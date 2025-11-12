@@ -1,0 +1,17 @@
+package org.firstinspires.ftc.teamcode;
+
+public class RobotMap {
+
+    public static final String FRONT_LEFT_MOTOR = "leftFront";
+    public static final boolean FRONT_LEFT_MOTOR_IS_INVERTED = false;
+
+    public static final String FRONT_RIGHT_MOTOR = "rightFront";//0
+    public static final boolean FRONT_RIGHT_MOTOR_IS_INVERTED = false;
+
+    public static final String BACK_LEFT_MOTOR = "leftBack";
+    public static final boolean BACK_LEFT_MOTOR_IS_INVERTED = true;
+
+    public static final String BACK_RIGHT_MOTOR = "rightBack";//1
+    public static final boolean BACK_RIGHT_MOTOR_IS_INVERTED = false;
+
+}
