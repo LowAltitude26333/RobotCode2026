@@ -8,6 +8,8 @@ buildscript {
     repositories {
         mavenCentral()
         google()
+        jcenter()
+        maven { url = uri("https://jitpack.io") }
     }
     dependencies {
         // Note for FTC Teams: Do not modify this yourself.
@@ -19,11 +21,14 @@ buildscript {
 // google() repository beginning with version 3.2 of the Android Gradle Plugin
 allprojects {
     repositories {
-        mavenCentral()
         google()
+        jcenter()
+        mavenCentral()
+        maven { url = uri("https://jitpack.io") }
     }
 }
-
 repositories {
-    mavenCentral()
+    maven {
+        url = 'https://maven.brott.dev/'
+    }
 }
