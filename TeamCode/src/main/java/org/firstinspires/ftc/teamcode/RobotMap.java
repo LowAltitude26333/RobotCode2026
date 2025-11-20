@@ -14,4 +14,6 @@ public class RobotMap {
     public static final String BACK_RIGHT_MOTOR = "rightBack";//1
     public static final boolean BACK_RIGHT_MOTOR_IS_INVERTED = false;
 
+    public static final String INTAKE_MOTOR = "intakeMotor";
+    public static final boolean INTAKE_MOTOR_IS_INVERTED = false;
 }
