@@ -4,6 +4,9 @@ public class LowAltitudeConstants {
 
     public static final double INTAKE_IN_SPEED = 0.0;
 
+    //Chasis
+    public static final double CHASSIS_POWER = 0.8;
+
     //Shooter
     public static final double SHOOTER_ON_SPEED = 0.5;
     public static final double SHOOTER_OFF_SPEED = 0.0;
