@@ -24,7 +24,7 @@ public class TeleOpChassis extends CommandOpMode {
 
         drive.setDefaultCommand(new DriveCommand(
                 drive,
-                driver::getLeftX,         // strafe (izquierda/derecha)
+                () -> driver.getLeftX(),        // strafe (izquierda/derecha)
                 () -> -driver.getLeftY(), // forward/backward (invertido para que arriba sea adelante)
                 driver::getRightX
         ));
