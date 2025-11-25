@@ -23,7 +23,7 @@ public class ShootSequenceCommand extends SequentialCommandGroup {
                 // 1. Preparación (Hood y RPM al mismo tiempo)
                 new ParallelCommandGroup(
                         new InstantCommand(() -> hood.setPosition(angle), hood),
-                        new InstantCommand(() -> shooter.setCurrentTarget(targetRpm))
+                        new InstantCommand(() -> shooter.setTargetRPM(targetRpm))
                 ),
 
                 // 2. Esperar a que el motor llegue a la velocidad (Ready to fire)

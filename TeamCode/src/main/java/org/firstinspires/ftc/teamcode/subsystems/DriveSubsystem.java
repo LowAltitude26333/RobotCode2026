@@ -5,41 +5,42 @@ import com.acmerobotics.roadrunner.PoseVelocity2d;
 import com.acmerobotics.roadrunner.Vector2d;
 import com.arcrobotics.ftclib.command.SubsystemBase;
 import com.qualcomm.robotcore.hardware.HardwareMap;
-
+import org.firstinspires.ftc.robotcore.external.Telemetry; // Importante
 import org.firstinspires.ftc.teamcode.MecanumDrive;
 
 public class DriveSubsystem extends SubsystemBase {
 
     private final MecanumDrive drive;
     private double speedMultiplier = 1.0;
+    private Telemetry telemetry;
 
-    public DriveSubsystem(HardwareMap hardwareMap, Pose2d startPose) {
-        drive = new MecanumDrive(hardwareMap, startPose);
+    // Agregamos Telemetry al constructor para debug
+    public DriveSubsystem(HardwareMap hardwareMap, Pose2d startPose, Telemetry telemetry) {
+        this.drive = new MecanumDrive(hardwareMap, startPose);
+        this.telemetry = telemetry;
     }
 
-    /**
-     * Método principal de manejo
-     */
     public void drive(double strafe, double forward, double turn, boolean isFieldCentric) {
 
-        // Aplicar multiplicador (Slow Mode)
+        // Debug: Ver qué valores llegan realmente
+        telemetry.addData("DRIVE Input Strafe", strafe);
+        telemetry.addData("DRIVE Input Fwd", forward);
+        telemetry.addData("DRIVE Input Turn", turn);
+
         double x = strafe * speedMultiplier;
         double y = forward * speedMultiplier;
         double t = turn * speedMultiplier;
 
         if (isFieldCentric) {
-            // CORRECCIÓN: Accedemos al heading a través del localizer
             double heading = drive.localizer.getPose().heading.toDouble();
-
-            // Rotación de vectores para Field Centric
             double rotX = x * Math.cos(-heading) - y * Math.sin(-heading);
             double rotY = x * Math.sin(-heading) + y * Math.cos(-heading);
-
             x = rotX;
             y = rotY;
         }
 
-        // Enviar potencias al RoadRunner
+        // IMPORTANTE: El 'turn' en RoadRunner 1.0 a veces requiere un valor más alto
+        // si maxAngVel es muy alto. Pero probemos directo primero.
         drive.setDrivePowers(new PoseVelocity2d(
                 new Vector2d(y, -x),
                 -t
@@ -50,40 +51,20 @@ public class DriveSubsystem extends SubsystemBase {
         drive(strafe, forward, turn, false);
     }
 
-    public void stop() {
-        drive(0, 0, 0);
-    }
-
-    public void setSpeedMultiplier(double multiplier) {
-        this.speedMultiplier = multiplier;
-    }
-
-    /**
-     * Resetea el ángulo del robot a 0 (útil si el Field Centric se descalibra)
-     */
     public void resetHeading() {
-        // CORRECCIÓN: Obtenemos la pose actual del localizer
         Pose2d currentPose = drive.localizer.getPose();
-
-        // Creamos una nueva pose con la misma posición X,Y pero ángulo 0
-        Pose2d newPose = new Pose2d(currentPose.position.x, currentPose.position.y, 0);
-
-        // CORRECCIÓN: Seteamos la pose en el localizer
-        drive.localizer.setPose(newPose);
+        drive.localizer.setPose(new Pose2d(currentPose.position.x, currentPose.position.y, 0));
     }
 
-    public Pose2d getPose() {
-        // CORRECCIÓN: Acceso a través del localizer
-        return drive.localizer.getPose();
-    }
-
-    public MecanumDrive getMecanumDrive() {
-        return drive;
-    }
+    public MecanumDrive getMecanumDrive() { return drive; }
 
     @Override
     public void periodic() {
-        // Actualizar la odometría constantemente
         drive.updatePoseEstimate();
+        // Telemetría de posición
+        Pose2d p = drive.localizer.getPose();
+        telemetry.addData("ROBOT X", p.position.x);
+        telemetry.addData("ROBOT Y", p.position.y);
+        telemetry.addData("ROBOT Heading (Deg)", Math.toDegrees(p.heading.toDouble()));
     }
 }

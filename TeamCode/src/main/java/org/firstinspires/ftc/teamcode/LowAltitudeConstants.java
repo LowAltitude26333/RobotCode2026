@@ -1,46 +1,43 @@
 package org.firstinspires.ftc.teamcode;
 
+import com.acmerobotics.dashboard.config.Config;
+
+@Config
 public class LowAltitudeConstants {
 
-    public static final double INTAKE_IN_SPEED = 0.0;
 
-    //Chasis
-    public static final double CHASSIS_POWER = 0.8;
+        // --- SHOOTER ---
+        public static double SHOOTER_KP = 0.002; // Ajustar este valor es crucial
+        public static double SHOOTER_KI = 0.0;
+        public static double SHOOTER_KD = 0.0001;
+        public static double SHOOTER_KF = 0.0005; // Feedforward para mantener velocidad
 
-    //Shooter
-    public static final double SHOOTER_ON_SPEED = 0.5;
-    public static final double SHOOTER_OFF_SPEED = 0.0;
-    public static final double SHOOTER_INTAKE_SPEED = -0.5;
+        public static double RPM_OFFSET = 50; // Tolerancia
 
-    //PID Shooter
-    public static final double SHOOTER_KP = 0.37;
-    public static final double SHOOTER_KI = 0.05;
-    public static final double SHOOTER_KD = 1.02;
-    public static final double SHOOTER_KF = 0.7;
+        // Relación: 1 vuelta de motor = 2 vueltas de llanta
+        // Esto significa que la llanta gira AL DOBLE de rápido que el motor.
+        public static double SHOOTER_VELOCITY_MULTIPLIER = 2.0;
+        public static double TICKS_PER_REV = 28.0; // Rev HD Hex Motor
 
-    //Tolerance
-    public static final double RPM_OFFSET = 50;
-    public static final double TICKS_PER_REV = 28.0;
-    public static final double GEAR_RATIO = 2;
+        // Límite de potencia para no quemar motores o seguridad
+        public static double SHOOTER_MAX_SPEED = 0.7; // Rango 0.0 a 1.0
 
+        // --- SHOOTER HOOD ---
+        // Estos son los ángulos físicos que permitimos por software
+        public static final double HOOD_MIN_LIMIT = 5.0;
+        public static final double HOOD_MAX_LIMIT = 207.0;
 
-    //Feedforward Shooter
-    public static final double SHOOTER_KS = 0.37;
-    public static final double SHOOTER_KV = 0.05;
+        // Estos son los límites físicos del servo (0 a 300 en goBILDA, 0 a 270 en REV)
+    public static double HOOD_SERVO_MAX_RANGE = 300.0;
 
+    public static final double INTAKE_IN_SPEED = 0.5;
     public static final double INTAKE_STOP = 0.0;
-    public static final double INTAKE_RETURN = 0.0;
-
-    // --- SHOOTER HOOD CONSTANTS ---
-    public static final double HOOD_MIN_ANGLE_DEG = 0;
-    public static final double HOOD_MAX_ANGLE_DEG = 300; // Revisa specs del servo (goBILDA vs REV)
-    public static final double HOOD_MIN_LIMIT = 25; // Límite de seguridad en código
-    public static final double HOOD_MAX_LIMIT = 55; // Límite de seguridad en código
+    public static final double INTAKE_REVERSE = -0.5;
 
     public enum HoodPosition {
-        WALL_SHOT(25.0),    // Tiro cercano
-        MID_FIELD(35.0),    // Tiro medio
-        LONG_SHOT(50.0);    // Tiro lejano
+        WALL_SHOT(5.0),    // Tiro cercano
+        MID_FIELD(106.0),    // Tiro medio
+        LONG_SHOT(207.0);    // Tiro lejano
 
         public final double angle;
 
@@ -50,6 +47,7 @@ public class LowAltitudeConstants {
     }
 
     // --- KICKER CONSTANTS ---
-    public static final double KICKER_SPEED = 1.0;
-    public static final int KICKER_CYCLE_TICKS = 288; // Solo si usas encoder (ej. motor Core Hex)
+    public static final double KICKER_OUT_SPEED = 0.5;
+    public static final double KICKER_REVERSE_SPEED = -0.5;
+
 }

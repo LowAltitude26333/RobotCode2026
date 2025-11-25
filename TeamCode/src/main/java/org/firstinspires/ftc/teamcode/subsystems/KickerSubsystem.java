@@ -28,14 +28,14 @@ public class KickerSubsystem extends SubsystemBase {
      * La duración del golpe dependerá del comando (WaitCommand).
      */
     public void kick() {
-        kickerMotor.set(LowAltitudeConstants.KICKER_SPEED);
+        kickerMotor.set(LowAltitudeConstants.KICKER_OUT_SPEED);
     }
 
     /**
      * Retrae el kicker manualmente si se atoró.
      */
-    public void retract() {
-        kickerMotor.set(-LowAltitudeConstants.KICKER_SPEED);
+    public void reverse() {
+        kickerMotor.set(LowAltitudeConstants.KICKER_REVERSE_SPEED);
     }
 
     /**

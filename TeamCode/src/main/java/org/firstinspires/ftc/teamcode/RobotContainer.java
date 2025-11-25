@@ -1,8 +1,10 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.acmerobotics.roadrunner.Pose2d;
+import com.arcrobotics.ftclib.command.CommandOpMode; // <--- Importar esto
 import com.arcrobotics.ftclib.command.CommandScheduler;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import org.firstinspires.ftc.robotcore.external.Telemetry; // <--- Importar esto
 
 import org.firstinspires.ftc.teamcode.commands.MecanumDriveCommand;
 import org.firstinspires.ftc.teamcode.oi.ControlProfile;
@@ -14,35 +16,44 @@ import org.firstinspires.ftc.teamcode.subsystems.ShooterSubsystem;
 
 public class RobotContainer {
 
-    // Subsistemas Públicos (para que el Profile pueda acceder a ellos)
-    // También podrías usar getters, pero public final es aceptable en FTC para simplificar.
+    // Subsistemas Públicos
     public final DriveSubsystem driveSubsystem;
     public final IntakeSubsystem intakeSubsystem;
     public final ShooterSubsystem shooterSubsystem;
     public final ShooterHoodSubsystem hoodSubsystem;
     public final KickerSubsystem kickerSubsystem;
 
-    // El perfil de control actual
     private final ControlProfile controlProfile;
 
     /**
-     * Constructor
-     * @param hardwareMap El mapa de hardware de FTC
+     * Constructor Actualizado
+     * @param opMode Pasamos el OpMode completo para sacar hardwareMap y telemetry
      * @param profile El perfil de control seleccionado (OI)
-     * @param startPose La posición inicial del robot (útil para auto -> teleop)
+     * @param startPose La posición inicial del robot
      */
-    public RobotContainer(HardwareMap hardwareMap, ControlProfile profile, Pose2d startPose) {
+    public RobotContainer(CommandOpMode opMode, ControlProfile profile, Pose2d startPose) { // <--- CAMBIO: Recibe CommandOpMode
         this.controlProfile = profile;
 
-        // 1. Inicializar Subsistemas
-        driveSubsystem = new DriveSubsystem(hardwareMap, startPose);
+        // Extraemos las herramientas del OpMode
+        HardwareMap hardwareMap = opMode.hardwareMap;
+        Telemetry telemetry = opMode.telemetry;       // <--- CAMBIO: Obtenemos telemetría
+
+        // 1. Inicializar Subsistemas (Pasando telemetría a los que la necesitan)
+
+        // DriveSubsystem ahora pide telemetry para debuggear el Turn
+        driveSubsystem = new DriveSubsystem(hardwareMap, startPose, telemetry); // <--- CAMBIO
+
         intakeSubsystem = new IntakeSubsystem(hardwareMap);
-        shooterSubsystem = new ShooterSubsystem(hardwareMap);
-        hoodSubsystem = new ShooterHoodSubsystem(hardwareMap);
+
+        // ShooterSubsystem ahora pide telemetry para ver RPMs
+        shooterSubsystem = new ShooterSubsystem(hardwareMap, telemetry); // <--- CAMBIO
+
+        // HoodSubsystem ahora pide telemetry para ver ángulos
+        hoodSubsystem = new ShooterHoodSubsystem(hardwareMap, telemetry); // <--- CAMBIO
+
         kickerSubsystem = new KickerSubsystem(hardwareMap);
 
         // 2. Configurar Comandos por Defecto
-        // El chasis siempre obedecerá al perfil seleccionado
         driveSubsystem.setDefaultCommand(new MecanumDriveCommand(
                 driveSubsystem,
                 profile::getDriveStrafe,
@@ -50,12 +61,11 @@ public class RobotContainer {
                 profile::getDriveTurn
         ));
 
+
         // 3. Configurar Botones
-        // Le pasamos "this" (el contenedor) al perfil para que enlace los botones
         controlProfile.configureButtonBindings(this);
     }
 
-    // Método auxiliar para resetear el scheduler si es necesario
     public void run() {
         CommandScheduler.getInstance().run();
     }

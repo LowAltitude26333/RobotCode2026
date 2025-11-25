@@ -9,6 +9,7 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 
 import org.firstinspires.ftc.teamcode.LowAltitudeConstants;
 import org.firstinspires.ftc.teamcode.RobotContainer;
+import org.firstinspires.ftc.teamcode.commands.ShooterPIDCommand;
 
 public class SkywalkerProfile implements ControlProfile {
 
@@ -29,8 +30,10 @@ public class SkywalkerProfile implements ControlProfile {
     // --- CHASIS (Arcade Drive estándar) ---
     @Override
     public double getDriveStrafe() { return driverOp.getLeftX(); }
+
     @Override
     public double getDriveForward() { return driverOp.getLeftY(); }
+
     @Override
     public double getDriveTurn() { return driverOp.getRightX(); }
 
@@ -41,7 +44,7 @@ public class SkywalkerProfile implements ControlProfile {
         // DRIVER (Gamepad 1) - Movilidad y Recolección
         // =================================================================
 
-        // INTAKE (Prueba básica de encendido/apagado/reversa)
+        // INTAKE
         // RB -> Intake Adentro (Comer)
         new GamepadButton(driverOp, GamepadKeys.Button.RIGHT_BUMPER)
                 .whenPressed(new InstantCommand(robot.intakeSubsystem::intakeOn, robot.intakeSubsystem));
@@ -50,68 +53,65 @@ public class SkywalkerProfile implements ControlProfile {
         new GamepadButton(driverOp, GamepadKeys.Button.LEFT_BUMPER)
                 .whenPressed(new InstantCommand(robot.intakeSubsystem::intakeReturn, robot.intakeSubsystem));
 
-        // A -> Intake Apagado (Parar todo)
+        // A -> Intake Apagado
         new GamepadButton(driverOp, GamepadKeys.Button.A)
                 .whenPressed(new InstantCommand(robot.intakeSubsystem::intakeOff, robot.intakeSubsystem));
 
-        // RESET GIROSCOPIO (Importante para probar Field Centric si lo usas después)
+        // RESET GIROSCOPIO (Usando el método seguro del subsistema)
         new GamepadButton(driverOp, GamepadKeys.Button.START)
                 .whenPressed(new InstantCommand(robot.driveSubsystem::resetHeading));
 
 
         // =================================================================
-        // TOOL OP (Gamepad 2) - Pruebas de Sistemas de Disparo
+        // TOOL OP (Gamepad 2) - Pruebas Manuales
         // =================================================================
 
         // --- 1. HOOD (Servos) ---
-        // Probamos los límites físicos definidos en las constantes
-
-        // D-Pad Arriba -> Ir a ángulo MÁXIMO (Tiro Lejano)
+        // D-Pad Arriba -> Tiro Lejano
         new GamepadButton(toolOp, GamepadKeys.Button.DPAD_UP)
                 .whenPressed(new InstantCommand(() ->
                         robot.hoodSubsystem.setPosition(LowAltitudeConstants.HoodPosition.LONG_SHOT), robot.hoodSubsystem));
 
-        // D-Pad Abajo -> Ir a ángulo MÍNIMO (Tiro Pared)
+        // D-Pad Abajo -> Tiro Pared
         new GamepadButton(toolOp, GamepadKeys.Button.DPAD_DOWN)
                 .whenPressed(new InstantCommand(() ->
                         robot.hoodSubsystem.setPosition(LowAltitudeConstants.HoodPosition.WALL_SHOT), robot.hoodSubsystem));
 
-        // D-Pad Derecha -> Ángulo MEDIO (Para verificar punto intermedio)
+        // D-Pad Derecha -> Ángulo MEDIO
         new GamepadButton(toolOp, GamepadKeys.Button.DPAD_RIGHT)
                 .whenPressed(new InstantCommand(() ->
                         robot.hoodSubsystem.setPosition(LowAltitudeConstants.HoodPosition.MID_FIELD), robot.hoodSubsystem));
 
 
         // --- 2. SHOOTER (Motor PIDF) ---
-        // Probamos si el motor gira, si hace ruido, y si el PID mantiene la velocidad
 
-        // Y -> Prender Shooter (Velocidad Alta de prueba)
+    // Y -> Prender Shooter y MANTENER velocidad (4500 RPM)
+    // Este comando corre indefinidamente hasta que otro comando use el shooter
         new GamepadButton(toolOp, GamepadKeys.Button.Y)
-                .whenPressed(new InstantCommand(() -> robot.shooterSubsystem.setCurrentTarget(4500))); // Ajustar RPM
+                .whenPressed(new ShooterPIDCommand(robot.shooterSubsystem, 4500));
 
-        // B -> Prender Shooter (Velocidad Baja/Idle)
+    // B -> Prender Shooter Velocidad Baja (2000 RPM)
+    // Esto interrumpirá al de 4500 y pondrá el nuevo de 2000
         new GamepadButton(toolOp, GamepadKeys.Button.B)
-                .whenPressed(new InstantCommand(() -> robot.shooterSubsystem.setCurrentTarget(2000)));
+                .whenPressed(new ShooterPIDCommand(robot.shooterSubsystem, 2000));
 
-        // A -> Apagar Shooter (Stop)
+    // A -> Apagar Shooter (Stop)
+    // Al requerir el subsistema, este comando mata al PIDCommand activo.
         new GamepadButton(toolOp, GamepadKeys.Button.A)
-                .whenPressed(new InstantCommand(robot.shooterSubsystem::stopMotors));
-
+                .whenPressed(new InstantCommand(
+                        robot.shooterSubsystem::stop, // Acción
+                        robot.shooterSubsystem        // Requisito (CRÍTICO para que funcione el apagado)
+                ));
 
         // --- 3. KICKER (Motor Raw Power) ---
-        // Probamos el mecanismo de empuje manualmente.
-        // Mientras mantienes presionado el gatillo o bumper, el motor gira.
-        // Al soltar, se detiene (freno).
-
-        // Right Bumper (Hold) -> Activar Kicker (Golpear)
-        // Usamos RunCommand para que se ejecute continuamente mientras se presiona
+        // RB (Hold) -> Activar Kicker
         new GamepadButton(toolOp, GamepadKeys.Button.RIGHT_BUMPER)
                 .whileHeld(new RunCommand(robot.kickerSubsystem::kick, robot.kickerSubsystem))
                 .whenReleased(new InstantCommand(robot.kickerSubsystem::stop, robot.kickerSubsystem));
 
-        // Left Bumper (Hold) -> Reversa Kicker (Por si se atora)
+        // LB (Hold) -> Reversa Kicker
         new GamepadButton(toolOp, GamepadKeys.Button.LEFT_BUMPER)
-                .whileHeld(new RunCommand(robot.kickerSubsystem::retract, robot.kickerSubsystem))
+                .whileHeld(new RunCommand(robot.kickerSubsystem::reverse, robot.kickerSubsystem))
                 .whenReleased(new InstantCommand(robot.kickerSubsystem::stop, robot.kickerSubsystem));
     }
 }
