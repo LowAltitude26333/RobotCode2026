@@ -264,6 +264,11 @@ public final class MecanumDrive {
         FlightRecorder.write("MECANUM_PARAMS", PARAMS);
     }
 
+    // Método helper para facilitar el acceso a la pose
+    public Pose2d getPose() {
+        return localizer.getPose();
+    }
+
     public void setDrivePowers(PoseVelocity2d powers) {
         MecanumKinematics.WheelVelocities<Time> wheelVels = new MecanumKinematics(1).inverse(
                 PoseVelocity2dDual.constant(powers, 1));
@@ -318,6 +323,7 @@ public final class MecanumDrive {
 
                 return false;
             }
+
 
             Pose2dDual<Time> txWorldTarget = timeTrajectory.get(t);
             targetPoseWriter.write(new PoseMessage(txWorldTarget.value()));
