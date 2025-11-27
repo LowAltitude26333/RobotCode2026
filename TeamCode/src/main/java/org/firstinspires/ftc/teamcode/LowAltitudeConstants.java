@@ -6,11 +6,11 @@ import com.acmerobotics.dashboard.config.Config;
 public class LowAltitudeConstants {
 
 
-        // --- SHOOTER ---
-        public static double SHOOTER_KP = 0.002; // Ajustar este valor es crucial
+        // --- SHOOTER --- Tuneado a 4500 RPM
+        public static double SHOOTER_KP = 0.0008;//0.002; // Ajustar este valor es crucial
         public static double SHOOTER_KI = 0.0;
-        public static double SHOOTER_KD = 0.0001;
-        public static double SHOOTER_KF = 0.0005; // Feedforward para mantener velocidad
+        public static double SHOOTER_KD = 0;//.0001;
+        public static double SHOOTER_KF = 0.000155; // Feedforward para mantener velocidad
 
         public static double RPM_OFFSET = 50; // Tolerancia
 
@@ -20,7 +20,7 @@ public class LowAltitudeConstants {
         public static double TICKS_PER_REV = 28.0; // Rev HD Hex Motor
 
         // Límite de potencia para no quemar motores o seguridad
-        public static double SHOOTER_MAX_SPEED = 0.7; // Rango 0.0 a 1.0
+        public static double SHOOTER_MAX_SPEED = 0.9; // Rango 0.0 a 1.0
 
         // --- SHOOTER HOOD ---
         // Estos son los ángulos físicos que permitimos por software

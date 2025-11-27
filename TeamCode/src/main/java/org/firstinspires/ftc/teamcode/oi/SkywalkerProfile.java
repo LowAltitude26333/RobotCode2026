@@ -93,7 +93,7 @@ public class SkywalkerProfile implements ControlProfile {
     // B -> Prender Shooter Velocidad Baja (2000 RPM)
     // Esto interrumpirá al de 4500 y pondrá el nuevo de 2000
         new GamepadButton(toolOp, GamepadKeys.Button.B)
-                .whenPressed(new ShooterPIDCommand(robot.shooterSubsystem, 2000));
+                .whenPressed(new ShooterPIDCommand(robot.shooterSubsystem, 3250));
 
     // A -> Apagar Shooter (Stop)
     // Al requerir el subsistema, este comando mata al PIDCommand activo.
@@ -114,4 +114,5 @@ public class SkywalkerProfile implements ControlProfile {
                 .whileHeld(new RunCommand(robot.kickerSubsystem::reverse, robot.kickerSubsystem))
                 .whenReleased(new InstantCommand(robot.kickerSubsystem::stop, robot.kickerSubsystem));
     }
+
 }
