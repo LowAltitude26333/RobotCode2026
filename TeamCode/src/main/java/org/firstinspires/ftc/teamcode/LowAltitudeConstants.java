@@ -2,7 +2,6 @@ package org.firstinspires.ftc.teamcode;
 
 public class LowAltitudeConstants {
 
-    public static final double INTAKE_IN_SPEED = 0.0;
 
     //Chasis
     public static final double CHASSIS_POWER = 0.8;
@@ -28,7 +27,7 @@ public class LowAltitudeConstants {
     public static final double SHOOTER_KS = 0.37;
     public static final double SHOOTER_KV = 0.05;
 
-    public static final double INTAKE_IN_SPEED = 0.0;
+    public static final double INTAKE_IN_SPEED = 0.7;
     public static final double INTAKE_STOP = 0.0;
-    public static final double INTAKE_RETURN = 0.0;
+    public static final double INTAKE_RETURN = -0.7;
 }
