@@ -16,8 +16,6 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.teamcode.MecanumDrive;
 import org.firstinspires.ftc.teamcode.subsystems.IntakeSubsystem;
-import org.firstinspires.ftc.teamcode.subsystems.LevnatadorSubsystem;
-import org.firstinspires.ftc.teamcode.subsystems.ShooterSubsystem2;
 
 
 @Config
@@ -31,8 +29,6 @@ public class AutonomoOne extends LinearOpMode {
         Pose2d startPose = new Pose2d(-52, 50, Math.toRadians(130));
         MecanumDrive drive = new MecanumDrive(hardwareMap, startPose);
         IntakeSubsystem intake = new IntakeSubsystem(hardwareMap);
-        LevnatadorSubsystem levantar = new LevnatadorSubsystem(hardwareMap);
-        ShooterSubsystem2 shooter = new ShooterSubsystem2(hardwareMap);
 
 
         Action adelante = drive.actionBuilder(startPose)

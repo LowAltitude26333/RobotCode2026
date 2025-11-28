@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.commands;
+package org.firstinspires.ftc.teamcode.commands.drivetrain;
 
 import com.arcrobotics.ftclib.command.RunCommand;
 import org.firstinspires.ftc.teamcode.subsystems.DriveSubsystem;
