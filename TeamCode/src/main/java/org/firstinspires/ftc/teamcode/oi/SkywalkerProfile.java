@@ -44,19 +44,6 @@ public class SkywalkerProfile implements ControlProfile {
         // DRIVER (Gamepad 1) - Movilidad y Recolección
         // =================================================================
 
-        // INTAKE
-        // RB -> Intake Adentro (Comer)
-        new GamepadButton(driverOp, GamepadKeys.Button.RIGHT_BUMPER)
-                .whenPressed(new InstantCommand(robot.intakeSubsystem::intakeOn, robot.intakeSubsystem));
-
-        // LB -> Intake Afuera (Escupir)
-        new GamepadButton(driverOp, GamepadKeys.Button.LEFT_BUMPER)
-                .whenPressed(new InstantCommand(robot.intakeSubsystem::intakeReturn, robot.intakeSubsystem));
-
-        // A -> Intake Apagado
-        new GamepadButton(driverOp, GamepadKeys.Button.A)
-                .whenPressed(new InstantCommand(robot.intakeSubsystem::intakeOff, robot.intakeSubsystem));
-
         // RESET GIROSCOPIO (Usando el método seguro del subsistema)
         new GamepadButton(driverOp, GamepadKeys.Button.START)
                 .whenPressed(new InstantCommand(robot.driveSubsystem::resetHeading));
@@ -82,18 +69,22 @@ public class SkywalkerProfile implements ControlProfile {
                 .whenPressed(new InstantCommand(() ->
                         robot.hoodSubsystem.setPosition(LowAltitudeConstants.HoodPosition.MID_FIELD), robot.hoodSubsystem));
 
+        //D-Pad Izquierda -> ángulo 0
+        new GamepadButton(toolOp, GamepadKeys.Button.DPAD_LEFT)
+                .whenPressed(new InstantCommand(() ->
+                        robot.hoodSubsystem.setPosition(LowAltitudeConstants.HoodPosition.HOME_POS), robot.hoodSubsystem));
 
         // --- 2. SHOOTER (Motor PIDF) ---
 
     // Y -> Prender Shooter y MANTENER velocidad (4500 RPM)
     // Este comando corre indefinidamente hasta que otro comando use el shooter
         new GamepadButton(toolOp, GamepadKeys.Button.Y)
-                .whenPressed(new ShooterPIDCommand(robot.shooterSubsystem, 4500));
+                .whenPressed(new ShooterPIDCommand(robot.shooterSubsystem, LowAltitudeConstants.SHOOTER_SPEED_RPM));
 
     // B -> Prender Shooter Velocidad Baja (2000 RPM)
     // Esto interrumpirá al de 4500 y pondrá el nuevo de 2000
         new GamepadButton(toolOp, GamepadKeys.Button.B)
-                .whenPressed(new ShooterPIDCommand(robot.shooterSubsystem, 3250));
+                .whenPressed(new ShooterPIDCommand(robot.shooterSubsystem, LowAltitudeConstants.SHOOTER_LOW_SPEED_RPM));
 
     // A -> Apagar Shooter (Stop)
     // Al requerir el subsistema, este comando mata al PIDCommand activo.
@@ -113,6 +104,23 @@ public class SkywalkerProfile implements ControlProfile {
         new GamepadButton(toolOp, GamepadKeys.Button.LEFT_BUMPER)
                 .whileHeld(new RunCommand(robot.kickerSubsystem::reverse, robot.kickerSubsystem))
                 .whenReleased(new InstantCommand(robot.kickerSubsystem::stop, robot.kickerSubsystem));
+
+        // 4 ----- INTAKE -------
+        // RB -> Intake Adentro (Comer)
+        new GamepadButton(toolOp, GamepadKeys.Button.RIGHT_STICK_BUTTON)
+                .whenPressed(new InstantCommand(robot.intakeSubsystem::intakeOn, robot.intakeSubsystem));
+        /*
+        new GamepadButton(toolOp, GamepadKeys.Button.RIGHT_STICK_BUTTON)
+                .whenPressed(new InstantCommand(robot.intakeSubsystem::intakeOn, robot.intakeSubsystem));
+         */
+
+        // LB -> Intake Afuera (Escupir)
+        new GamepadButton(toolOp, GamepadKeys.Button.LEFT_STICK_BUTTON)
+                .whenPressed(new InstantCommand(robot.intakeSubsystem::intakeReturn, robot.intakeSubsystem));
+
+        // A -> Intake Apagado
+        new GamepadButton(toolOp, GamepadKeys.Button.X)
+                .whenPressed(new InstantCommand(robot.intakeSubsystem::intakeOff, robot.intakeSubsystem));
     }
 
 }

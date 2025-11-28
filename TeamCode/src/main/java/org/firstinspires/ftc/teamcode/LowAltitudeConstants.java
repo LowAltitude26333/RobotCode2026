@@ -12,6 +12,11 @@ public class LowAltitudeConstants {
     public static double SHOOTER_KD = 0;//.0001;
     public static double SHOOTER_KF = 0.000155; // Feedforward para mantener velocidad
 
+    //Shooter velocity
+    public static double SHOOTER_SPEED_RPM = 3000;
+    public static double SHOOTER_LOW_SPEED_RPM = 2000;
+
+
     public static double RPM_OFFSET = 50; // Tolerancia
 
     // Relación: 1 vuelta de motor = 2 vueltas de llanta
@@ -35,9 +40,10 @@ public class LowAltitudeConstants {
     public static final double INTAKE_REVERSE = -0.5;
 
     public enum HoodPosition {
-        WALL_SHOT(5.0),    // Tiro cercano
+        WALL_SHOT(40.0),    // Tiro cercano
         MID_FIELD(106.0),    // Tiro medio
-        LONG_SHOT(207.0);    // Tiro lejano
+        LONG_SHOT(207.0),    // Tiro lejano
+        HOME_POS( 0.0);
 
         public final double angle;
 
