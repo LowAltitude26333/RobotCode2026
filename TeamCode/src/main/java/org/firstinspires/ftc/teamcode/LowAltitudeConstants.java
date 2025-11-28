@@ -13,8 +13,8 @@ public class LowAltitudeConstants {
     public static double SHOOTER_KF = 0.000155; // Feedforward para mantener velocidad
 
     //Shooter velocity
-    public static double SHOOTER_SPEED_RPM = 3000;
-    public static double SHOOTER_LOW_SPEED_RPM = 2000;
+    public static double SHOOTER_SPEED_RPM = 3650;
+    public static double SHOOTER_LOW_SPEED_RPM = 3000; //esta funciona para half court shot
 
 
     public static double RPM_OFFSET = 50; // Tolerancia
