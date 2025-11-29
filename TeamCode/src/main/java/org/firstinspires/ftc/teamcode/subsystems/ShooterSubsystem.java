@@ -120,12 +120,13 @@ public class ShooterSubsystem extends SubsystemBase {
     public Action runPIDAutonomous() {
         return (telemetryPacket) -> {
             runPID();
-            return true;
+            return false;
         };
     }
 
+
     public Action waitUntilTargetRPMAutonomous() {
-        return (telemetryPacket) -> onTarget();
+        return (telemetryPacket) -> !onTarget();
     }
 
     public Action stopAutonomous() {

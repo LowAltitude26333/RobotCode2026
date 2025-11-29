@@ -17,7 +17,7 @@ public class LowAltitudeConstants {
     public static double SHOOTER_LOW_SPEED_RPM = 3000; //esta funciona para half court shot
 
 
-    public static double RPM_OFFSET = 50; // Tolerancia
+    public static double RPM_OFFSET = 200; // Tolerancia Anterior 50
 
     // Relación: 1 vuelta de motor = 2 vueltas de llanta
     // Esto significa que la llanta gira AL DOBLE de rápido que el motor.
