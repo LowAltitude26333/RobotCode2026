@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
+import com.acmerobotics.roadrunner.Action;
 import com.arcrobotics.ftclib.command.SubsystemBase;
 import com.arcrobotics.ftclib.controller.PIDFController;
 import com.arcrobotics.ftclib.hardware.motors.Motor;
@@ -43,6 +44,12 @@ public class ShooterSubsystem extends SubsystemBase {
         );
     }
 
+
+    /*
+     * ==================================================================
+     * Comandos TeleOp
+     * ==================================================================
+     */
     // Solo guarda el valor, no mueve nada aún
     public void setTargetRPM(double rpm) {
         this.targetRPM = rpm;
@@ -95,5 +102,36 @@ public class ShooterSubsystem extends SubsystemBase {
         telemetry.addData("SHOOTER Actual", getShooterRPM());
         telemetry.addData("SHOOTER Velocity", motorLeader.getVelocity());
         telemetry.addData("SHOOTER Power", motorLeader.get());
+    }
+
+    /*
+    =========================================================================
+    Comandos Autónomo
+    =========================================================================
+     */
+
+    public Action setRPMAutonomous(double RPM) {
+        return(telemetryPacket) -> {
+            setTargetRPM(RPM);
+            return false;
+        };
+    }
+
+    public Action runPIDAutonomous() {
+        return (telemetryPacket) -> {
+            runPID();
+            return true;
+        };
+    }
+
+    public Action waitUntilTargetRPMAutonomous() {
+        return (telemetryPacket) -> onTarget();
+    }
+
+    public Action stopAutonomous() {
+        return (telemetryPacket) -> {
+            stop();
+            return false;
+        };
     }
 }
