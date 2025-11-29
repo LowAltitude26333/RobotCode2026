@@ -8,12 +8,8 @@ import com.acmerobotics.roadrunner.SequentialAction;
 import com.acmerobotics.roadrunner.SleepAction;
 import com.acmerobotics.roadrunner.Vector2d;
 import com.acmerobotics.roadrunner.ftc.Actions;
-import com.acmerobotics.roadrunner.TrajectoryActionBuilder;
-import com.arcrobotics.ftclib.hardware.motors.MotorEx;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.hardware.HardwareMap;
-
 import org.firstinspires.ftc.teamcode.MecanumDrive;
 import org.firstinspires.ftc.teamcode.subsystems.IntakeSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.KickerSubsystem;
@@ -21,14 +17,14 @@ import org.firstinspires.ftc.teamcode.subsystems.ShooterSubsystem;
 
 
 @Config
-@Autonomous(name = "Autonomo One", group = "Autonomo uno")
-public class AutonomoOne extends LinearOpMode {
+@Autonomous(name = "Autonomo One", group = "Autonomo Full")
+public class AutonomoFullCore extends LinearOpMode {
 
 
     @Override
     public void runOpMode() {
 
-        Pose2d startPose = new Pose2d(-50, 48, Math.toRadians(130));
+        Pose2d startPose = new Pose2d(-52, 50, Math.toRadians(130));
         MecanumDrive drive = new MecanumDrive(hardwareMap, startPose);
         IntakeSubsystem intake = new IntakeSubsystem(hardwareMap);
         ShooterSubsystem shooter = new ShooterSubsystem(hardwareMap,telemetry);

@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
+import com.acmerobotics.roadrunner.Action;
 import com.arcrobotics.ftclib.command.SubsystemBase;
 import com.arcrobotics.ftclib.hardware.motors.Motor;
 import com.arcrobotics.ftclib.hardware.motors.MotorEx;
@@ -43,5 +44,21 @@ public class KickerSubsystem extends SubsystemBase {
      */
     public void stop() {
         kickerMotor.stopMotor(); // Al ser BRAKE, se detendrá de golpe.
+    }
+    public Action cargar() {
+        return (telemetryPacket) -> {
+
+            kickerMotor.set(0.7);
+
+            return false;
+        };
+    }
+    public Action off() {
+        return (telemetryPacket) -> {
+
+            kickerMotor.set(0.0);
+
+            return false;
+        };
     }
 }

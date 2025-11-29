@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
+import com.acmerobotics.roadrunner.Action;
 import com.arcrobotics.ftclib.command.SubsystemBase;
 import com.arcrobotics.ftclib.controller.PIDFController;
 import com.arcrobotics.ftclib.hardware.motors.Motor;
@@ -96,4 +97,14 @@ public class ShooterSubsystem extends SubsystemBase {
         telemetry.addData("SHOOTER Velocity", motorLeader.getVelocity());
         telemetry.addData("SHOOTER Power", motorLeader.get());
     }
+    public Action disparar() {
+        return (telemetryPacket) -> {
+
+            motorLeader.set(0.7);
+            motorFollower.set(0.7);
+
+            return false;
+        };
+    }
+
 }

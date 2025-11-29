@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
+import com.acmerobotics.roadrunner.Action;
 import com.arcrobotics.ftclib.command.SubsystemBase;
 import com.arcrobotics.ftclib.hardware.motors.MotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
@@ -25,5 +26,21 @@ public class IntakeSubsystem extends SubsystemBase {
     }
     public void intakeReturn(){
         intakeMotor.set(LowAltitudeConstants.INTAKE_REVERSE);
+    }
+    public Action soltar() {
+        return (telemetryPacket) -> {
+
+            intakeMotor.set(-0.7);
+
+            return false;
+        };
+    }
+    public Action off() {
+        return (telemetryPacket) -> {
+
+            intakeMotor.set(0.0);
+
+            return false;
+        };
     }
 }
