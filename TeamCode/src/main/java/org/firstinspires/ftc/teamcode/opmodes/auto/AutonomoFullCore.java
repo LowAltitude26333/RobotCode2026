@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.opmodes.auto;
 
-import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.roadrunner.Action;
 import com.acmerobotics.roadrunner.ParallelAction;
@@ -9,12 +8,8 @@ import com.acmerobotics.roadrunner.SequentialAction;
 import com.acmerobotics.roadrunner.SleepAction;
 import com.acmerobotics.roadrunner.Vector2d;
 import com.acmerobotics.roadrunner.ftc.Actions;
-import com.acmerobotics.roadrunner.TrajectoryActionBuilder;
-import com.arcrobotics.ftclib.hardware.motors.MotorEx;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.hardware.HardwareMap;
-
 import org.firstinspires.ftc.teamcode.MecanumDrive;
 import org.firstinspires.ftc.teamcode.subsystems.IntakeSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.KickerSubsystem;
@@ -22,56 +17,20 @@ import org.firstinspires.ftc.teamcode.subsystems.ShooterSubsystem;
 
 
 @Config
-@Autonomous(name = "Autonomo One", group = "Autonomo uno")
-public class AutonomoOne extends LinearOpMode {
+@Autonomous(name = "Autonomo One", group = "Autonomo Full")
+public class AutonomoFullCore extends LinearOpMode {
+
 
     @Override
     public void runOpMode() {
 
-<<<<<<< HEAD
-        Pose2d startPose = new Pose2d(-50, 48, Math.toRadians(130));//pegado a la goul de frente
-=======
-        Pose2d startPose = new Pose2d(-50, 48, Math.toRadians(130));
->>>>>>> 3cead8f0e4404b6820523a9b2b6fa87aec56cc8b
+        Pose2d startPose = new Pose2d(-52, 50, Math.toRadians(130));
         MecanumDrive drive = new MecanumDrive(hardwareMap, startPose);
         IntakeSubsystem intake = new IntakeSubsystem(hardwareMap);
         ShooterSubsystem shooter = new ShooterSubsystem(hardwareMap,telemetry);
         KickerSubsystem kicker = new KickerSubsystem(hardwareMap);
-<<<<<<< HEAD
-
-        Thread rpmThread = new Thread(() -> {
-            try {
-                while (!isStopRequested()) {
-                    if (opModeIsActive()) {
-                        telemetry.addData("ShooterRPM", shooter.getShooterRPM());
-                    } else {
-                        telemetry.addData("ShooterRPM", "init");
-                    }
-                    telemetry.update();
-                    Thread.sleep(100);
-                }
-            } catch (InterruptedException ignored) { }
-        });
-        rpmThread.setDaemon(true); // para que no impida que el programa termine
-        rpmThread.start();
-
-        Thread mostrarRPMThread = new Thread(() -> {
-            try {
-                while (!isStopRequested()) {
-                    telemetry.addData("ShooterRPM", shooter.getShooterRPM());
-                    telemetry.update();
-                    Thread.sleep(80); // Frecuencia de actualización
-                }
-            } catch (InterruptedException ignored) {}
-        });
-        mostrarRPMThread.setDaemon(true);
 
 
-
-=======
-
-
->>>>>>> 3cead8f0e4404b6820523a9b2b6fa87aec56cc8b
         Action uno = drive.actionBuilder(startPose)
                 .strafeTo(new Vector2d(-47, 40))
                 .waitSeconds(3)
@@ -94,52 +53,17 @@ public class AutonomoOne extends LinearOpMode {
                 .splineToLinearHeading(new Pose2d(13,30,Math.toRadians(270)),Math.toRadians(130))
                 .build();
 
-<<<<<<< HEAD
-        Action mostrarRPM = (tp) -> {
-            telemetry.addData("ShooterRPM", shooter.getShooterRPM());
-            telemetry.update();
-            return false;
-        };
-        /*
-=======
->>>>>>> 3cead8f0e4404b6820523a9b2b6fa87aec56cc8b
         Action unoConIntake = new SequentialAction(
                 new ParallelAction(
                         dos,intake.soltar()
                 ),
                 intake.off() // se apaga después
         );
-<<<<<<< HEAD
-
-         */
-        Action unoConTodo = new SequentialAction(
-
-                shooter.setRPMAutonomous(3000),
-
-                new ParallelAction(
-                        // termina si llega a RPM
-                        shooter.waitUntilTargetRPMAutonomous(),
-
-                        /* o si pasan 5 segundos
-                        new SleepAction(5.0),
-
-                         */
-
-                        // pero mientras tanto corre PID
-                        shooter.runPIDAutonomous(),
-                        mostrarRPM
-                ),
-                mostrarRPM,
-                uno
-        );
-        /*
-=======
         Action unoConTodo = new SequentialAction(
                 new ParallelAction(
                         uno,
                         shooter.disparar()
                 ));
->>>>>>> 3cead8f0e4404b6820523a9b2b6fa87aec56cc8b
         Action active = new SequentialAction(
                 new ParallelAction(
                         kicker.cargar(),
@@ -152,12 +76,6 @@ public class AutonomoOne extends LinearOpMode {
 
         );
 
-<<<<<<< HEAD
-         */
-
-
-=======
->>>>>>> 3cead8f0e4404b6820523a9b2b6fa87aec56cc8b
 
 
 
@@ -173,17 +91,10 @@ public class AutonomoOne extends LinearOpMode {
 
         waitForStart();
 
-        mostrarRPMThread.start();
-
         if (opModeIsActive()) {
             Actions.runBlocking(unoConTodo);
-<<<<<<< HEAD
-            //Actions.runBlocking(active);
-            //Actions.runBlocking(unoConIntake);
-=======
             Actions.runBlocking(active);
             Actions.runBlocking(unoConIntake);
->>>>>>> 3cead8f0e4404b6820523a9b2b6fa87aec56cc8b
             Actions.runBlocking(tres);
             Actions.runBlocking(cuatro);
 
@@ -194,7 +105,6 @@ public class AutonomoOne extends LinearOpMode {
             telemetry.addLine("Trayectoria completada");
             telemetry.update();
         }
-
-
     }
 }
+
