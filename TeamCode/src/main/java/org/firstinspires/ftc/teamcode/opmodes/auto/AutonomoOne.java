@@ -28,17 +28,16 @@ public class AutonomoOne extends LinearOpMode {
     @Override
     public void runOpMode() {
 
-<<<<<<< HEAD
         Pose2d startPose = new Pose2d(-50, 48, Math.toRadians(130));//pegado a la goul de frente
-=======
-        Pose2d startPose = new Pose2d(-50, 48, Math.toRadians(130));
->>>>>>> 3cead8f0e4404b6820523a9b2b6fa87aec56cc8b
         MecanumDrive drive = new MecanumDrive(hardwareMap, startPose);
         IntakeSubsystem intake = new IntakeSubsystem(hardwareMap);
         ShooterSubsystem shooter = new ShooterSubsystem(hardwareMap,telemetry);
         KickerSubsystem kicker = new KickerSubsystem(hardwareMap);
-<<<<<<< HEAD
-
+        /*
+        ===========================
+        Thread para mostrar RPM TnT
+        ===========================
+         */
         Thread rpmThread = new Thread(() -> {
             try {
                 while (!isStopRequested()) {
@@ -68,10 +67,6 @@ public class AutonomoOne extends LinearOpMode {
 
 
 
-=======
-
-
->>>>>>> 3cead8f0e4404b6820523a9b2b6fa87aec56cc8b
         Action uno = drive.actionBuilder(startPose)
                 .strafeTo(new Vector2d(-47, 40))
                 .waitSeconds(3)
@@ -94,22 +89,18 @@ public class AutonomoOne extends LinearOpMode {
                 .splineToLinearHeading(new Pose2d(13,30,Math.toRadians(270)),Math.toRadians(130))
                 .build();
 
-<<<<<<< HEAD
         Action mostrarRPM = (tp) -> {
             telemetry.addData("ShooterRPM", shooter.getShooterRPM());
             telemetry.update();
             return false;
         };
         /*
-=======
->>>>>>> 3cead8f0e4404b6820523a9b2b6fa87aec56cc8b
         Action unoConIntake = new SequentialAction(
                 new ParallelAction(
                         dos,intake.soltar()
                 ),
                 intake.off() // se apaga después
         );
-<<<<<<< HEAD
 
          */
         Action unoConTodo = new SequentialAction(
@@ -133,13 +124,6 @@ public class AutonomoOne extends LinearOpMode {
                 uno
         );
         /*
-=======
-        Action unoConTodo = new SequentialAction(
-                new ParallelAction(
-                        uno,
-                        shooter.disparar()
-                ));
->>>>>>> 3cead8f0e4404b6820523a9b2b6fa87aec56cc8b
         Action active = new SequentialAction(
                 new ParallelAction(
                         kicker.cargar(),
@@ -152,12 +136,9 @@ public class AutonomoOne extends LinearOpMode {
 
         );
 
-<<<<<<< HEAD
          */
 
 
-=======
->>>>>>> 3cead8f0e4404b6820523a9b2b6fa87aec56cc8b
 
 
 
@@ -177,13 +158,8 @@ public class AutonomoOne extends LinearOpMode {
 
         if (opModeIsActive()) {
             Actions.runBlocking(unoConTodo);
-<<<<<<< HEAD
             //Actions.runBlocking(active);
             //Actions.runBlocking(unoConIntake);
-=======
-            Actions.runBlocking(active);
-            Actions.runBlocking(unoConIntake);
->>>>>>> 3cead8f0e4404b6820523a9b2b6fa87aec56cc8b
             Actions.runBlocking(tres);
             Actions.runBlocking(cuatro);
 
