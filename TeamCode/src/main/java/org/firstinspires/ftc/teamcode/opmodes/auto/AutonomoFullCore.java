@@ -59,11 +59,11 @@ public class AutonomoFullCore extends LinearOpMode {
                 ),
                 intake.off() // se apaga después
         );
-        Action unoConTodo = new SequentialAction(
+        /*Action unoConTodo = new SequentialAction(
                 new ParallelAction(
                         uno,
                         shooter.disparar()
-                ));
+                ));*/
         Action active = new SequentialAction(
                 new ParallelAction(
                         kicker.cargar(),
@@ -92,7 +92,7 @@ public class AutonomoFullCore extends LinearOpMode {
         waitForStart();
 
         if (opModeIsActive()) {
-            Actions.runBlocking(unoConTodo);
+           // Actions.runBlocking(unoConTodo);
             Actions.runBlocking(active);
             Actions.runBlocking(unoConIntake);
             Actions.runBlocking(tres);

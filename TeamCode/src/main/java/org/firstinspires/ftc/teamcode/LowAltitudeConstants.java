@@ -40,9 +40,9 @@ public class LowAltitudeConstants {
     public static final double INTAKE_REVERSE = -0.5;
 
     public enum HoodPosition {
-        WALL_SHOT(40.0),    // Tiro cercano
-        MID_FIELD(106.0),    // Tiro medio
-        LONG_SHOT(207.0),    // Tiro lejano
+        WALL_SHOT(202.0),    // Tiro cercano
+        MID_FIELD(40.0),    // Tiro medio
+        LONG_SHOT(45.0),    // Tiro lejano
         HOME_POS( 0.0);
 
         public final double angle;
