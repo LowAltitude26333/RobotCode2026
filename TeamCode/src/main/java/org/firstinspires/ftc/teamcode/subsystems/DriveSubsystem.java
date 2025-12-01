@@ -77,7 +77,22 @@ public class DriveSubsystem extends SubsystemBase {
         drive.localizer.setPose(new Pose2d(currentPose.position.x, currentPose.position.y, 0));
     }
 
-    public MecanumDrive getMecanumDrive() { return drive; }
+    public MecanumDrive getMecanumDrive() {
+        return drive;
+    }
+
+    public double getPoseX(){
+        return drive.localizer.getPose().position.x;
+
+    }
+    public double getPoseY(){
+        return drive.localizer.getPose().position.y;
+
+    }
+    public double getHeading(){
+        return drive.localizer.getPose().heading.toDouble();
+
+    }
 
     @Override
     public void periodic() {
@@ -88,4 +103,5 @@ public class DriveSubsystem extends SubsystemBase {
         telemetry.addData("ROBOT Y", p.position.y);
         telemetry.addData("ROBOT Heading (Deg)", Math.toDegrees(p.heading.toDouble()));
     }
+
 }

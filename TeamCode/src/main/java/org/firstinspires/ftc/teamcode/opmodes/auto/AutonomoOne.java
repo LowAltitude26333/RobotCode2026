@@ -81,6 +81,7 @@ public class AutonomoOne extends LinearOpMode {
         );
 
 
+<<<<<<< Updated upstream
 
 
         /*Action cinco = drive.actionBuilder(new Pose2d(13, 30, Math.toRadians(270)))
@@ -88,6 +89,8 @@ public class AutonomoOne extends LinearOpMode {
                 .build();*/
 
 
+=======
+>>>>>>> Stashed changes
         while (!isStopRequested() && !opModeIsActive()) {
             telemetry.addLine("Listo para iniciar: presiona PLAY");
             telemetry.update();
