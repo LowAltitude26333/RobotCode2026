@@ -44,6 +44,12 @@ public class ShooterSubsystem extends SubsystemBase {
         );
     }
 
+
+    /*
+     * ==================================================================
+     * Comandos TeleOp
+     * ==================================================================
+     */
     // Solo guarda el valor, no mueve nada aún
     public void setTargetRPM(double rpm) {
         this.targetRPM = rpm;
@@ -97,14 +103,35 @@ public class ShooterSubsystem extends SubsystemBase {
         telemetry.addData("SHOOTER Velocity", motorLeader.getVelocity());
         telemetry.addData("SHOOTER Power", motorLeader.get());
     }
-    public Action disparar() {
-        return (telemetryPacket) -> {
 
-            motorLeader.set(0.7);
-            motorFollower.set(0.7);
+    /*
+    =========================================================================
+    Comandos Autónomo
+    =========================================================================
+     */
 
+    public Action setRPMAutonomous(double RPM) {
+        return(telemetryPacket) -> {
+            setTargetRPM(RPM);
             return false;
         };
     }
 
+    public Action runPIDAutonomous() {
+        return (telemetryPacket) -> {
+            runPID();
+            return true;
+        };
+    }
+
+    public Action waitUntilTargetRPMAutonomous() {
+        return (telemetryPacket) -> onTarget();
+    }
+
+    public Action stopAutonomous() {
+        return (telemetryPacket) -> {
+            stop();
+            return false;
+        };
+    }
 }
