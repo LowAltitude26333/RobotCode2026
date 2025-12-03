@@ -7,17 +7,34 @@ public class LowAltitudeConstants {
 
 
     // --- SHOOTER --- Tuneado a 4500 RPM
-    public static double SHOOTER_KP = 0.0008;//0.002; // Ajustar este valor es crucial
+    public static double SHOOTER_KP = 0.0015;//0008; // Ajustar este valor es crucial
     public static double SHOOTER_KI = 0.0;
-    public static double SHOOTER_KD = 0;//.0001;
-    public static double SHOOTER_KF = 0.000155; // Feedforward para mantener velocidad
+    public static double SHOOTER_KD = 0.0;//.0001;
+    public static double SHOOTER_KF = 0.000229;//000155; // Feedforward para mantener velocidad
 
     //Shooter velocity
     public static double SHOOTER_SPEED_RPM = 3650;
     public static double SHOOTER_LOW_SPEED_RPM = 3000; //esta funciona para half court shot
 
+    // NUEVO: Umbral de recuperación agresiva
+    // Si la velocidad cae más de 150 RPM del target, aplicamos fuerza bruta.
+    public static double SHOOTER_RECOVERY_THRESHOLD = 150.0;
 
-    public static double RPM_OFFSET = 200; // Tolerancia Anterior 50
+    public static double RPM_OFFSET = 100; // Tolerancia Anterior 200
+
+
+    public enum TargetRPM {
+        WALL_SHOT_RPM(2750.0),    // Tiro cercano + 2750 RPM Target + 17 inches
+        SHORT_SHOT_RPM(2850.0), // Tiro en medio medio de la cancha + 2850 RPM Target + 36 inches
+        MID_FIELD_RPM(3300.0),    // Tiro media cancha + 3300 RPM Target
+        LONG_SHOT_RPM(3625.0);    // Tiro full court + 3625 RPM Target
+
+        public final double targetRPM;
+
+        TargetRPM(double targetRPM) {
+            this.targetRPM = targetRPM;
+        }
+    }
 
     // Relación: 1 vuelta de motor = 2 vueltas de llanta
     // Esto significa que la llanta gira AL DOBLE de rápido que el motor.
@@ -27,6 +44,9 @@ public class LowAltitudeConstants {
     // Límite de potencia para no quemar motores o seguridad
     public static double SHOOTER_MAX_SPEED = 0.9; // Rango 0.0 a 1.0
 
+    // NUEVO: Límite exclusivo para emergencias (Recuperación)
+    public static double SHOOTER_BOOST_SPEED = 1.0;
+
     // --- SHOOTER HOOD ---
     // Estos son los ángulos físicos que permitimos por software
     public static final double HOOD_MIN_LIMIT = 5.0;
@@ -35,14 +55,15 @@ public class LowAltitudeConstants {
     // Estos son los límites físicos del servo (0 a 300 en goBILDA, 0 a 270 en REV)
     public static double HOOD_SERVO_MAX_RANGE = 300.0;
 
-    public static final double INTAKE_IN_SPEED = 0.5;
+    public static final double INTAKE_IN_SPEED = 0.6;
     public static final double INTAKE_STOP = 0.0;
     public static final double INTAKE_REVERSE = -0.5;
 
     public enum HoodPosition {
-        WALL_SHOT(202.0),    // Tiro cercano
-        MID_FIELD(40.0),    // Tiro medio
-        LONG_SHOT(45.0),    // Tiro lejano
+        WALL_SHOT(202.0),    // Tiro cercano + 2750 RPM Target + 17 inches
+        SHORT_SHOT(127), // Tiro en medio medio de la cancha + 2850 RPM Target + 36 inches
+        MID_FIELD(127.0),    // Tiro media cancha + 3300 RPM Target
+        LONG_SHOT(62.0),    // Tiro full court + 3625 RPM Target
         HOME_POS( 0.0);
 
         public final double angle;

@@ -22,7 +22,7 @@ public class RobotMap {
     public static final boolean SHOOTER_DOWN_MOTOR_IS_INVERTED = true;
 
     public static final String INTAKE_MOTOR = "intakeMotor";
-    public static final boolean INTAKE_MOTOR_IS_INVERTED = false;
+    public static final boolean INTAKE_MOTOR_IS_INVERTED = true;
 
     public static final String HOOD_SERVO_LEFT = "hoodLeft";
     public static final boolean HOOD_LEFT_INVERTED = true;
