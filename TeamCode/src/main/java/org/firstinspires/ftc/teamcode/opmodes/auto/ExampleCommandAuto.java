@@ -70,7 +70,7 @@ public class ExampleCommandAuto extends CommandOpMode {
 
                 // --- GRUPO A: TAREAS DE FONDO (Corren todo el tiempo) ---
                 // El Shooter mantendrá al target de RPM desde el inicio
-                new ShooterPIDCommand(shooter, 4500),
+                new ShooterPIDCommand(shooter, 3500),
                 // El Intake estará prendido siempre
                 new InstantCommand(intake::intakeOn, intake),
 

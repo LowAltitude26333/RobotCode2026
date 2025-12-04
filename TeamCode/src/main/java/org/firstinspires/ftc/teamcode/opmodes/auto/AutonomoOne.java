@@ -1,168 +1,122 @@
 package org.firstinspires.ftc.teamcode.opmodes.auto;
 
-import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.roadrunner.Action;
-import com.acmerobotics.roadrunner.ParallelAction;
 import com.acmerobotics.roadrunner.Pose2d;
-import com.acmerobotics.roadrunner.SequentialAction;
-import com.acmerobotics.roadrunner.SleepAction;
 import com.acmerobotics.roadrunner.Vector2d;
-import com.acmerobotics.roadrunner.ftc.Actions;
+import com.arcrobotics.ftclib.command.CommandOpMode;
+import com.arcrobotics.ftclib.command.InstantCommand;
+import com.arcrobotics.ftclib.command.ParallelCommandGroup;
+import com.arcrobotics.ftclib.command.SequentialCommandGroup;
+import com.arcrobotics.ftclib.command.WaitCommand;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
+import org.firstinspires.ftc.teamcode.LowAltitudeConstants;
 import org.firstinspires.ftc.teamcode.MecanumDrive;
+import org.firstinspires.ftc.teamcode.commands.ActionCommand;
+import org.firstinspires.ftc.teamcode.commands.ShooterPIDCommand;
+import org.firstinspires.ftc.teamcode.commands.auto.ShootBurstCommand;
+import org.firstinspires.ftc.teamcode.subsystems.DriveSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.IntakeSubsystem;
-// Asumo que estos existen en tu proyecto:
-import org.firstinspires.ftc.teamcode.subsystems.ShooterSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.KickerSubsystem;
+import org.firstinspires.ftc.teamcode.subsystems.ShooterHoodSubsystem;
+import org.firstinspires.ftc.teamcode.subsystems.ShooterSubsystem;
 
-@Config
-@Autonomous(name = "Autonomo Goul Medium", group = "Autonomo Goul Medium")
-public class AutonomoOne extends LinearOpMode {
+@Autonomous(name = "AutonomoOne")
+public class AutonomoOne extends CommandOpMode {
+
+    // Subsistemas
+    private DriveSubsystem drive;
+    private ShooterSubsystem shooter;
+    private ShooterHoodSubsystem hood;
+    private KickerSubsystem kicker;
+    private IntakeSubsystem intake;
 
     @Override
-    public void runOpMode() {
+    public void initialize() {
+        // 1. INIT HARDWARE
+        // Empezamos en 0,0,0 para prueba segura
+        Pose2d startPose = new Pose2d(-50, 48, Math.toRadians(130));
 
-        // Inicialización de Pose y Subsystems
-        Pose2d startPose = new Pose2d(-52, 50, Math.toRadians(130));
-        MecanumDrive drive = new MecanumDrive(hardwareMap, startPose);
-        IntakeSubsystem intake = new IntakeSubsystem(hardwareMap);
-        ShooterSubsystem shooter = new ShooterSubsystem(hardwareMap, telemetry);
-        KickerSubsystem kicker = new KickerSubsystem(hardwareMap);
+        drive = new DriveSubsystem(hardwareMap, startPose, telemetry);
+        shooter = new ShooterSubsystem(hardwareMap, telemetry);
+        hood = new ShooterHoodSubsystem(hardwareMap, telemetry);
+        kicker = new KickerSubsystem(hardwareMap);
+        intake = new IntakeSubsystem(hardwareMap);
 
-        // Thread para mostrar RPM en telemetría
-        Thread mostrarRPMThread = new Thread(() -> {
-            try {
-                while (!isStopRequested()) {
-                    if (opModeIsActive()) {
-                        telemetry.addData("ShooterRPM", shooter.getShooterRPM());
-                        telemetry.update();
-                    }
-                    Thread.sleep(80); // Frecuencia de actualización
-                }
-            } catch (InterruptedException ignored) {}
-        });
-        mostrarRPMThread.setDaemon(true);
+        // 2. CONSTRUIR TRAYECTORIAS "DUMMY" (RoadRunner 1.0)
+        MecanumDrive rrDrive = drive.getMecanumDrive();
 
-        // --- Definición de Trayectorias (Actions) ---
-
-        Action adelante = drive.actionBuilder(startPose)
-                .strafeTo(new Vector2d(-47, 40))
-                .waitSeconds(3)
+        // Path 1: Simula ir a disparar (Se queda en 0,0 pero espera 2 segs)
+        Action path1 = rrDrive.actionBuilder(startPose)
+                .strafeTo(new Vector2d(15, -15))// No se mueve
+                .turn(Math.toRadians(-3))
+                .waitSeconds(3) // Simula tiempo de viaje
                 .build();
 
-        Action lado = drive.actionBuilder(new Pose2d(-47, 40, Math.toRadians(130)))
-                .strafeTo(new Vector2d(-13, 25))
-                .turn(Math.toRadians(-220))
-                .lineToY(45)
+        // Path 2: Simula ir a recoger (Se queda en 0,0)
+        Action path2 = rrDrive.actionBuilder(new Pose2d(15, -15, Math.toRadians(127)))
+                .splineToLinearHeading(new Pose2d(-3,15,Math.toRadians(272)),Math.toRadians(130))
+                .strafeTo(new Vector2d(-3, 50))
+                .build();
+
+        // Path 3: Simula regresar (Se queda en 0,0)
+        Action path3 = rrDrive.actionBuilder(new Pose2d(-3, 50, Math.toRadians(270)))
+                .setTangent(0)
+                .splineToLinearHeading(new Pose2d(15,-15,Math.toRadians(127)),Math.toRadians(270))
                 .waitSeconds(2)
-                .splineToConstantHeading(new Vector2d(-47, 40), Math.toRadians(90))
-                .turn(Math.toRadians(-150))
+                .build();
+        Action path4 = rrDrive.actionBuilder(new Pose2d(15, -15, Math.toRadians(127)))
+                .splineToLinearHeading(new Pose2d(13,30,Math.toRadians(270)),Math.toRadians(130))
                 .build();
 
-        /* Action turn = drive.actionBuilder(new Pose2d(-13, 25, Math.toRadians(90)))
-                .lineToY(45)
-                .build(); */
 
-        /* Action atras = drive.actionBuilder(new Pose2d(28, 45, Math.toRadians(180)))
-                .strafeTo(new Vector2d(58, 45))
-                .build(); */
+        // 3. SECUENCIA MAESTRA
+        schedule(new ParallelCommandGroup(
 
-        // Corregido: faltaba cerrar el builder
-        Action izquerda = drive.actionBuilder(new Pose2d(58, 45, Math.toRadians(180)))
-                .strafeTo(new Vector2d(58, 15))
-                .build();
+                // --- GRUPO A: TAREAS DE FONDO (Corren todo el tiempo) ---
+                // El Shooter mantendrá al target de RPM desde el inicio
+                new ShooterPIDCommand(shooter, 3000),
+                // El Intake estará prendido siempre
+                new InstantCommand(intake::intakeOn, intake),
 
-        // Corregido: eliminado el artefacto de git (>>>> Stashed changes)
-        Action cuatro = drive.actionBuilder(new Pose2d(-47, 40, Math.toRadians(130)))
-                .splineToLinearHeading(new Pose2d(13, 30, Math.toRadians(270)), Math.toRadians(130))
-                .build();
+                // --- GRUPO B: SECUENCIA DE "MOVIMIENTOS" ---
+                new SequentialCommandGroup(
+                        // 1. Configuración Inicial (Hood)
+                        new InstantCommand(() -> hood.setPosition(LowAltitudeConstants.HoodPosition.MID_FIELD), hood),
 
-        // Acción auxiliar para telemetría dentro de SequentialAction
-        Action mostrarRPM = (tp) -> {
-            telemetry.addData("ShooterRPM", shooter.getShooterRPM());
-            telemetry.update();
-            return false; // Retorna false para indicar que la acción terminó instantáneamente
-        };
+                        // 2. Ejecutar Path 1 (Simulación de viaje)
+                        new ActionCommand(path1, drive),
 
-        // NOTA: 'uno' y 'dos' no estaban definidos en tu código original.
-        // He creado placeholders vacíos para que no marque error,
-        // debes definirlos con drive.actionBuilder si los necesitas.
-        Action uno = new SleepAction(0.1); 
-        Action dos = new SleepAction(0.1);
-        Action tres = new SleepAction(0.1);
+                        // 3. Disparar las 3 pelotas precargadas
+                        // (El Shooter ya debería estar listo porque se prendió al inicio)
+                        new ShootBurstCommand(shooter,hood, kicker, 3),
 
-        /*
-        Action unoConIntake = new SequentialAction(
-                new ParallelAction(
-                        dos,
-                        intake.soltar()
-                ),
-                intake.off()
-        );
-        */
+                        // 4. Ejecutar Path 2 (Simulación ir a recoger)
+                        new ActionCommand(path2, drive),
 
-        Action unoConTodo = new SequentialAction(
-                shooter.setRPMAutonomous(3000),
-                new ParallelAction(
-                        // termina si llega a RPM
-                        shooter.waitUntilTargetRPMAutonomous(),
-                        /* o si pasan 5 segundos
-                        new SleepAction(5.0),
-                        */
-                        // pero mientras tanto corre PID
-                        shooter.runPIDAutonomous(),
-                        mostrarRPM
-                ),
-                mostrarRPM,
-                uno // 'uno' debe estar definido arriba
-        );
+                        // 5. "Kicker Kick Poquito" (Acomodar pelotas)
+                        new InstantCommand(kicker::kick, kicker),
+                        new WaitCommand(100), // Golpe cortito
+                        new InstantCommand(kicker::stop, kicker),
 
-        /*
-        Action active = new SequentialAction(
-                new ParallelAction(
-                        kicker.cargar(),
-                        intake.soltar()
-                ),
-                new SleepAction(3.0),
-                intake.off(),
-                kicker.off()
-        );
-        */
+                        // Opcional: Esperar un poco para asegurar que el intake agarre
+                        new WaitCommand(500),
 
-        // --- Loop de espera antes de Start ---
-        while (!isStopRequested() && !opModeIsActive()) {
-            telemetry.addLine("Listo para iniciar: presiona PLAY");
-            telemetry.update();
-        }
+                        // 6. Ejecutar Path 3 (Simulación regresar)
+                        new ActionCommand(path3, drive),
 
-        waitForStart();
+                        // 7. Disparar las pelotas recogidas
+                        new ShootBurstCommand(shooter,hood, kicker, 3),
 
-        // Iniciar el thread de telemetría
-        mostrarRPMThread.start();
+                        new ActionCommand(path4, drive),
 
-        if (opModeIsActive()) {
-            // Ejecución de acciones
-            Actions.runBlocking(adelante);
-            Actions.runBlocking(lado);
-            
-            // Asegúrate que 'unoConTodo' no use variables nulas
-            Actions.runBlocking(unoConTodo);
-            
-            // Comentado porque 'unoConIntake' estaba comentado arriba
-            // Actions.runBlocking(unoConIntake);
-            
-            // Comentado porque 'active' estaba comentado arriba
-            // Actions.runBlocking(active);
-            
-            Actions.runBlocking(tres);
-            Actions.runBlocking(cuatro);
+                        // Final: Apagar todo
+                        new InstantCommand(shooter::stop),
+                        new InstantCommand(intake::intakeOff)
+                )
+        ));
 
-            if (isStopRequested()) return;
-            
-            telemetry.addLine("Trayectoria completada");
-            telemetry.update();
-        }
+        telemetry.addLine("Auto SAFE MODE Cargado. El robot NO se moverá de (0,0).");
+        telemetry.update();
     }
 }
