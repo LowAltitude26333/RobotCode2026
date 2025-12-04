@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
+import com.acmerobotics.roadrunner.Action;
 import com.arcrobotics.ftclib.command.SubsystemBase;
 import com.arcrobotics.ftclib.hardware.ServoEx;
 import com.arcrobotics.ftclib.hardware.SimpleServo;
@@ -58,5 +59,13 @@ public class ShooterHoodSubsystem extends SubsystemBase {
         // Imprimimos la posición lógica (Grados) y la cruda (0-1)
         telemetry.addData("HOOD Angle Command", leftServo.getAngle());
         telemetry.addData("HOOD Raw Position", leftServo.getPosition());
+    }
+    public Action medium() {
+        return (telemetryPacket) -> {
+
+            setAngle(LowAltitudeConstants.HoodPosition.MID_FIELD.angle);
+
+            return false;
+        };
     }
 }

@@ -116,6 +116,7 @@ public class ShooterTuningOpMode extends CommandOpMode {
         telemetry.addData(">> DASHBOARD <<", "Edita TARGET_RPM y TARGET_ANGLE en la PC");
         telemetry.addData("Target RPM", TARGET_RPM);
         telemetry.addData("Target Angle", TARGET_ANGLE);
+        telemetry.addData("OnTarget", shooter.onTarget());
         telemetry.update(); // Actualiza la pantalla
     }
 }

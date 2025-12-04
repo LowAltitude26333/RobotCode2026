@@ -41,7 +41,7 @@ public class LowAltitudeConstants {
 
     public enum HoodPosition {
         WALL_SHOT(40.0),    // Tiro cercano
-        MID_FIELD(106.0),    // Tiro medio
+        MID_FIELD(127.0),    // Tiro medio
         LONG_SHOT(207.0),    // Tiro lejano
         HOME_POS( 0.0);
 

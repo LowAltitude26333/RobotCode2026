@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.opmodes.auto;
 
+import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.roadrunner.Action;
 import com.acmerobotics.roadrunner.ParallelAction;
@@ -16,56 +17,73 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.teamcode.MecanumDrive;
 import org.firstinspires.ftc.teamcode.subsystems.IntakeSubsystem;
+import org.firstinspires.ftc.teamcode.subsystems.KickerSubsystem;
+import org.firstinspires.ftc.teamcode.subsystems.ShooterSubsystem;
 
 
 @Config
-@Autonomous(name = "Autonomo Goul Medium", group = "Autonomo Goul Medium")
-public class AutonomoOne extends LinearOpMode {
-
+@Autonomous(name = "AutonomoLargeOneLine", group = "AutonomoLargeOneLine")
+public class AutonomoLargeOneLine extends LinearOpMode {
 
     @Override
     public void runOpMode() {
 
-<<<<<<< Updated upstream
-        Pose2d startPose = new Pose2d(-52, 50, Math.toRadians(130));
-=======
-        Pose2d startPose = new Pose2d(-58, 48, Math.toRadians(130));//pegado a la goul frente
->>>>>>> Stashed changes
+        Pose2d startPose = new Pose2d(61, 10, Math.toRadians(180));//pegado a la goul frente
         MecanumDrive drive = new MecanumDrive(hardwareMap, startPose);
         IntakeSubsystem intake = new IntakeSubsystem(hardwareMap);
+        ShooterSubsystem shooter = new ShooterSubsystem(hardwareMap,telemetry);
+        KickerSubsystem kicker = new KickerSubsystem(hardwareMap);
+        /*
+        ===========================
+        Thread para mostrar RPM TnT
+        ===========================
+         */
+        Thread rpmThread = new Thread(() -> {
+            try {
+                while (!isStopRequested()) {
+                    if (opModeIsActive()) {
+                        telemetry.addData("ShooterRPM", shooter.getShooterRPM());
+                    } else {
+                        telemetry.addData("ShooterRPM", "init");
+                    }
+                    telemetry.update();
+                    Thread.sleep(100);
+                }
+            } catch (InterruptedException ignored) { }
+        });
+        rpmThread.setDaemon(true); // para que no impida que el programa termine
+        rpmThread.start();
+
+        Thread mostrarRPMThread = new Thread(() -> {
+            try {
+                while (!isStopRequested()) {
+                    telemetry.addData("ShooterRPM", shooter.getShooterRPM());
+                    telemetry.update();
+                    Thread.sleep(80); // Frecuencia de actualización
+                }
+            } catch (InterruptedException ignored) {}
+        });
+        mostrarRPMThread.setDaemon(true);
 
 
-        Action adelante = drive.actionBuilder(startPose)
-                .strafeTo(new Vector2d(-47, 40))
-                .waitSeconds(3)
+
+        Action uno = drive.actionBuilder(startPose)
+                .splineToLinearHeading(new Pose2d(59,13,Math.toRadians(170)),Math.toRadians(180))
+                .waitSeconds(1)
                 .build();
 
 
-        Action lado = drive.actionBuilder(new Pose2d(-47, 40, Math.toRadians(130)))
-                .strafeTo(new Vector2d(-13, 25))
-                .turn(Math.toRadians(-220))
-                .lineToY(45)
-                .waitSeconds(2)
-                .splineToConstantHeading(new Vector2d(-47, 40), Math.toRadians(90))
-                .turn(Math.toRadians(-150))
+        Action dos = drive.actionBuilder(new Pose2d(59, 13, Math.toRadians(170)))
+                .splineToLinearHeading(new Pose2d(35,29,Math.toRadians(270)),Math.toRadians(170))
+                .strafeTo(new Vector2d(35, 60))
+                .strafeTo(new Vector2d(35, 55))
                 .build();
-        /*Action turn = drive.actionBuilder(new Pose2d(-13, 25, Math.toRadians(90)))
-                .lineToY(45)
-                .build();*/
-
-
-        /*Action atras = drive.actionBuilder(new Pose2d(28, 45, Math.toRadians(180)))
-                .strafeTo(new Vector2d(58, 45))
+        Action tres = drive.actionBuilder(new Pose2d(35, 55, Math.toRadians(270)))
+                .splineToLinearHeading(new Pose2d(59,13,Math.toRadians(170)),Math.toRadians(270))
+                .waitSeconds(1)
+                .strafeTo(new Vector2d(38, 13))
                 .build();
 
-<<<<<<< Updated upstream
-        Action izquerda = drive.actionBuilder(new Pose2d(58, 45, Math.toRadians(180)))
-                .strafeTo(new Vector2d(58, 15))
-=======
-
-        Action cuatro = drive.actionBuilder(new Pose2d(-47, 40, Math.toRadians(130)))
-                .splineToLinearHeading(new Pose2d(13,30,Math.toRadians(270)),Math.toRadians(130))
-                .build();
 
         Action mostrarRPM = (tp) -> {
             telemetry.addData("ShooterRPM", shooter.getShooterRPM());
@@ -122,7 +140,6 @@ public class AutonomoOne extends LinearOpMode {
 
         /*Action cinco = drive.actionBuilder(new Pose2d(13, 30, Math.toRadians(270)))
                 .splineToLinearHeading(new Pose2d(13,30,Math.toRadians(270)),Math.toRadians(130))
->>>>>>> Stashed changes
                 .build();*/
 
 
@@ -133,25 +150,22 @@ public class AutonomoOne extends LinearOpMode {
 
         waitForStart();
 
+        mostrarRPMThread.start();
+
         if (opModeIsActive()) {
-<<<<<<< Updated upstream
-            Actions.runBlocking(adelante);
-            Actions.runBlocking(lado);
-=======
-            Actions.runBlocking(unoConTodo);
-            Actions.runBlocking(unoConIntake);
+            Actions.runBlocking(uno);
+            Actions.runBlocking(dos);
             Actions.runBlocking(tres);
-            Actions.runBlocking(cuatro);
 
 
 
->>>>>>> Stashed changes
 
 
             if (isStopRequested()) return;
             telemetry.addLine("Trayectoria completada");
             telemetry.update();
         }
+
+
     }
 }
-
