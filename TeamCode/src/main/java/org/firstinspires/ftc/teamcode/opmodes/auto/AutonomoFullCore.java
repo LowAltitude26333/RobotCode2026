@@ -17,14 +17,14 @@ import org.firstinspires.ftc.teamcode.subsystems.ShooterSubsystem;
 
 
 @Config
-@Autonomous(name = "Autonomo One", group = "Autonomo Full")
+@Autonomous(name = "Autonomo Large Zone", group = "Autonomo Large Zone")
 public class AutonomoFullCore extends LinearOpMode {
 
 
     @Override
     public void runOpMode() {
 
-        Pose2d startPose = new Pose2d(-52, 50, Math.toRadians(130));
+        Pose2d startPose = new Pose2d(61, 10, Math.toRadians(180));
         MecanumDrive drive = new MecanumDrive(hardwareMap, startPose);
         IntakeSubsystem intake = new IntakeSubsystem(hardwareMap);
         ShooterSubsystem shooter = new ShooterSubsystem(hardwareMap,telemetry);
@@ -32,25 +32,41 @@ public class AutonomoFullCore extends LinearOpMode {
 
 
         Action uno = drive.actionBuilder(startPose)
-                .strafeTo(new Vector2d(-47, 40))
-                .waitSeconds(3)
+                .splineToLinearHeading(new Pose2d(-17,20,Math.toRadians(145)),Math.toRadians(180))
+                .waitSeconds(1)
                 .build();
 
 
-        Action dos = drive.actionBuilder(new Pose2d(-47, 40, Math.toRadians(130)))
-                .splineToLinearHeading(new Pose2d(-13,25,Math.toRadians(270)),Math.toRadians(130))
-                .strafeTo(new Vector2d(-13, 45))
-                .waitSeconds(0.2)
+        Action dos = drive.actionBuilder(new Pose2d(-17, 20, Math.toRadians(145)))
+                .splineToLinearHeading(new Pose2d(12,30,Math.toRadians(270)),Math.toRadians(145))
+                .strafeTo(new Vector2d(12, 60))
+                .strafeTo(new Vector2d(12, 50))
                 .build();
-        Action tres = drive.actionBuilder(new Pose2d(-13, 45, Math.toRadians(270)))
-                .setTangent(0)
-                .splineToLinearHeading(new Pose2d(-47,40,Math.toRadians(130)),Math.toRadians(270))
-                .waitSeconds(0.2)
+
+        Action tres = drive.actionBuilder(new Pose2d(12, 50, Math.toRadians(270)))
+                .splineToLinearHeading(new Pose2d(2,45,Math.toRadians(180)),Math.toRadians(270))
+                .strafeTo(new Vector2d(2, 55))
+                .strafeTo(new Vector2d(2, 50))
+                .splineToLinearHeading(new Pose2d(-17,20,Math.toRadians(145)),Math.toRadians(180))
+                .waitSeconds(1)
                 .build();
 
 
-        Action cuatro = drive.actionBuilder(new Pose2d(-47, 40, Math.toRadians(130)))
-                .splineToLinearHeading(new Pose2d(13,30,Math.toRadians(270)),Math.toRadians(130))
+        Action cuatro = drive.actionBuilder(new Pose2d(-17, 20, Math.toRadians(145)))
+                .splineToLinearHeading(new Pose2d(35,30,Math.toRadians(270)),Math.toRadians(145))
+                .strafeTo(new Vector2d(35, 60))
+                .strafeTo(new Vector2d(35, 35))
+                .splineToLinearHeading(new Pose2d(-17,20,Math.toRadians(145)),Math.toRadians(270))
+                .waitSeconds(1)
+                .build();
+        Action cinco = drive.actionBuilder(new Pose2d(-17, 20, Math.toRadians(145)))
+                .splineToLinearHeading(new Pose2d(-12,25,Math.toRadians(270)),Math.toRadians(145))
+                .strafeTo(new Vector2d(-12, 53))
+                .strafeTo(new Vector2d(-12, 47))
+                .build();
+        Action seis = drive.actionBuilder(new Pose2d(-12, 47, Math.toRadians(270)))
+                .splineToLinearHeading(new Pose2d(-17,20,Math.toRadians(145)),Math.toRadians(270))
+                .waitSeconds(1)
                 .build();
 
         Action unoConIntake = new SequentialAction(
@@ -62,6 +78,7 @@ public class AutonomoFullCore extends LinearOpMode {
         /*Action unoConTodo = new SequentialAction(
                 new ParallelAction(
                         uno,
+                      //  shooter.disparar()
                         shooter.disparar()
                 ));*/
         Action active = new SequentialAction(
@@ -92,11 +109,15 @@ public class AutonomoFullCore extends LinearOpMode {
         waitForStart();
 
         if (opModeIsActive()) {
+            Actions.runBlocking(uno);
+            Actions.runBlocking(dos);
            // Actions.runBlocking(unoConTodo);
             Actions.runBlocking(active);
             Actions.runBlocking(unoConIntake);
             Actions.runBlocking(tres);
             Actions.runBlocking(cuatro);
+            Actions.runBlocking(cinco);
+            Actions.runBlocking(seis);
 
 
 
