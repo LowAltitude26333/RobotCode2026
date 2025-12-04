@@ -49,25 +49,33 @@ public class AutonomoOne extends CommandOpMode {
         // Path 1: Simula ir a disparar (Se queda en 0,0 pero espera 2 segs)
         Action path1 = rrDrive.actionBuilder(startPose)
                 .strafeTo(new Vector2d(15, -15))// No se mueve
-                .turn(Math.toRadians(-3))
+                .turn(Math.toRadians(-5))
                 .waitSeconds(3) // Simula tiempo de viaje
                 .build();
 
         // Path 2: Simula ir a recoger (Se queda en 0,0)
-        Action path2 = rrDrive.actionBuilder(new Pose2d(15, -15, Math.toRadians(127)))
-                .splineToLinearHeading(new Pose2d(-3,15,Math.toRadians(272)),Math.toRadians(130))
-                .strafeTo(new Vector2d(-3, 50))
+        Action path2 = rrDrive.actionBuilder(new Pose2d(15, -15, Math.toRadians(125)))
+                .splineToLinearHeading(new Pose2d(2,15,Math.toRadians(272)),Math.toRadians(125))
+                .strafeTo(new Vector2d(2, 54))
                 .build();
 
         // Path 3: Simula regresar (Se queda en 0,0)
-        Action path3 = rrDrive.actionBuilder(new Pose2d(-3, 50, Math.toRadians(270)))
+        Action path3 = rrDrive.actionBuilder(new Pose2d(2, 54, Math.toRadians(272)))
+                .strafeTo(new Vector2d(2, 44))
                 .setTangent(0)
-                .splineToLinearHeading(new Pose2d(15,-15,Math.toRadians(127)),Math.toRadians(270))
+                .splineToLinearHeading(new Pose2d(13,-13,Math.toRadians(133)),Math.toRadians(272))
                 .waitSeconds(2)
                 .build();
-        Action path4 = rrDrive.actionBuilder(new Pose2d(15, -15, Math.toRadians(127)))
-                .splineToLinearHeading(new Pose2d(13,30,Math.toRadians(270)),Math.toRadians(130))
+        Action path4 = rrDrive.actionBuilder(new Pose2d(13, -13, Math.toRadians(133)))
+                .splineToLinearHeading(new Pose2d(35,20,Math.toRadians(272)),Math.toRadians(133))
+                .strafeTo(new Vector2d(35, 65))
                 .build();
+        Action path5 = rrDrive.actionBuilder(new Pose2d(35, 54, Math.toRadians(272)))
+                .setTangent(0)
+                .splineToLinearHeading(new Pose2d(40,5,Math.toRadians(180)),Math.toRadians(272))
+                .waitSeconds(2)
+                .build();
+
 
 
         // 3. SECUENCIA MAESTRA
@@ -96,7 +104,7 @@ public class AutonomoOne extends CommandOpMode {
 
                         // 5. "Kicker Kick Poquito" (Acomodar pelotas)
                         new InstantCommand(kicker::kick, kicker),
-                        new WaitCommand(100), // Golpe cortito
+                        new WaitCommand(150), // Golpe cortito
                         new InstantCommand(kicker::stop, kicker),
 
                         // Opcional: Esperar un poco para asegurar que el intake agarre
@@ -109,12 +117,18 @@ public class AutonomoOne extends CommandOpMode {
                         new ShootBurstCommand(shooter,hood, kicker, 3),
 
                         new ActionCommand(path4, drive),
+                        new InstantCommand(kicker::kick, kicker),
+                        new WaitCommand(150), // Golpe cortito
+                        new InstantCommand(kicker::stop, kicker),
+
+                        new ActionCommand(path5, drive),
 
                         // Final: Apagar todo
                         new InstantCommand(shooter::stop),
                         new InstantCommand(intake::intakeOff)
                 )
         ));
+
 
         telemetry.addLine("Auto SAFE MODE Cargado. El robot NO se moverá de (0,0).");
         telemetry.update();

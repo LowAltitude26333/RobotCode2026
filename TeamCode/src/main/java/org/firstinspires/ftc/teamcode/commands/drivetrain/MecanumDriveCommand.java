@@ -14,8 +14,8 @@ public class MecanumDriveCommand extends RunCommand {
                 () -> drive.drive(
                         strafe.getAsDouble(),
                         forward.getAsDouble(),
-                        turn.getAsDouble(),
-                        false // Por defecto Robot Centric, cámbialo a true si quieres Field Centric
+                        turn.getAsDouble()
+                         // Por defecto Robot Centric, cámbialo a true si quieres Field Centric
                 ),
                 drive
         );

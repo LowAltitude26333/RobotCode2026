@@ -6,6 +6,7 @@ import com.arcrobotics.ftclib.command.CommandScheduler;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import org.firstinspires.ftc.robotcore.external.Telemetry; // <--- Importar esto
 
+import org.firstinspires.ftc.teamcode.commands.drivetrain.FieldCentricDriveCommand;
 import org.firstinspires.ftc.teamcode.commands.drivetrain.MecanumDriveCommand;
 import org.firstinspires.ftc.teamcode.oi.ControlProfile;
 import org.firstinspires.ftc.teamcode.subsystems.DriveSubsystem;
@@ -55,13 +56,17 @@ public class RobotContainer {
         kickerSubsystem = new KickerSubsystem(hardwareMap);
 
         // 2. Configurar Comandos por Defecto
-        driveSubsystem.setDefaultCommand(new MecanumDriveCommand(
+       /* driveSubsystem.setDefaultCommand(new MecanumDriveCommand(
                 driveSubsystem,
                 profile::getDriveStrafe,
                 profile::getDriveForward,
                 profile::getDriveTurn
-        ));
+        ));*/
 
+        driveSubsystem.setDefaultCommand(new FieldCentricDriveCommand(driveSubsystem,
+                profile::getDriveStrafe,
+                profile::getDriveForward,
+                profile::getDriveTurn));
 
         // 3. Configurar Botones
         controlProfile.configureButtonBindings(this);

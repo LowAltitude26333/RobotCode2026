@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.commands.auto;
 
+import static org.firstinspires.ftc.robotcore.external.BlocksOpModeCompanion.telemetry;
+
 import com.arcrobotics.ftclib.command.InstantCommand;
 import com.arcrobotics.ftclib.command.ParallelCommandGroup;
 import com.arcrobotics.ftclib.command.SequentialCommandGroup;
@@ -23,11 +25,12 @@ public class ShootBurstCommand extends SequentialCommandGroup {
         addCommands(
                 new ParallelCommandGroup(
                         new InstantCommand(() -> hood.setPosition(targetAngle), hood),
-                        new InstantCommand(() -> shooter.setTargetEnum(targetRpm))
+                        new InstantCommand
+                                (() -> shooter.setTargetEnum(targetRpm))
                 ),
                 new WaitUntilCommand(shooter::onTarget),
                 new SequentialCommandGroup(
-                        getBurstSequence(kicker, shots)
+                        getBurstSequence(kicker, shots, shooter)
                 )
         );
     }
@@ -42,19 +45,22 @@ public class ShootBurstCommand extends SequentialCommandGroup {
     }
 
     // Método auxiliar con la lógica de tiempo variable
-    private SequentialCommandGroup getBurstSequence(KickerSubsystem kicker, int shots) {
+    private SequentialCommandGroup getBurstSequence(KickerSubsystem kicker, int shots, ShooterSubsystem shooter) {
         SequentialCommandGroup sequence = new SequentialCommandGroup();
 
         for (int i = 0; i < shots; i++) {
             // LÓGICA: Si es la primera iteración (i=0), espera 750ms.
             // Si son las siguientes (i=1, 2...), espera 450ms.
-            long kickTime = (i == 0) ? 700 : 550;
+            long kickTime = (i == 0) ? 250 : 250;
 
             sequence.addCommands(
+                    new WaitUntilCommand(shooter::onTarget),
                     new InstantCommand(kicker::kick, kicker),
                     new WaitCommand(kickTime), // Tiempo dinámico
                     new InstantCommand(kicker::stop, kicker),
-                    new WaitCommand(750)  // Tiempo entre disparos (Recuperación)
+                    new WaitCommand(150)  // Tiempo entre disparos (Recuperación)0
+
+
             );
         }
         return sequence;
