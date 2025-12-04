@@ -22,8 +22,8 @@ import org.firstinspires.ftc.teamcode.subsystems.ShooterSubsystem;
 public class ShooterTuningOpMode extends CommandOpMode {
 
     // --- VARIABLES EDITABLES EN DASHBOARD ---
-    public static double TARGET_RPM = 4000;   // Resultados de test 1: 3750(target) para FULL COURT, REALES 3600RPM
-    public static double TARGET_ANGLE = 45;   // Ángulo de 62 grados
+    public static double TARGET_RPM = 3625;   // Resultados de test 1: 3625 (target)
+    public static double TARGET_ANGLE = 0;   // Ángulo de 62 grados
 
     // Subsistemas
     private ShooterSubsystem shooter;
@@ -92,6 +92,11 @@ public class ShooterTuningOpMode extends CommandOpMode {
         // D-Pad Arriba -> Retract (Reversa manual)
         new GamepadButton(gamepad, GamepadKeys.Button.DPAD_UP)
                 .whenPressed(new InstantCommand(kicker::reverse, kicker));
+
+        // D-Pad Derecha -> Prender el shooter (manual)
+        new GamepadButton(gamepad, GamepadKeys.Button.DPAD_RIGHT)
+                .whenPressed(new InstantCommand(()-> {shooter.driveShooter(1.0);}));
+
 
 
         telemetry.addLine("--- GUÍA DE USO ---");

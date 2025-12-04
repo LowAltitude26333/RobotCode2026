@@ -79,6 +79,7 @@ public class AutonomoFullCore extends LinearOpMode {
                 new ParallelAction(
                         uno,
                       //  shooter.disparar()
+                        shooter.disparar()
                 ));*/
         Action active = new SequentialAction(
                 new ParallelAction(
@@ -110,6 +111,9 @@ public class AutonomoFullCore extends LinearOpMode {
         if (opModeIsActive()) {
             Actions.runBlocking(uno);
             Actions.runBlocking(dos);
+           // Actions.runBlocking(unoConTodo);
+            Actions.runBlocking(active);
+            Actions.runBlocking(unoConIntake);
             Actions.runBlocking(tres);
             Actions.runBlocking(cuatro);
             Actions.runBlocking(cinco);

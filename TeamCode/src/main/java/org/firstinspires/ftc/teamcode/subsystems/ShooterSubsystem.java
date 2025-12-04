@@ -67,20 +67,44 @@ public class ShooterSubsystem extends SubsystemBase {
         return motorRPM * LowAltitudeConstants.SHOOTER_VELOCITY_MULTIPLIER;
     }
 
-    // Este método debe llamarse CADA CICLO dentro de un Comando
     public void runPID() {
+        if (targetRPM == 0) {
+            stop();
+            return;
+        }
+
         double currentRPM = getShooterRPM();
+        double error = targetRPM - currentRPM;
 
-        // PIDFController calcula la potencia necesaria
-        // calculate(valorActual, valorDeseado)
-        double output = pidfController.calculate(currentRPM, targetRPM);
+        double finalPower;
 
-        // Clamp usando tu constante de seguridad
-        double safePower = Math.max(-LowAltitudeConstants.SHOOTER_MAX_SPEED,
-                Math.min(output, LowAltitudeConstants.SHOOTER_MAX_SPEED));
+        // --- LÓGICA HÍBRIDA MEJORADA ---
 
-        motorLeader.set(safePower);
-        motorFollower.set(safePower);
+        // CASO DE EMERGENCIA (Caída fuerte por disparo)
+        // Aquí sí le damos permiso de usar el 100% (1.0) para levantar rápido
+        if (error > LowAltitudeConstants.SHOOTER_RECOVERY_THRESHOLD) {
+            finalPower = LowAltitudeConstants.SHOOTER_BOOST_SPEED;
+        }
+        // CASO DE MANTENIMIENTO (Ya estamos cerca o estables)
+        // Aquí respetamos tu límite de seguridad de 0.9
+        else {
+            double pidOutput = pidfController.calculate(currentRPM, targetRPM);
+            finalPower = Math.max(-LowAltitudeConstants.SHOOTER_MAX_SPEED,
+                    Math.min(pidOutput, LowAltitudeConstants.SHOOTER_MAX_SPEED));
+        }
+
+        motorLeader.set(finalPower);
+        motorFollower.set(finalPower);
+    }
+
+    public void driveShooter(double power){
+        motorLeader.set(power);
+        motorFollower.set(power);
+    }
+
+    // Método auxiliar para usar el Enum directamente
+    public void setTargetEnum(LowAltitudeConstants.TargetRPM preset) {
+        setTargetRPM(preset.targetRPM);
     }
 
     // Apagado de emergencia o descanso
@@ -120,12 +144,14 @@ public class ShooterSubsystem extends SubsystemBase {
     public Action runPIDAutonomous() {
         return (telemetryPacket) -> {
             runPID();
-            return true;
+            return false;
         };
     }
 
+
     public Action waitUntilTargetRPMAutonomous() {
         return (telemetryPacket) -> onTarget();
+        // onTarget es true ==> false
     }
 
     public Action stopAutonomous() {
