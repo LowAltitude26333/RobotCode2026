@@ -76,6 +76,9 @@ public class DriveSubsystem extends SubsystemBase {
         Pose2d currentPose = drive.localizer.getPose();
         drive.localizer.setPose(new Pose2d(currentPose.position.x, currentPose.position.y, 0));
     }
+    public void stop(){
+        drive(0,0,0,false);
+    }
 
     public MecanumDrive getMecanumDrive() { return drive; }
 

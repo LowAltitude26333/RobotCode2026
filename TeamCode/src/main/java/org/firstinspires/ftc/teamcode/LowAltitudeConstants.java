@@ -24,10 +24,10 @@ public class LowAltitudeConstants {
 
 
     public enum TargetRPM {
-        WALL_SHOT_RPM(2750.0),    // Tiro cercano + 2750 RPM Target + 17 inches
-        SHORT_SHOT_RPM(2850.0), // Tiro en medio medio de la cancha + 2850 RPM Target + 36 inches
-        MID_FIELD_RPM(3300.0),    // Tiro media cancha + 3300 RPM Target
-        LONG_SHOT_RPM(3625.0);    // Tiro full court + 3625 RPM Target
+        WALL_SHOT_RPM(2450.0),    // Tiro cercano + 2750 RPM Target + 17 inches
+        SHORT_SHOT_RPM(2550.0), // Tiro en medio medio de la cancha + 2850 RPM Target + 36 inches
+        MID_FIELD_RPM(3000.0),    // Tiro media cancha + 3300 RPM Target
+        LONG_SHOT_RPM(3425.0);    // Tiro full court + 3625 RPM Target
 
         public final double targetRPM;
 
@@ -74,7 +74,7 @@ public class LowAltitudeConstants {
     }
 
     // --- KICKER CONSTANTS ---
-    public static final double KICKER_OUT_SPEED = 0.5;
+    public static final double KICKER_OUT_SPEED = 0.8;
     public static final double KICKER_REVERSE_SPEED = -0.5;
 
 }

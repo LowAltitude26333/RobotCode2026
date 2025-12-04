@@ -1,6 +1,8 @@
 package org.firstinspires.ftc.teamcode.oi;
 
+import com.arcrobotics.ftclib.command.CommandScheduler;
 import com.arcrobotics.ftclib.command.InstantCommand;
+import com.arcrobotics.ftclib.command.ParallelCommandGroup;
 import com.arcrobotics.ftclib.command.RunCommand;
 import com.arcrobotics.ftclib.command.button.GamepadButton;
 import com.arcrobotics.ftclib.gamepad.GamepadEx;
@@ -27,100 +29,113 @@ public class SkywalkerProfile implements ControlProfile {
     @Override
     public GamepadEx getToolOp() { return toolOp; }
 
-    // --- CHASIS (Arcade Drive estándar) ---
+    // --- CHASIS ---
     @Override
     public double getDriveStrafe() { return driverOp.getLeftX(); }
-
     @Override
     public double getDriveForward() { return driverOp.getLeftY(); }
-
     @Override
     public double getDriveTurn() { return driverOp.getRightX(); }
 
     @Override
     public void configureButtonBindings(RobotContainer robot) {
 
-        // =================================================================
-        // DRIVER (Gamepad 1) - Movilidad y Recolección
-        // =================================================================
+        /*
+         * =================================================================
+         * DRIVER (PILOTO)
+         * Enfoque: Posicionamiento y Disparo Final
+         * =================================================================
+         */
 
-        // RESET GIROSCOPIO (Usando el método seguro del subsistema)
-        new GamepadButton(driverOp, GamepadKeys.Button.START)
-                .whenPressed(new InstantCommand(robot.driveSubsystem::resetHeading));
-
-
-        // =================================================================
-        // TOOL OP (Gamepad 2) - Pruebas Manuales
-        // =================================================================
-
-        // --- 1. HOOD (Servos) ---
-        // D-Pad Arriba -> Tiro Lejano
-        new GamepadButton(toolOp, GamepadKeys.Button.DPAD_UP)
-                .whenPressed(new InstantCommand(() ->
-                        robot.hoodSubsystem.setPosition(LowAltitudeConstants.HoodPosition.LONG_SHOT), robot.hoodSubsystem));
-
-        // D-Pad Abajo -> Tiro Pared
-        new GamepadButton(toolOp, GamepadKeys.Button.DPAD_DOWN)
-                .whenPressed(new InstantCommand(() ->
-                        robot.hoodSubsystem.setPosition(LowAltitudeConstants.HoodPosition.WALL_SHOT), robot.hoodSubsystem));
-
-        // D-Pad Derecha -> Ángulo MEDIO
-        new GamepadButton(toolOp, GamepadKeys.Button.DPAD_RIGHT)
-                .whenPressed(new InstantCommand(() ->
-                        robot.hoodSubsystem.setPosition(LowAltitudeConstants.HoodPosition.MID_FIELD), robot.hoodSubsystem));
-
-        //D-Pad Izquierda -> ángulo 0
-        new GamepadButton(toolOp, GamepadKeys.Button.DPAD_LEFT)
-                .whenPressed(new InstantCommand(() ->
-                        robot.hoodSubsystem.setPosition(LowAltitudeConstants.HoodPosition.HOME_POS), robot.hoodSubsystem));
-
-        // --- 2. SHOOTER (Motor PIDF) ---
-
-    // Y -> Prender Shooter y MANTENER velocidad (4500 RPM)
-    // Este comando corre indefinidamente hasta que otro comando use el shooter
-        new GamepadButton(toolOp, GamepadKeys.Button.Y)
-                .whenPressed(new ShooterPIDCommand(robot.shooterSubsystem, LowAltitudeConstants.SHOOTER_SPEED_RPM));
-
-    // B -> Prender Shooter Velocidad Baja (2000 RPM)
-    // Esto interrumpirá al de 4500 y pondrá el nuevo de 2000
-        new GamepadButton(toolOp, GamepadKeys.Button.B)
-                .whenPressed(new ShooterPIDCommand(robot.shooterSubsystem, LowAltitudeConstants.SHOOTER_LOW_SPEED_RPM));
-
-    // A -> Apagar Shooter (Stop)
-    // Al requerir el subsistema, este comando mata al PIDCommand activo.
-        new GamepadButton(toolOp, GamepadKeys.Button.A)
-                .whenPressed(new InstantCommand(
-                        robot.shooterSubsystem::stop, // Acción
-                        robot.shooterSubsystem        // Requisito (CRÍTICO para que funcione el apagado)
-                ));
-
-        // --- 3. KICKER (Motor Raw Power) ---
+        // 1. DISPARO (Gatillo) - El driver decide cuándo disparar
         // RB (Hold) -> Activar Kicker
-        new GamepadButton(toolOp, GamepadKeys.Button.RIGHT_BUMPER)
+        new GamepadButton(driverOp, GamepadKeys.Button.RIGHT_BUMPER)
                 .whileHeld(new RunCommand(robot.kickerSubsystem::kick, robot.kickerSubsystem))
                 .whenReleased(new InstantCommand(robot.kickerSubsystem::stop, robot.kickerSubsystem));
 
-        // LB (Hold) -> Reversa Kicker
-        new GamepadButton(toolOp, GamepadKeys.Button.LEFT_BUMPER)
-                .whileHeld(new RunCommand(robot.kickerSubsystem::reverse, robot.kickerSubsystem))
-                .whenReleased(new InstantCommand(robot.kickerSubsystem::stop, robot.kickerSubsystem));
+        // 2. RESET GIROSCOPIO (Start)
+        new GamepadButton(driverOp, GamepadKeys.Button.START)
+                .whenPressed(new InstantCommand(robot.driveSubsystem::resetHeading));
 
-        // 4 ----- INTAKE -------
-        // RB -> Intake Adentro (Comer)
-        new GamepadButton(toolOp, GamepadKeys.Button.RIGHT_STICK_BUTTON)
-                .whenPressed(new InstantCommand(robot.intakeSubsystem::intakeOn, robot.intakeSubsystem));
+        // 3. GLOBAL EMERGENCY STOP (Back)
+        // "Rómpase en caso de emergencia": Mata comandos y frena todo.
+        new GamepadButton(driverOp, GamepadKeys.Button.BACK)
+                .whenPressed(new InstantCommand(() -> {
+                    CommandScheduler.getInstance().cancelAll(); // Cancela PID, trayectorias, etc.
+                    robot.driveSubsystem.stop();
+                    robot.shooterSubsystem.stop();
+                    robot.intakeSubsystem.intakeOff();
+                    robot.kickerSubsystem.stop();
+                }));
+
+
         /*
-        new GamepadButton(toolOp, GamepadKeys.Button.RIGHT_STICK_BUTTON)
-                .whenPressed(new InstantCommand(robot.intakeSubsystem::intakeOn, robot.intakeSubsystem));
+         * =================================================================
+         * TOOL OP (ARTILLERO)
+         * Enfoque: Configuración de Estado (State Machine)
+         * =================================================================
          */
 
-        // LB -> Intake Afuera (Escupir)
-        new GamepadButton(toolOp, GamepadKeys.Button.LEFT_STICK_BUTTON)
+        // --- PRESETS DE DISPARO (Hood + RPM Simultáneos) ---
+
+        // A -> WALL SHOT (Cerca)
+        new GamepadButton(toolOp, GamepadKeys.Button.A)
+                .whenPressed(new ParallelCommandGroup(
+                        new InstantCommand(() -> robot.hoodSubsystem.setPosition(LowAltitudeConstants.HoodPosition.WALL_SHOT), robot.hoodSubsystem),
+                        new ShooterPIDCommand(robot.shooterSubsystem, LowAltitudeConstants.TargetRPM.WALL_SHOT_RPM.targetRPM)
+                ));
+
+        // X -> SHORT SHOT (Corto alcance / Stack)
+        new GamepadButton(toolOp, GamepadKeys.Button.X)
+                .whenPressed(new ParallelCommandGroup(
+                        new InstantCommand(() -> robot.hoodSubsystem.setPosition(LowAltitudeConstants.HoodPosition.SHORT_SHOT), robot.hoodSubsystem),
+                        new ShooterPIDCommand(robot.shooterSubsystem, LowAltitudeConstants.TargetRPM.SHORT_SHOT_RPM.targetRPM)
+                ));
+
+        // B -> MID FIELD (Media Cancha)
+        new GamepadButton(toolOp, GamepadKeys.Button.B)
+                .whenPressed(new ParallelCommandGroup(
+                        new InstantCommand(() -> robot.hoodSubsystem.setPosition(LowAltitudeConstants.HoodPosition.MID_FIELD), robot.hoodSubsystem),
+                        new ShooterPIDCommand(robot.shooterSubsystem, LowAltitudeConstants.TargetRPM.MID_FIELD_RPM.targetRPM)
+                ));
+
+        // Y -> LONG SHOT (Lejos)
+        new GamepadButton(toolOp, GamepadKeys.Button.Y)
+                .whenPressed(new ParallelCommandGroup(
+                        new InstantCommand(() -> robot.hoodSubsystem.setPosition(LowAltitudeConstants.HoodPosition.LONG_SHOT), robot.hoodSubsystem),
+                        new ShooterPIDCommand(robot.shooterSubsystem, LowAltitudeConstants.TargetRPM.LONG_SHOT_RPM.targetRPM)
+                ));
+
+
+
+        // --- INTAKE ---
+        // RB -> Intake ON
+        new GamepadButton(toolOp, GamepadKeys.Button.RIGHT_BUMPER)
+                .whenPressed(new InstantCommand(robot.intakeSubsystem::intakeOn, robot.intakeSubsystem));
+
+        // LB -> Intake REVERSE
+        new GamepadButton(toolOp, GamepadKeys.Button.LEFT_BUMPER)
                 .whenPressed(new InstantCommand(robot.intakeSubsystem::intakeReturn, robot.intakeSubsystem));
 
-        // A -> Intake Apagado
-        new GamepadButton(toolOp, GamepadKeys.Button.X)
-                .whenPressed(new InstantCommand(robot.intakeSubsystem::intakeOff, robot.intakeSubsystem));
-    }
+        // D-Pad Down -> Intake OFF + Shooter OFF (Modo "Quiet")
+        // Útil para apagar todo el ruido cuando ya no se dispara
+        new GamepadButton(toolOp, GamepadKeys.Button.DPAD_DOWN)
+                .whenPressed(new ParallelCommandGroup(
+                        new InstantCommand(robot.intakeSubsystem::intakeOff, robot.intakeSubsystem),
+                        new InstantCommand(robot.shooterSubsystem::stop, robot.shooterSubsystem)
+                ));
 
+
+        // --- UTILIDADES MANUALES (Backup) ---
+
+        // D-Pad Up -> Kicker Manual (Por si el driver falla o se ocupa)
+        new GamepadButton(toolOp, GamepadKeys.Button.DPAD_UP)
+                .whileHeld(new RunCommand(robot.kickerSubsystem::kick, robot.kickerSubsystem))
+                .whenReleased(new InstantCommand(robot.kickerSubsystem::stop, robot.kickerSubsystem));
+
+        // D-Pad Left -> Kicker Retract (Desatascar)
+        new GamepadButton(toolOp, GamepadKeys.Button.DPAD_LEFT)
+                .whileHeld(new RunCommand(robot.kickerSubsystem::reverse, robot.kickerSubsystem))
+                .whenReleased(new InstantCommand(robot.kickerSubsystem::stop, robot.kickerSubsystem));
+    }
 }
