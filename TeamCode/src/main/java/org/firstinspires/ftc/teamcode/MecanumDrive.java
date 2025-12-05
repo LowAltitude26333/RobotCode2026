@@ -112,6 +112,9 @@ public final class MecanumDrive {
     public final LazyImu lazyImu;
 
     public final Localizer localizer;
+
+    public Pose2d pose;
+
     private final LinkedList<Pose2d> poseHistory = new LinkedList<>();
 
     private final DownsampledWriter estimatedPoseWriter = new DownsampledWriter("ESTIMATED_POSE", 50_000_000);
@@ -473,6 +476,8 @@ public final class MecanumDrive {
 
     public PoseVelocity2d updatePoseEstimate() {
         PoseVelocity2d vel = localizer.update();
+
+        pose = localizer.getPose();
         poseHistory.add(localizer.getPose());
         
         while (poseHistory.size() > 100) {
