@@ -29,10 +29,12 @@ import org.firstinspires.ftc.teamcode.subsystems.KickerSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.ShooterHoodSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.ShooterSubsystem;
 
+import java.util.function.Function;
+
 
 @Config
-@Autonomous(name = "Autonomo Spline Goal Out", group = "Autonomo Spline Goul Out")
-public class AutonomoSplineGoulOut extends CommandOpMode {
+@Autonomous(name = "Autonomo Spline Goal Out Blue", group = "Autonomo Spline Goul Out Blue")
+public class AutonomoSplineGoulOutBlue extends CommandOpMode {
     // Subsistemas
     private DriveSubsystem drive;
     private ShooterSubsystem shooter;
@@ -43,6 +45,15 @@ public class AutonomoSplineGoulOut extends CommandOpMode {
 
     @Override
     public void initialize() {
+        //Alianza inversion
+        boolean AlianzaAzul = true;
+        Function<Pose2d, Pose2d> poseMap = AlianzaAzul
+                ? pose -> pose // lado rojo: no cambia nada
+                : pose -> new Pose2d(
+                -pose.position.x,      // reflejo en X
+                -pose.position.y,
+                -pose.heading.toDouble() // invertir heading
+        );
         // 1. INIT HARDWARE
         // Empezamos en 0,0,0 para prueba segura
         Pose2d startPose = new Pose2d(-50, 48, Math.toRadians(130));

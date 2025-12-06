@@ -29,10 +29,12 @@ import org.firstinspires.ftc.teamcode.subsystems.KickerSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.ShooterHoodSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.ShooterSubsystem;
 
+import java.util.function.Function;
+
 
 @Config
-@Autonomous(name = "Autonomo Large Zone", group = "Autonomo Large Zone")
-public class AutonomoFullCore extends CommandOpMode {
+@Autonomous(name = "Autonomo Large Zone Blue", group = "Autonomo Large Zone Blue")
+public class AutonomoFullCoreBlue extends CommandOpMode {
     // Subsistemas
     private DriveSubsystem drive;
     private ShooterSubsystem shooter;
@@ -43,6 +45,15 @@ public class AutonomoFullCore extends CommandOpMode {
 
     @Override
     public void initialize() {
+        //Alianza inversion
+        boolean AlianzaAzul = true;
+        Function<Pose2d, Pose2d> poseMap = AlianzaAzul
+                ? pose -> pose // lado rojo: no cambia nada
+                : pose -> new Pose2d(
+                -pose.position.x,      // reflejo en X
+                -pose.position.y,
+                -pose.heading.toDouble() // invertir heading
+        );
         // 1. INIT HARDWARE
         // Empezamos en 0,0,0 para prueba segura
         Pose2d startPose = new Pose2d(61, 10, Math.toRadians(180));

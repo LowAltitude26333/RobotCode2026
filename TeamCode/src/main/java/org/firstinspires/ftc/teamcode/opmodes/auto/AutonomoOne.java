@@ -13,8 +13,10 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import org.firstinspires.ftc.teamcode.LowAltitudeConstants;
 import org.firstinspires.ftc.teamcode.MecanumDrive;
 import org.firstinspires.ftc.teamcode.commands.ActionCommand;
+import org.firstinspires.ftc.teamcode.commands.ColorDetectCommand;
 import org.firstinspires.ftc.teamcode.commands.ShooterPIDCommand;
 import org.firstinspires.ftc.teamcode.commands.auto.ShootBurstCommand;
+import org.firstinspires.ftc.teamcode.subsystems.ColorSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.DriveSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.IntakeSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.KickerSubsystem;
@@ -30,6 +32,7 @@ public class AutonomoOne extends CommandOpMode {
     private ShooterHoodSubsystem hood;
     private KickerSubsystem kicker;
     private IntakeSubsystem intake;
+    private ColorSubsystem colorSensor;
 
     @Override
     public void initialize() {
@@ -42,6 +45,7 @@ public class AutonomoOne extends CommandOpMode {
         hood = new ShooterHoodSubsystem(hardwareMap, telemetry);
         kicker = new KickerSubsystem(hardwareMap);
         intake = new IntakeSubsystem(hardwareMap);
+        colorSensor = new ColorSubsystem(hardwareMap, telemetry);
 
         // 2. CONSTRUIR TRAYECTORIAS "DUMMY" (RoadRunner 1.0)
         MecanumDrive rrDrive = drive.getMecanumDrive();
@@ -86,6 +90,9 @@ public class AutonomoOne extends CommandOpMode {
                 new ShooterPIDCommand(shooter, 3000),
                 // El Intake estará prendido siempre
                 new InstantCommand(intake::intakeOn, intake),
+
+                //Color detect
+                //new ColorDetectCommand(colorSensor),
 
                 // --- GRUPO B: SECUENCIA DE "MOVIMIENTOS" ---
                 new SequentialCommandGroup(

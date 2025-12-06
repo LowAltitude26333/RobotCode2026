@@ -29,10 +29,12 @@ import org.firstinspires.ftc.teamcode.subsystems.KickerSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.ShooterHoodSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.ShooterSubsystem;
 
+import java.util.function.Function;
+
 
 @Config
-@Autonomous(name = "Autonomo Spline Goal Out", group = "Autonomo Spline Goul Out")
-public class AutonomoSplineGoulOut extends CommandOpMode {
+@Autonomous(name = "Autonomo Spline Large Out Blue", group = "Autonomo Spline Large Out Blue")
+public class AutonomoSplineLargeOutBlue extends CommandOpMode {
     // Subsistemas
     private DriveSubsystem drive;
     private ShooterSubsystem shooter;
@@ -43,9 +45,18 @@ public class AutonomoSplineGoulOut extends CommandOpMode {
 
     @Override
     public void initialize() {
+        //Alianza inversion
+        boolean AlianzaAzul = true;
+        Function<Pose2d, Pose2d> poseMap = AlianzaAzul
+                ? pose -> pose // lado rojo: no cambia nada
+                : pose -> new Pose2d(
+                -pose.position.x,      // reflejo en X
+                -pose.position.y,
+                -pose.heading.toDouble() // invertir heading
+        );
         // 1. INIT HARDWARE
         // Empezamos en 0,0,0 para prueba segura
-        Pose2d startPose = new Pose2d(-50, 48, Math.toRadians(130));
+        Pose2d startPose = new Pose2d(61, 10, Math.toRadians(180));
 
         drive = new DriveSubsystem(hardwareMap, startPose, telemetry);
         shooter = new ShooterSubsystem(hardwareMap, telemetry);
@@ -59,8 +70,7 @@ public class AutonomoSplineGoulOut extends CommandOpMode {
 
         // Path 1: Simula ir a disparar (Se queda en 0,0 pero espera 2 segs)
         Action path1 = rrDrive.actionBuilder(startPose)
-                .strafeTo(new Vector2d(-48, 46))
-                .splineToLinearHeading(new Pose2d(-12,30,Math.toRadians(270)),Math.toRadians(130))
+                .splineToLinearHeading(new Pose2d(35,30,Math.toRadians(270)),Math.toRadians(145))
                 .build();
 
         // 3. SECUENCIA MAESTRA

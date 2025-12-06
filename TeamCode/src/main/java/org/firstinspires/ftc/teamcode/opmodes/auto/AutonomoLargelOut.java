@@ -31,8 +31,8 @@ import org.firstinspires.ftc.teamcode.subsystems.ShooterSubsystem;
 
 
 @Config
-@Autonomous(name = "Autonomo Spline Goal Out", group = "Autonomo Spline Goul Out")
-public class AutonomoSplineGoulOut extends CommandOpMode {
+@Autonomous(name = "Autonomo Largel Out", group = "Autonomo Largel Out")
+public class AutonomoLargelOut extends CommandOpMode {
     // Subsistemas
     private DriveSubsystem drive;
     private ShooterSubsystem shooter;
@@ -59,8 +59,7 @@ public class AutonomoSplineGoulOut extends CommandOpMode {
 
         // Path 1: Simula ir a disparar (Se queda en 0,0 pero espera 2 segs)
         Action path1 = rrDrive.actionBuilder(startPose)
-                .strafeTo(new Vector2d(-48, 46))
-                .splineToLinearHeading(new Pose2d(-12,30,Math.toRadians(270)),Math.toRadians(130))
+                .strafeTo(new Vector2d(40, 10))
                 .build();
 
         // 3. SECUENCIA MAESTRA

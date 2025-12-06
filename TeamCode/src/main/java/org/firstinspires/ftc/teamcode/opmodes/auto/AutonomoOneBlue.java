@@ -1,20 +1,14 @@
 package org.firstinspires.ftc.teamcode.opmodes.auto;
 
-import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.roadrunner.Action;
-import com.acmerobotics.roadrunner.ParallelAction;
 import com.acmerobotics.roadrunner.Pose2d;
-import com.acmerobotics.roadrunner.SequentialAction;
-import com.acmerobotics.roadrunner.SleepAction;
 import com.acmerobotics.roadrunner.Vector2d;
-import com.acmerobotics.roadrunner.ftc.Actions;
 import com.arcrobotics.ftclib.command.CommandOpMode;
 import com.arcrobotics.ftclib.command.InstantCommand;
 import com.arcrobotics.ftclib.command.ParallelCommandGroup;
 import com.arcrobotics.ftclib.command.SequentialCommandGroup;
 import com.arcrobotics.ftclib.command.WaitCommand;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
 import org.firstinspires.ftc.teamcode.LowAltitudeConstants;
 import org.firstinspires.ftc.teamcode.MecanumDrive;
@@ -29,10 +23,11 @@ import org.firstinspires.ftc.teamcode.subsystems.KickerSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.ShooterHoodSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.ShooterSubsystem;
 
+import java.util.function.Function;
 
-@Config
-@Autonomous(name = "Autonomo Large Zone", group = "Autonomo Large Zone")
-public class AutonomoFullCore extends CommandOpMode {
+@Autonomous(name = "AutonomoOneBlue")
+public class AutonomoOneBlue extends CommandOpMode {
+
     // Subsistemas
     private DriveSubsystem drive;
     private ShooterSubsystem shooter;
@@ -43,9 +38,18 @@ public class AutonomoFullCore extends CommandOpMode {
 
     @Override
     public void initialize() {
+        //Alianza inversion
+        boolean AlianzaAzul = true;
+        Function<Pose2d, Pose2d> poseMap = AlianzaAzul
+                ? pose -> pose // lado rojo: no cambia nada
+                : pose -> new Pose2d(
+                -pose.position.x,      // reflejo en X
+                -pose.position.y,
+                -pose.heading.toDouble() // invertir heading
+        );
         // 1. INIT HARDWARE
         // Empezamos en 0,0,0 para prueba segura
-        Pose2d startPose = new Pose2d(61, 10, Math.toRadians(180));
+        Pose2d startPose = new Pose2d(-50, 48, Math.toRadians(130));
 
         drive = new DriveSubsystem(hardwareMap, startPose, telemetry);
         shooter = new ShooterSubsystem(hardwareMap, telemetry);
@@ -59,43 +63,33 @@ public class AutonomoFullCore extends CommandOpMode {
 
         // Path 1: Simula ir a disparar (Se queda en 0,0 pero espera 2 segs)
         Action path1 = rrDrive.actionBuilder(startPose)
-                .splineToLinearHeading(new Pose2d(-17, 20, Math.toRadians(145)), Math.toRadians(180))
-                .waitSeconds(1)
+                .strafeTo(new Vector2d(15, -15))// No se mueve
+                .turn(Math.toRadians(-5))
+                .waitSeconds(3) // Simula tiempo de viaje
                 .build();
 
         // Path 2: Simula ir a recoger (Se queda en 0,0)
-        Action path2 = rrDrive.actionBuilder(new Pose2d(-17, 20, Math.toRadians(145)))
-                .splineToLinearHeading(new Pose2d(12, 30, Math.toRadians(270)), Math.toRadians(145))
-                .strafeTo(new Vector2d(12, 60))
-                .strafeTo(new Vector2d(12, 50))
+        Action path2 = rrDrive.actionBuilder(new Pose2d(15, -15, Math.toRadians(125)))
+                .splineToLinearHeading(new Pose2d(2, 15, Math.toRadians(272)), Math.toRadians(125))
+                .strafeTo(new Vector2d(2, 54))
                 .build();
 
         // Path 3: Simula regresar (Se queda en 0,0)
-        Action path3 = rrDrive.actionBuilder(new Pose2d(12, 50, Math.toRadians(270)))
-                .splineToLinearHeading(new Pose2d(2, 45, Math.toRadians(180)), Math.toRadians(270))
-                .strafeTo(new Vector2d(2, 55))
-                .strafeTo(new Vector2d(2, 50))
-                .splineToLinearHeading(new Pose2d(-17, 20, Math.toRadians(145)), Math.toRadians(180))
-                .waitSeconds(1)
+        Action path3 = rrDrive.actionBuilder(new Pose2d(2, 54, Math.toRadians(272)))
+                .strafeTo(new Vector2d(2, 44))
+                .setTangent(0)
+                .splineToLinearHeading(new Pose2d(13, -13, Math.toRadians(133)), Math.toRadians(272))
+                .waitSeconds(2)
                 .build();
-        Action path4 = rrDrive.actionBuilder(new Pose2d(-17, 20, Math.toRadians(145)))
-                .splineToLinearHeading(new Pose2d(35, 30, Math.toRadians(270)), Math.toRadians(145))
-                .strafeTo(new Vector2d(35, 60))
-                .strafeTo(new Vector2d(35, 35))
-                .splineToLinearHeading(new Pose2d(-17, 20, Math.toRadians(145)), Math.toRadians(270))
-                .waitSeconds(1)
+        Action path4 = rrDrive.actionBuilder(new Pose2d(13, -13, Math.toRadians(133)))
+                .splineToLinearHeading(new Pose2d(35, 20, Math.toRadians(272)), Math.toRadians(133))
+                .strafeTo(new Vector2d(35, 65))
                 .build();
-        Action path5 = rrDrive.actionBuilder(new Pose2d(-17, 20, Math.toRadians(145)))
-                .splineToLinearHeading(new Pose2d(-12, 25, Math.toRadians(270)), Math.toRadians(145))
-                .strafeTo(new Vector2d(-12, 53))
-                .strafeTo(new Vector2d(-12, 47))
+        Action path5 = rrDrive.actionBuilder(new Pose2d(35, 54, Math.toRadians(272)))
+                .setTangent(0)
+                .splineToLinearHeading(new Pose2d(40, 5, Math.toRadians(180)), Math.toRadians(272))
+                .waitSeconds(2)
                 .build();
-
-        Action path6 = rrDrive.actionBuilder(new Pose2d(-12, 47, Math.toRadians(270)))
-                .splineToLinearHeading(new Pose2d(-17,20,Math.toRadians(145)),Math.toRadians(270))
-                .waitSeconds(1)
-                .build();
-
 
 
         // 3. SECUENCIA MAESTRA
@@ -108,7 +102,7 @@ public class AutonomoFullCore extends CommandOpMode {
                 new InstantCommand(intake::intakeOn, intake),
 
                 //Color detect
-                new ColorDetectCommand(colorSensor),
+                //new ColorDetectCommand(colorSensor),
 
                 // --- GRUPO B: SECUENCIA DE "MOVIMIENTOS" ---
                 new SequentialCommandGroup(
@@ -120,7 +114,7 @@ public class AutonomoFullCore extends CommandOpMode {
 
                         // 3. Disparar las 3 pelotas precargadas
                         // (El Shooter ya debería estar listo porque se prendió al inicio)
-                        new ShootBurstCommand(shooter,hood, kicker, 3),
+                        new ShootBurstCommand(shooter, hood, kicker, 3),
 
                         // 4. Ejecutar Path 2 (Simulación ir a recoger)
                         new ActionCommand(path2, drive),
@@ -137,7 +131,7 @@ public class AutonomoFullCore extends CommandOpMode {
                         new ActionCommand(path3, drive),
 
                         // 7. Disparar las pelotas recogidas
-                        new ShootBurstCommand(shooter,hood, kicker, 3),
+                        new ShootBurstCommand(shooter, hood, kicker, 3),
 
                         new ActionCommand(path4, drive),
                         new InstantCommand(kicker::kick, kicker),
@@ -145,8 +139,6 @@ public class AutonomoFullCore extends CommandOpMode {
                         new InstantCommand(kicker::stop, kicker),
 
                         new ActionCommand(path5, drive),
-
-                        new ActionCommand(path6, drive),
 
                         // Final: Apagar todo
                         new InstantCommand(shooter::stop),
