@@ -52,7 +52,6 @@ public class AutonomoLargelOut extends CommandOpMode {
         hood = new ShooterHoodSubsystem(hardwareMap, telemetry);
         kicker = new KickerSubsystem(hardwareMap);
         intake = new IntakeSubsystem(hardwareMap);
-        colorSensor = new ColorSubsystem(hardwareMap, telemetry);
 
         // 2. CONSTRUIR TRAYECTORIAS "DUMMY" (RoadRunner 1.0)
         MecanumDrive rrDrive = drive.getMecanumDrive();

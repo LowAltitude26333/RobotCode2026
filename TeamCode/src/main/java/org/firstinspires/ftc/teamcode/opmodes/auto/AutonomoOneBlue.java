@@ -34,7 +34,7 @@ public class AutonomoOneBlue extends CommandOpMode {
     private ShooterHoodSubsystem hood;
     private KickerSubsystem kicker;
     private IntakeSubsystem intake;
-    private ColorSubsystem colorSensor;
+    //private ColorSubsystem colorSensor;
 
     @Override
     public void initialize() {
@@ -44,7 +44,7 @@ public class AutonomoOneBlue extends CommandOpMode {
                 ? pose -> pose // lado rojo: no cambia nada
                 : pose -> new Pose2d(
                 -pose.position.x,      // reflejo en X
-                -pose.position.y,
+                pose.position.y,
                 -pose.heading.toDouble() // invertir heading
         );
         // 1. INIT HARDWARE
@@ -56,7 +56,7 @@ public class AutonomoOneBlue extends CommandOpMode {
         hood = new ShooterHoodSubsystem(hardwareMap, telemetry);
         kicker = new KickerSubsystem(hardwareMap);
         intake = new IntakeSubsystem(hardwareMap);
-        colorSensor = new ColorSubsystem(hardwareMap, telemetry);
+        //colorSensor = new ColorSubsystem(hardwareMap, telemetry);
 
         // 2. CONSTRUIR TRAYECTORIAS "DUMMY" (RoadRunner 1.0)
         MecanumDrive rrDrive = drive.getMecanumDrive();
@@ -71,7 +71,7 @@ public class AutonomoOneBlue extends CommandOpMode {
         // Path 2: Simula ir a recoger (Se queda en 0,0)
         Action path2 = rrDrive.actionBuilder(new Pose2d(15, -15, Math.toRadians(125)))
                 .splineToLinearHeading(new Pose2d(2, 15, Math.toRadians(272)), Math.toRadians(125))
-                .strafeTo(new Vector2d(2, 54))
+                .strafeTo(new Vector2d(2, 58))
                 .build();
 
         // Path 3: Simula regresar (Se queda en 0,0)
@@ -87,7 +87,7 @@ public class AutonomoOneBlue extends CommandOpMode {
                 .build();
         Action path5 = rrDrive.actionBuilder(new Pose2d(35, 54, Math.toRadians(272)))
                 .setTangent(0)
-                .splineToLinearHeading(new Pose2d(40, 5, Math.toRadians(180)), Math.toRadians(272))
+                .splineToLinearHeading(new Pose2d(40, 5, Math.toRadians(270)), Math.toRadians(272))
                 .waitSeconds(2)
                 .build();
 

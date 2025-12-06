@@ -85,7 +85,7 @@ public class RobotContainer {
         controlProfile.configureButtonBindings(this);
 
         //init april tag
-        initAprilTag(hardwareMap);
+        //initAprilTag(hardwareMap);
     }
 
     public void run() {

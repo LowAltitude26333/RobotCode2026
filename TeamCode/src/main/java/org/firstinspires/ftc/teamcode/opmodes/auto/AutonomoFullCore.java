@@ -39,7 +39,6 @@ public class AutonomoFullCore extends CommandOpMode {
     private ShooterHoodSubsystem hood;
     private KickerSubsystem kicker;
     private IntakeSubsystem intake;
-    private ColorSubsystem colorSensor;
 
     @Override
     public void initialize() {
@@ -52,26 +51,26 @@ public class AutonomoFullCore extends CommandOpMode {
         hood = new ShooterHoodSubsystem(hardwareMap, telemetry);
         kicker = new KickerSubsystem(hardwareMap);
         intake = new IntakeSubsystem(hardwareMap);
-        colorSensor = new ColorSubsystem(hardwareMap, telemetry);
+        //colorSensor = new ColorSubsystem(hardwareMap, telemetry);
 
         // 2. CONSTRUIR TRAYECTORIAS "DUMMY" (RoadRunner 1.0)
         MecanumDrive rrDrive = drive.getMecanumDrive();
 
         // Path 1: Simula ir a disparar (Se queda en 0,0 pero espera 2 segs)
         Action path1 = rrDrive.actionBuilder(startPose)
-                .splineToLinearHeading(new Pose2d(-17, 20, Math.toRadians(145)), Math.toRadians(180))
+                .splineToLinearHeading(new Pose2d(-15, 2, Math.toRadians(145)), Math.toRadians(180))
                 .waitSeconds(1)
                 .build();
 
         // Path 2: Simula ir a recoger (Se queda en 0,0)
-        Action path2 = rrDrive.actionBuilder(new Pose2d(-17, 20, Math.toRadians(145)))
-                .splineToLinearHeading(new Pose2d(12, 30, Math.toRadians(270)), Math.toRadians(145))
-                .strafeTo(new Vector2d(12, 60))
-                .strafeTo(new Vector2d(12, 50))
+        Action path2 = rrDrive.actionBuilder(new Pose2d(-15, 2, Math.toRadians(145)))
+                .splineToLinearHeading(new Pose2d(-5, 20, Math.toRadians(270)), Math.toRadians(145))
+                .strafeTo(new Vector2d(-5, 60))
+                .strafeTo(new Vector2d(-5, 50))
                 .build();
 
         // Path 3: Simula regresar (Se queda en 0,0)
-        Action path3 = rrDrive.actionBuilder(new Pose2d(12, 50, Math.toRadians(270)))
+        Action path3 = rrDrive.actionBuilder(new Pose2d(-5, 50, Math.toRadians(270)))
                 .splineToLinearHeading(new Pose2d(2, 45, Math.toRadians(180)), Math.toRadians(270))
                 .strafeTo(new Vector2d(2, 55))
                 .strafeTo(new Vector2d(2, 50))
@@ -103,17 +102,17 @@ public class AutonomoFullCore extends CommandOpMode {
 
                 // --- GRUPO A: TAREAS DE FONDO (Corren todo el tiempo) ---
                 // El Shooter mantendrá al target de RPM desde el inicio
-                new ShooterPIDCommand(shooter, 3000),
+                new ShooterPIDCommand(shooter, 3625),
                 // El Intake estará prendido siempre
                 new InstantCommand(intake::intakeOn, intake),
 
                 //Color detect
-                new ColorDetectCommand(colorSensor),
+                //new ColorDetectCommand(colorSensor),
 
                 // --- GRUPO B: SECUENCIA DE "MOVIMIENTOS" ---
                 new SequentialCommandGroup(
                         // 1. Configuración Inicial (Hood)
-                        new InstantCommand(() -> hood.setPosition(LowAltitudeConstants.HoodPosition.MID_FIELD), hood),
+                        new InstantCommand(() -> hood.setPosition(LowAltitudeConstants.HoodPosition.LONG_SHOT), hood),
 
                         // 2. Ejecutar Path 1 (Simulación de viaje)
                         new ActionCommand(path1, drive),

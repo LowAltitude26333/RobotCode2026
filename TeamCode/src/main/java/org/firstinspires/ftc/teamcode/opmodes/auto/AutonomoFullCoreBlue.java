@@ -51,7 +51,7 @@ public class AutonomoFullCoreBlue extends CommandOpMode {
                 ? pose -> pose // lado rojo: no cambia nada
                 : pose -> new Pose2d(
                 -pose.position.x,      // reflejo en X
-                -pose.position.y,
+                pose.position.y,
                 -pose.heading.toDouble() // invertir heading
         );
         // 1. INIT HARDWARE
@@ -63,7 +63,7 @@ public class AutonomoFullCoreBlue extends CommandOpMode {
         hood = new ShooterHoodSubsystem(hardwareMap, telemetry);
         kicker = new KickerSubsystem(hardwareMap);
         intake = new IntakeSubsystem(hardwareMap);
-        colorSensor = new ColorSubsystem(hardwareMap, telemetry);
+        //colorSensor = new ColorSubsystem(hardwareMap, telemetry);
 
         // 2. CONSTRUIR TRAYECTORIAS "DUMMY" (RoadRunner 1.0)
         MecanumDrive rrDrive = drive.getMecanumDrive();

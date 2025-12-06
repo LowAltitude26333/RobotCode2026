@@ -45,7 +45,7 @@ public class AutonomoOne extends CommandOpMode {
         hood = new ShooterHoodSubsystem(hardwareMap, telemetry);
         kicker = new KickerSubsystem(hardwareMap);
         intake = new IntakeSubsystem(hardwareMap);
-        colorSensor = new ColorSubsystem(hardwareMap, telemetry);
+       // colorSensor = new ColorSubsystem(hardwareMap, telemetry);
 
         // 2. CONSTRUIR TRAYECTORIAS "DUMMY" (RoadRunner 1.0)
         MecanumDrive rrDrive = drive.getMecanumDrive();
@@ -60,7 +60,7 @@ public class AutonomoOne extends CommandOpMode {
         // Path 2: Simula ir a recoger (Se queda en 0,0)
         Action path2 = rrDrive.actionBuilder(new Pose2d(15, -15, Math.toRadians(125)))
                 .splineToLinearHeading(new Pose2d(2,15,Math.toRadians(272)),Math.toRadians(125))
-                .strafeTo(new Vector2d(2, 54))
+                .strafeTo(new Vector2d(2, 58))
                 .build();
 
         // Path 3: Simula regresar (Se queda en 0,0)
@@ -76,7 +76,7 @@ public class AutonomoOne extends CommandOpMode {
                 .build();
         Action path5 = rrDrive.actionBuilder(new Pose2d(35, 54, Math.toRadians(272)))
                 .setTangent(0)
-                .splineToLinearHeading(new Pose2d(40,5,Math.toRadians(180)),Math.toRadians(272))
+                .splineToLinearHeading(new Pose2d(40,5,Math.toRadians(270)),Math.toRadians(272))
                 .waitSeconds(2)
                 .build();
 
@@ -125,7 +125,7 @@ public class AutonomoOne extends CommandOpMode {
 
                         new ActionCommand(path4, drive),
                         new InstantCommand(kicker::kick, kicker),
-                        new WaitCommand(150), // Golpe cortito
+                        new WaitCommand(140), // Golpe cortito
                         new InstantCommand(kicker::stop, kicker),
 
                         new ActionCommand(path5, drive),
