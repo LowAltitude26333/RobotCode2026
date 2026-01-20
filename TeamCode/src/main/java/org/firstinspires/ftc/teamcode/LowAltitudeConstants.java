@@ -7,20 +7,16 @@ public class LowAltitudeConstants {
 
 
     // --- SHOOTER --- Tuneado a 4500 RPM
-    public static double SHOOTER_KP = 0.1;//0008; // Ajustar este valor es crucial
-    public static double SHOOTER_KI = 0.0;
-    public static double SHOOTER_KD = 0.000;//.0001;  0.00
-    public static double SHOOTER_KF = 0.001;//000155; // Feedforward para mantener velocidad
-
-    //Shooter velocity
-    public static double SHOOTER_SPEED_RPM = 3650;
-    public static double SHOOTER_LOW_SPEED_RPM = 3000; //esta funciona para half court shot
+    public static double SHOOTER_KP = 15; // Ajustar este valor es crucial
+    public static double SHOOTER_KI = 0.01;
+    public static double SHOOTER_KD = 2.7;
+    public static double SHOOTER_KF = 0.00042; // Feedforward para mantener velocidad
 
     // NUEVO: Umbral de recuperación agresiva
     // Si la velocidad cae más de 150 RPM del target, aplicamos fuerza bruta.
-    public static double SHOOTER_RECOVERY_THRESHOLD = 150.0;
+    public static double SHOOTER_RECOVERY_THRESHOLD = -5; //Antes 150. Cambiado ya que al llegar al error, dejaba de dar más poder.
 
-    public static double RPM_OFFSET = 100; // Tolerancia Anterior 200
+    public static double RPM_OFFSET = 10; // Tolerancia Anterior 100
 
 
     public enum TargetRPM {
