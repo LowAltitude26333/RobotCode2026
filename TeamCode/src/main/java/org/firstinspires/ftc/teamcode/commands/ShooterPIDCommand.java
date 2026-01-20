@@ -31,7 +31,7 @@ public class ShooterPIDCommand extends CommandBase {
 
     @Override
     public void end(boolean interrupted) {
-        // Si el comando termina (o es interrumpido por el botón A),
+        // Si el comando termina (o es interrumpido por el botón A),ShooterPIDCommand
         // apagamos el motor por seguridad.
         shooter.stop();
     }
