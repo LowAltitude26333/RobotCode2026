@@ -69,12 +69,14 @@ public class RobotContainer {
         kickerSubsystem = new KickerSubsystem(hardwareMap);
 
         // 2. Configurar Comandos por Defecto
-       /* driveSubsystem.setDefaultCommand(new MecanumDriveCommand(
+       /*driveSubsystem.setDefaultCommand(new MecanumDriveCommand(
                 driveSubsystem,
                 profile::getDriveStrafe,
                 profile::getDriveForward,
                 profile::getDriveTurn
-        ));*/
+        ));
+
+        */
 
         driveSubsystem.setDefaultCommand(new FieldCentricDriveCommand(driveSubsystem,
                 profile::getDriveStrafe,

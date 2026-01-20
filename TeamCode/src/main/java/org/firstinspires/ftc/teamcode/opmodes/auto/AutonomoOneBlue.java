@@ -16,14 +16,13 @@ import org.firstinspires.ftc.teamcode.commands.ActionCommand;
 import org.firstinspires.ftc.teamcode.commands.ColorDetectCommand;
 import org.firstinspires.ftc.teamcode.commands.ShooterPIDCommand;
 import org.firstinspires.ftc.teamcode.commands.auto.ShootBurstCommand;
+import org.firstinspires.ftc.teamcode.commands.auto.ShootBurstShortCommand;
 import org.firstinspires.ftc.teamcode.subsystems.ColorSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.DriveSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.IntakeSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.KickerSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.ShooterHoodSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.ShooterSubsystem;
-
-import java.util.function.Function;
 
 @Autonomous(name = "AutonomoOneBlue")
 public class AutonomoOneBlue extends CommandOpMode {
@@ -38,58 +37,50 @@ public class AutonomoOneBlue extends CommandOpMode {
 
     @Override
     public void initialize() {
-        //Alianza inversion
-        boolean AlianzaAzul = true;
-        Function<Pose2d, Pose2d> poseMap = AlianzaAzul
-                ? pose -> pose // lado rojo: no cambia nada
-                : pose -> new Pose2d(
-                -pose.position.x,      // reflejo en X
-                pose.position.y,
-                -pose.heading.toDouble() // invertir heading
-        );
         // 1. INIT HARDWARE
         // Empezamos en 0,0,0 para prueba segura
-        Pose2d startPose = new Pose2d(-50, 48, Math.toRadians(130));
+        Pose2d startPose = new Pose2d(-50, -48, Math.toRadians(235));
 
         drive = new DriveSubsystem(hardwareMap, startPose, telemetry);
         shooter = new ShooterSubsystem(hardwareMap, telemetry);
         hood = new ShooterHoodSubsystem(hardwareMap, telemetry);
         kicker = new KickerSubsystem(hardwareMap);
         intake = new IntakeSubsystem(hardwareMap);
-        //colorSensor = new ColorSubsystem(hardwareMap, telemetry);
+        // colorSensor = new ColorSubsystem(hardwareMap, telemetry);
 
         // 2. CONSTRUIR TRAYECTORIAS "DUMMY" (RoadRunner 1.0)
         MecanumDrive rrDrive = drive.getMecanumDrive();
 
         // Path 1: Simula ir a disparar (Se queda en 0,0 pero espera 2 segs)
         Action path1 = rrDrive.actionBuilder(startPose)
-                .strafeTo(new Vector2d(15, -15))// No se mueve
-                .turn(Math.toRadians(-5))
+                .strafeTo(new Vector2d(-15, -15))// No se mueve
+                .turn(Math.toRadians(-8))
                 .waitSeconds(3) // Simula tiempo de viaje
                 .build();
 
         // Path 2: Simula ir a recoger (Se queda en 0,0)
-        Action path2 = rrDrive.actionBuilder(new Pose2d(15, -15, Math.toRadians(125)))
-                .splineToLinearHeading(new Pose2d(2, 15, Math.toRadians(272)), Math.toRadians(125))
-                .strafeTo(new Vector2d(2, 58))
+        Action path2 = rrDrive.actionBuilder(new Pose2d(-15, -15, Math.toRadians(227)))
+                .splineToLinearHeading(new Pose2d(-6,-15,Math.toRadians(90)),Math.toRadians(227))
+                .strafeTo(new Vector2d(-6, -58))
                 .build();
 
         // Path 3: Simula regresar (Se queda en 0,0)
-        Action path3 = rrDrive.actionBuilder(new Pose2d(2, 54, Math.toRadians(272)))
-                .strafeTo(new Vector2d(2, 44))
+        Action path3 = rrDrive.actionBuilder(new Pose2d(-6, -58, Math.toRadians(90)))
+                .strafeTo(new Vector2d(-6, -24))
                 .setTangent(0)
-                .splineToLinearHeading(new Pose2d(13, -13, Math.toRadians(133)), Math.toRadians(272))
+                .splineToLinearHeading(new Pose2d(-15,-15,Math.toRadians(227)),Math.toRadians(90))
                 .waitSeconds(2)
                 .build();
-        Action path4 = rrDrive.actionBuilder(new Pose2d(13, -13, Math.toRadians(133)))
-                .splineToLinearHeading(new Pose2d(35, 20, Math.toRadians(272)), Math.toRadians(133))
-                .strafeTo(new Vector2d(35, 65))
+        Action path4 = rrDrive.actionBuilder(new Pose2d(-15, -15, Math.toRadians(227)))
+                .splineToLinearHeading(new Pose2d(10,-15,Math.toRadians(90)),Math.toRadians(227))
+                .strafeTo(new Vector2d(10, -60))
+                .strafeTo(new Vector2d(10, -35))
                 .build();
-        Action path5 = rrDrive.actionBuilder(new Pose2d(35, 54, Math.toRadians(272)))
-                .setTangent(0)
-                .splineToLinearHeading(new Pose2d(40, 5, Math.toRadians(270)), Math.toRadians(272))
+        Action path5 = rrDrive.actionBuilder(new Pose2d(10, -65, Math.toRadians(90)))
+                .splineToLinearHeading(new Pose2d(40,5,Math.toRadians(90)),Math.toRadians(227))
                 .waitSeconds(2)
                 .build();
+
 
 
         // 3. SECUENCIA MAESTRA
@@ -114,7 +105,7 @@ public class AutonomoOneBlue extends CommandOpMode {
 
                         // 3. Disparar las 3 pelotas precargadas
                         // (El Shooter ya debería estar listo porque se prendió al inicio)
-                        new ShootBurstCommand(shooter, hood, kicker, 3),
+                        new ShootBurstShortCommand(shooter,hood, kicker, 3),
 
                         // 4. Ejecutar Path 2 (Simulación ir a recoger)
                         new ActionCommand(path2, drive),
@@ -131,11 +122,11 @@ public class AutonomoOneBlue extends CommandOpMode {
                         new ActionCommand(path3, drive),
 
                         // 7. Disparar las pelotas recogidas
-                        new ShootBurstCommand(shooter, hood, kicker, 3),
+                        new ShootBurstShortCommand(shooter,hood, kicker, 3),
 
                         new ActionCommand(path4, drive),
                         new InstantCommand(kicker::kick, kicker),
-                        new WaitCommand(150), // Golpe cortito
+                        new WaitCommand(140), // Golpe cortito
                         new InstantCommand(kicker::stop, kicker),
 
                         new ActionCommand(path5, drive),

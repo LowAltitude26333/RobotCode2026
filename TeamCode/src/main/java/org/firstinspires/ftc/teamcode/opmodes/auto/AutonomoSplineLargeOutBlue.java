@@ -51,8 +51,8 @@ public class AutonomoSplineLargeOutBlue extends CommandOpMode {
                 ? pose -> pose // lado rojo: no cambia nada
                 : pose -> new Pose2d(
                 -pose.position.x,      // reflejo en X
-                -pose.position.y,
-                -pose.heading.toDouble() // invertir heading
+                pose.position.y,
+                pose.heading.toDouble() // invertir heading
         );
         // 1. INIT HARDWARE
         // Empezamos en 0,0,0 para prueba segura

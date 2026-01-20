@@ -81,7 +81,8 @@ public class SkywalkerProfile implements ControlProfile {
         // A -> WALL SHOT (Cerca)
         new GamepadButton(toolOp, GamepadKeys.Button.A)
                 .whenPressed(new ParallelCommandGroup(
-                        new InstantCommand(() -> robot.hoodSubsystem.setPosition(LowAltitudeConstants.HoodPosition.WALL_SHOT), robot.hoodSubsystem),
+                        new InstantCommand(() -> robot.hoodSubsystem.setPosition(LowAltitudeConstants.HoodPosition.
+                                WALL_SHOT), robot.hoodSubsystem),
                         new ShooterPIDCommand(robot.shooterSubsystem, LowAltitudeConstants.TargetRPM.WALL_SHOT_RPM.targetRPM)
                 ));
 
@@ -137,5 +138,10 @@ public class SkywalkerProfile implements ControlProfile {
         new GamepadButton(toolOp, GamepadKeys.Button.DPAD_LEFT)
                 .whileHeld(new RunCommand(robot.kickerSubsystem::reverse, robot.kickerSubsystem))
                 .whenReleased(new InstantCommand(robot.kickerSubsystem::stop, robot.kickerSubsystem));
+
+        //F-Pad Right -> Hood 0
+        new GamepadButton(toolOp, GamepadKeys.Button.DPAD_RIGHT)
+                .whenPressed(new InstantCommand(() -> robot.hoodSubsystem.setPosition(LowAltitudeConstants.HoodPosition.
+                        HOME_POS), robot.hoodSubsystem));
     }
 }

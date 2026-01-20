@@ -38,7 +38,7 @@ public class AutonomoOne extends CommandOpMode {
     public void initialize() {
         // 1. INIT HARDWARE
         // Empezamos en 0,0,0 para prueba segura
-        Pose2d startPose = new Pose2d(-50, 48, Math.toRadians(130));
+        Pose2d startPose = new Pose2d(-50, 48, Math.toRadians(135));
 
         drive = new DriveSubsystem(hardwareMap, startPose, telemetry);
         shooter = new ShooterSubsystem(hardwareMap, telemetry);
@@ -58,25 +58,25 @@ public class AutonomoOne extends CommandOpMode {
                 .build();
 
         // Path 2: Simula ir a recoger (Se queda en 0,0)
-        Action path2 = rrDrive.actionBuilder(new Pose2d(15, -15, Math.toRadians(125)))
-                .splineToLinearHeading(new Pose2d(2,15,Math.toRadians(272)),Math.toRadians(125))
+        Action path2 = rrDrive.actionBuilder(new Pose2d(15, -15, Math.toRadians(130)))
+                .splineToLinearHeading(new Pose2d(2,15,Math.toRadians(272)),Math.toRadians(130))
                 .strafeTo(new Vector2d(2, 58))
                 .build();
 
         // Path 3: Simula regresar (Se queda en 0,0)
-        Action path3 = rrDrive.actionBuilder(new Pose2d(2, 54, Math.toRadians(272)))
+        Action path3 = rrDrive.actionBuilder(new Pose2d(2, 58, Math.toRadians(272)))
                 .strafeTo(new Vector2d(2, 44))
                 .setTangent(0)
-                .splineToLinearHeading(new Pose2d(13,-13,Math.toRadians(133)),Math.toRadians(272))
+                .splineToLinearHeading(new Pose2d(13,-13,Math.toRadians(130)),Math.toRadians(272))
                 .waitSeconds(2)
                 .build();
-        Action path4 = rrDrive.actionBuilder(new Pose2d(13, -13, Math.toRadians(133)))
-                .splineToLinearHeading(new Pose2d(35,20,Math.toRadians(272)),Math.toRadians(133))
+        Action path4 = rrDrive.actionBuilder(new Pose2d(13, -13, Math.toRadians(130)))
+                .splineToLinearHeading(new Pose2d(35,20,Math.toRadians(271)),Math.toRadians(130))
                 .strafeTo(new Vector2d(35, 65))
                 .build();
-        Action path5 = rrDrive.actionBuilder(new Pose2d(35, 54, Math.toRadians(272)))
+        Action path5 = rrDrive.actionBuilder(new Pose2d(35, 54, Math.toRadians(271)))
                 .setTangent(0)
-                .splineToLinearHeading(new Pose2d(40,5,Math.toRadians(270)),Math.toRadians(272))
+                .splineToLinearHeading(new Pose2d(40,5,Math.toRadians(270)),Math.toRadians(271))
                 .waitSeconds(2)
                 .build();
 

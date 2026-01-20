@@ -34,7 +34,9 @@ public class ShooterSubsystem extends SubsystemBase {
         motorLeader.setRunMode(Motor.RunMode.RawPower);
         motorFollower.setRunMode(Motor.RunMode.RawPower);
 
+        // CORRECCIÓN: Resetear ambos encoders
         motorLeader.resetEncoder();
+        motorFollower.resetEncoder();
 
         pidfController = new PIDFController(
                 LowAltitudeConstants.SHOOTER_KP,
@@ -50,10 +52,8 @@ public class ShooterSubsystem extends SubsystemBase {
      * Comandos TeleOp
      * ==================================================================
      */
-    // Solo guarda el valor, no mueve nada aún
     public void setTargetRPM(double rpm) {
         this.targetRPM = rpm;
-        // Si cambiamos de objetivo, reseteamos el acumulado del PID para evitar saltos
         pidfController.reset();
     }
 
@@ -78,15 +78,11 @@ public class ShooterSubsystem extends SubsystemBase {
 
         double finalPower;
 
-        // --- LÓGICA HÍBRIDA MEJORADA ---
-
-        // CASO DE EMERGENCIA (Caída fuerte por disparo)
-        // Aquí sí le damos permiso de usar el 100% (1.0) para levantar rápido
+        // Caso de emergencia (caída fuerte por disparo)
         if (error > LowAltitudeConstants.SHOOTER_RECOVERY_THRESHOLD) {
             finalPower = LowAltitudeConstants.SHOOTER_BOOST_SPEED;
         }
-        // CASO DE MANTENIMIENTO (Ya estamos cerca o estables)
-        // Aquí respetamos tu límite de seguridad de 0.9
+        // Caso de mantenimiento (cerca del target)
         else {
             double pidOutput = pidfController.calculate(currentRPM, targetRPM);
             finalPower = Math.max(-LowAltitudeConstants.SHOOTER_MAX_SPEED,
@@ -102,12 +98,10 @@ public class ShooterSubsystem extends SubsystemBase {
         motorFollower.set(power);
     }
 
-    // Método auxiliar para usar el Enum directamente
     public void setTargetEnum(LowAltitudeConstants.TargetRPM preset) {
         setTargetRPM(preset.targetRPM);
     }
 
-    // Apagado de emergencia o descanso
     public void stop() {
         targetRPM = 0;
         motorLeader.set(0);
@@ -122,9 +116,13 @@ public class ShooterSubsystem extends SubsystemBase {
 
     @Override
     public void periodic() {
+        // CORRECCIÓN CRÍTICA: Ejecutar el PID cada ciclo
+        runPID();
+
         telemetry.addData("SHOOTER Target", targetRPM);
         telemetry.addData("SHOOTER Actual", getShooterRPM());
-        telemetry.addData("SHOOTER Velocity", motorLeader.getVelocity());
+        telemetry.addData("SHOOTER Error", targetRPM - getShooterRPM());
+        telemetry.addData("SHOOTER Velocity (ticks/s)", motorLeader.getVelocity());
         telemetry.addData("SHOOTER Power", motorLeader.get());
     }
 
@@ -135,7 +133,7 @@ public class ShooterSubsystem extends SubsystemBase {
      */
 
     public Action setRPMAutonomous(double RPM) {
-        return(telemetryPacket) -> {
+        return (telemetryPacket) -> {
             setTargetRPM(RPM);
             return false;
         };
@@ -148,10 +146,8 @@ public class ShooterSubsystem extends SubsystemBase {
         };
     }
 
-
     public Action waitUntilTargetRPMAutonomous() {
         return (telemetryPacket) -> onTarget();
-        // onTarget es true ==> false
     }
 
     public Action stopAutonomous() {

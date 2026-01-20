@@ -7,10 +7,10 @@ public class LowAltitudeConstants {
 
 
     // --- SHOOTER --- Tuneado a 4500 RPM
-    public static double SHOOTER_KP = 0.0015;//0008; // Ajustar este valor es crucial
+    public static double SHOOTER_KP = 0.1;//0008; // Ajustar este valor es crucial
     public static double SHOOTER_KI = 0.0;
-    public static double SHOOTER_KD = 0.0;//.0001;
-    public static double SHOOTER_KF = 0.000229;//000155; // Feedforward para mantener velocidad
+    public static double SHOOTER_KD = 0.000;//.0001;  0.00
+    public static double SHOOTER_KF = 0.001;//000155; // Feedforward para mantener velocidad
 
     //Shooter velocity
     public static double SHOOTER_SPEED_RPM = 3650;
@@ -61,7 +61,7 @@ public class LowAltitudeConstants {
 
     public enum HoodPosition {
         WALL_SHOT(202.0),    // Tiro cercano + 2750 RPM Target + 17 inches
-        SHORT_SHOT(127), // Tiro en medio medio de la cancha + 2850 RPM Target + 36 inches
+        SHORT_SHOT(127.0), // Tiro en medio medio de la cancha + 2850 RPM Target + 36 inches
         MID_FIELD(127.0),    // Tiro media cancha + 3300 RPM Target
         LONG_SHOT(62.0),    // Tiro full court + 3625 RPM Target
         HOME_POS( 0.0);
