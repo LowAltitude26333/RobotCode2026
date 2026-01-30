@@ -40,8 +40,8 @@ public class ShootBurstCommand extends SequentialCommandGroup {
                              KickerSubsystem kicker,
                              int shots) {
         this(shooter, hood, kicker, shots,
-                LowAltitudeConstants.TargetRPM.MID_FIELD_RPM, // Corregido: Usar el Enum correcto
-                LowAltitudeConstants.HoodPosition.MID_FIELD);
+                LowAltitudeConstants.TargetRPM.SHORT_SHOT_RPM, // Corregido: Usar el Enum correcto
+                LowAltitudeConstants.HoodPosition.SHORT_SHOT);
     }
 
     // Método auxiliar con la lógica de tiempo variable

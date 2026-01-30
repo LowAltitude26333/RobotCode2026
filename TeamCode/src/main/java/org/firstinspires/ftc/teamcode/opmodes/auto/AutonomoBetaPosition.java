@@ -13,18 +13,20 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import org.firstinspires.ftc.teamcode.LowAltitudeConstants;
 import org.firstinspires.ftc.teamcode.MecanumDrive;
 import org.firstinspires.ftc.teamcode.commands.ActionCommand;
+import org.firstinspires.ftc.teamcode.commands.ColorDetectCommand;
+import org.firstinspires.ftc.teamcode.commands.PoseStorage;
 import org.firstinspires.ftc.teamcode.commands.ShooterPIDCommand;
 import org.firstinspires.ftc.teamcode.commands.auto.ShootBurstCommand;
+import org.firstinspires.ftc.teamcode.subsystems.ColorSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.DriveSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.IntakeSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.KickerSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.ShooterHoodSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.ShooterSubsystem;
 
-@Autonomous(name = "Example Command Auto (Safe Test)", group = "Test")
-public class ExampleCommandAuto extends CommandOpMode {
+@Autonomous(name = "Beta")
+public class AutonomoBetaPosition extends CommandOpMode {
 
-    // Subsistemas
     private DriveSubsystem drive;
     private ShooterSubsystem shooter;
     private ShooterHoodSubsystem hood;
@@ -33,9 +35,7 @@ public class ExampleCommandAuto extends CommandOpMode {
 
     @Override
     public void initialize() {
-        // 1. INIT HARDWARE
-        // Empezamos en 0,0,0 para prueba segura
-        Pose2d startPose = new Pose2d(0, 0, 0);
+        Pose2d startPose = new Pose2d(-52, 47, Math.toRadians(127));
 
         drive = new DriveSubsystem(hardwareMap, startPose, telemetry);
         shooter = new ShooterSubsystem(hardwareMap, telemetry);
@@ -43,73 +43,64 @@ public class ExampleCommandAuto extends CommandOpMode {
         kicker = new KickerSubsystem(hardwareMap);
         intake = new IntakeSubsystem(hardwareMap);
 
-        // 2. CONSTRUIR TRAYECTORIAS "DUMMY" (RoadRunner 1.0)
         MecanumDrive rrDrive = drive.getMecanumDrive();
 
-        // Path 1: Simula ir a disparar (Se queda en 0,0 pero espera 2 segs)
         Action path1 = rrDrive.actionBuilder(startPose)
-                .strafeTo(new Vector2d(0, 0)) // No se mueve
-                .waitSeconds(2.0) // Simula tiempo de viaje
+                .strafeTo(new Vector2d(-30, 25))
                 .build();
 
-        // Path 2: Simula ir a recoger (Se queda en 0,0)
-        Action path2 = rrDrive.actionBuilder(new Pose2d(0, 0, 0))
-                .strafeTo(new Vector2d(0, 0))
-                .waitSeconds(2.0)
+        Action path2 = rrDrive.actionBuilder(new Pose2d(-30, 25, Math.toRadians(127)))
+                .splineToLinearHeading(new Pose2d(-10,20,Math.toRadians(270)),Math.toRadians(130))
+                .strafeTo(new Vector2d(-10, 50))
                 .build();
 
-        // Path 3: Simula regresar (Se queda en 0,0)
-        Action path3 = rrDrive.actionBuilder(new Pose2d(0, 0, 0))
-                .strafeTo(new Vector2d(0, 0))
-                .waitSeconds(2.0)
+        Action path3 = rrDrive.actionBuilder(new Pose2d(-10, 50, Math.toRadians(270)))
+                .strafeTo(new Vector2d(-10, 45))
+                .splineToLinearHeading(new Pose2d(-30,25,Math.toRadians(130)),Math.toRadians(270))
                 .build();
 
+        Action path4 = rrDrive.actionBuilder(new Pose2d(-30, 25, Math.toRadians(130)))
+                .splineToLinearHeading(new Pose2d(10,25,Math.toRadians(270)),Math.toRadians(130))
+                .strafeTo(new Vector2d(10, 50))
+                .build();
 
-        // 3. SECUENCIA MAESTRA
+        Action path5 = rrDrive.actionBuilder(new Pose2d(10, 50, Math.toRadians(270)))
+                .strafeTo(new Vector2d(10, 45))
+                .splineToLinearHeading(new Pose2d(-30,25,Math.toRadians(127)),Math.toRadians(270))
+                //.splineToLinearHeading(new Pose2d(-30,25,Math.toRadians(90)),Math.toRadians(127))
+                .build();
+
         schedule(new ParallelCommandGroup(
-
-                // --- GRUPO A: TAREAS DE FONDO (Corren todo el tiempo) ---
-                // El Shooter mantendrá al target de RPM desde el inicio
-                new ShooterPIDCommand(shooter, 3500),
-                // El Intake estará prendido siempre
+                new ShooterPIDCommand(shooter, 2550),
                 new InstantCommand(intake::intakeOn, intake),
 
-                // --- GRUPO B: SECUENCIA DE "MOVIMIENTOS" ---
                 new SequentialCommandGroup(
-                        // 1. Configuración Inicial (Hood)
-                        new InstantCommand(() -> hood.setPosition(LowAltitudeConstants.HoodPosition.MID_FIELD), hood),
-
-                        // 2. Ejecutar Path 1 (Simulación de viaje)
+                        new InstantCommand(() -> hood.setPosition(LowAltitudeConstants.HoodPosition.SHORT_SHOT), hood),
                         new ActionCommand(path1, drive),
-
-                        // 3. Disparar las 3 pelotas precargadas
-                        // (El Shooter ya debería estar listo porque se prendió al inicio)
                         new ShootBurstCommand(shooter,hood, kicker, 3),
-
-                        // 4. Ejecutar Path 2 (Simulación ir a recoger)
                         new ActionCommand(path2, drive),
-
-                        // 5. "Kicker Kick Poquito" (Acomodar pelotas)
                         new InstantCommand(kicker::kick, kicker),
-                        new WaitCommand(100), // Golpe cortito
+                        new WaitCommand(150),
                         new InstantCommand(kicker::stop, kicker),
-
-                        // Opcional: Esperar un poco para asegurar que el intake agarre
                         new WaitCommand(500),
-
-                        // 6. Ejecutar Path 3 (Simulación regresar)
                         new ActionCommand(path3, drive),
-
-                        // 7. Disparar las pelotas recogidas
                         new ShootBurstCommand(shooter,hood, kicker, 3),
-
-                        // Final: Apagar todo
+                        new ActionCommand(path4, drive),
+                        new InstantCommand(kicker::kick, kicker),
+                        new WaitCommand(150),
+                        new InstantCommand(kicker::stop, kicker),
+                        new WaitCommand(500),
+                        new ActionCommand(path5, drive),
+                        new ShootBurstCommand(shooter,hood, kicker, 3),
                         new InstantCommand(shooter::stop),
-                        new InstantCommand(intake::intakeOff)
+                        new InstantCommand(intake::intakeOff),
+
+                        // 🔹 Guardar pose final para TeleOp
+                        new InstantCommand(() -> PoseStorage.currentPose = rrDrive.pose)
                 )
         ));
 
-        telemetry.addLine("Auto SAFE MODE Cargado. El robot NO se moverá de (0,0).");
+        telemetry.addLine("Auto Beta cargado. Pose final se guardará en PoseStorage.");
         telemetry.update();
     }
 }

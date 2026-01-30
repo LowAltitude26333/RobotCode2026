@@ -16,7 +16,7 @@ public class LowAltitudeConstants {
     // Si la velocidad cae más de 150 RPM del target, aplicamos fuerza bruta.
     public static double SHOOTER_RECOVERY_THRESHOLD = -5; //Antes 150. Cambiado ya que al llegar al error, dejaba de dar más poder.
 
-    public static double RPM_OFFSET = 10; // Tolerancia Anterior 100
+    public static double RPM_OFFSET = 100; // Tolerancia Anterior 100
 
 
     public enum TargetRPM {
@@ -51,15 +51,15 @@ public class LowAltitudeConstants {
     // Estos son los límites físicos del servo (0 a 300 en goBILDA, 0 a 270 en REV)
     public static double HOOD_SERVO_MAX_RANGE = 300.0;
 
-    public static final double INTAKE_IN_SPEED = 0.6;
+    public static final double INTAKE_IN_SPEED = 0.5;
     public static final double INTAKE_STOP = 0.0;
     public static final double INTAKE_REVERSE = -0.5;
 
     public enum HoodPosition {
-        WALL_SHOT(202.0),    // Tiro cercano + 2750 RPM Target + 17 inches
-        SHORT_SHOT(127.0), // Tiro en medio medio de la cancha + 2850 RPM Target + 36 inches
-        MID_FIELD(127.0),    // Tiro media cancha + 3300 RPM Target
-        LONG_SHOT(62.0),    // Tiro full court + 3625 RPM Target
+        WALL_SHOT(202.0),    // Tiro cercano + 2450 RPM Target + 17 inches 202
+        SHORT_SHOT(127.0), // Tiro en medio medio de la cancha + 2550 RPM Target + 36 inches 127
+        MID_FIELD(127.0),    // Tiro media cancha + 3000 RPM Target 127
+        LONG_SHOT(62.0),    // Tiro full court + 3425 RPM Target 62
         HOME_POS( 0.0);
 
         public final double angle;
@@ -70,7 +70,7 @@ public class LowAltitudeConstants {
     }
 
     // --- KICKER CONSTANTS ---
-    public static final double KICKER_OUT_SPEED = 0.8;
-    public static final double KICKER_REVERSE_SPEED = -0.5;
+    public static final double KICKER_OUT_SPEED = 0.7;
+    public static final double KICKER_REVERSE_SPEED = -0.7;
 
 }
