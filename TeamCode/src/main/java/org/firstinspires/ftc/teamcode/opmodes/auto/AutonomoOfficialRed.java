@@ -57,7 +57,7 @@ public class AutonomoOfficialRed extends CommandOpMode {
         // Path 2: Simula ir a recoger (Se queda en 0,0)
         Action path2 = rrDrive.actionBuilder(new Pose2d(-30, 25, Math.toRadians(127)))
                 .splineToLinearHeading(new Pose2d(-10,20,Math.toRadians(270)),Math.toRadians(130))
-                .strafeTo(new Vector2d(-10, 50))
+                .strafeTo(new Vector2d(-10, 55))
                 .build();
         Action path3 = rrDrive.actionBuilder(new Pose2d(-10, 50, Math.toRadians(270)))
                 .strafeTo(new Vector2d(-10, 45))
@@ -65,7 +65,7 @@ public class AutonomoOfficialRed extends CommandOpMode {
                 .build();
         Action path4 = rrDrive.actionBuilder(new Pose2d(-30, 25, Math.toRadians(130)))
                 .splineToLinearHeading(new Pose2d(10,25,Math.toRadians(270)),Math.toRadians(130))
-                .strafeTo(new Vector2d(10, 50))
+                .strafeTo(new Vector2d(10, 55))
                 .build();
         Action path5 = rrDrive.actionBuilder(new Pose2d(10, 50, Math.toRadians(270)))
                 .strafeTo(new Vector2d(13, 45))

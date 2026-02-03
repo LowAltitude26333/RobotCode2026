@@ -16,6 +16,7 @@ import org.firstinspires.ftc.teamcode.commands.ActionCommand;
 import org.firstinspires.ftc.teamcode.commands.ColorDetectCommand;
 import org.firstinspires.ftc.teamcode.commands.ShooterPIDCommand;
 import org.firstinspires.ftc.teamcode.commands.auto.ShootBurstCommand;
+import org.firstinspires.ftc.teamcode.commands.auto.ShootBurstLongCommand;
 import org.firstinspires.ftc.teamcode.subsystems.ColorSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.DriveSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.IntakeSubsystem;
@@ -97,14 +98,14 @@ public class FullOficialBlue extends CommandOpMode {
 
                         // 3. Disparar las 3 pelotas precargadas
                         // (El Shooter ya debería estar listo porque se prendió al inicio)
-                        new ShootBurstCommand(shooter,hood, kicker, 3),
+                        new ShootBurstLongCommand(shooter,hood, kicker, 3),
 
                         // 4. Ejecutar Path 2 (Simulación ir a recoger)
                         new ActionCommand(path2, drive),
 
                         // 5. "Kicker Kick Poquito" (Acomodar pelotas)
                         new InstantCommand(kicker::kick, kicker),
-                        new WaitCommand(150), // Golpe cortito
+                        new WaitCommand(250), // Golpe cortito
                         new InstantCommand(kicker::stop, kicker),
 
                         // Opcional: Esperar un poco para asegurar que el intake agarre
@@ -119,7 +120,7 @@ public class FullOficialBlue extends CommandOpMode {
                         new ActionCommand(path4, drive),
 
                         new InstantCommand(kicker::kick, kicker),
-                        new WaitCommand(150), // Golpe cortito
+                        new WaitCommand(250), // Golpe cortito
                         new InstantCommand(kicker::stop, kicker),
 
                         new WaitCommand(500),

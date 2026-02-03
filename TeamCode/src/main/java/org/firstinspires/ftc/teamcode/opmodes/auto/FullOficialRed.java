@@ -16,6 +16,7 @@ import org.firstinspires.ftc.teamcode.commands.ActionCommand;
 import org.firstinspires.ftc.teamcode.commands.ColorDetectCommand;
 import org.firstinspires.ftc.teamcode.commands.ShooterPIDCommand;
 import org.firstinspires.ftc.teamcode.commands.auto.ShootBurstCommand;
+import org.firstinspires.ftc.teamcode.commands.auto.ShootBurstLongCommand;
 import org.firstinspires.ftc.teamcode.subsystems.ColorSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.DriveSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.IntakeSubsystem;
@@ -23,8 +24,8 @@ import org.firstinspires.ftc.teamcode.subsystems.KickerSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.ShooterHoodSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.ShooterSubsystem;
 
-@Autonomous(name = "AutonomoOfficialBlue 1")
-public class AutonomoOfficialBlue extends CommandOpMode {
+@Autonomous(name = "FullOficialRed1")
+public class FullOficialRed extends CommandOpMode {
 
     // Subsistemas
     private DriveSubsystem drive;
@@ -37,7 +38,7 @@ public class AutonomoOfficialBlue extends CommandOpMode {
     public void initialize() {
         // 1. INIT HARDWARE
         // Empezamos en 0,0,0 para prueba segura
-        Pose2d startPose = new Pose2d(-52, -47, Math.toRadians(227));
+        Pose2d startPose = new Pose2d(61, 10, Math.toRadians(180));
 
 
 
@@ -51,25 +52,25 @@ public class AutonomoOfficialBlue extends CommandOpMode {
         // 2. CONSTRUIR TRAYECTORIAS "DUMMY" (RoadRunner 1.0)
         MecanumDrive rrDrive = drive.getMecanumDrive();
         Action path1 = rrDrive.actionBuilder(startPose)
-                .strafeTo(new Vector2d(-30, -25))// No se mueve
+                .splineToLinearHeading(new Pose2d(55,13,Math.toRadians(160)),Math.toRadians(180))
                 .build();
 
         // Path 2: Simula ir a recoger (Se queda en 0,0)
-        Action path2 = rrDrive.actionBuilder(new Pose2d(-30, -25, Math.toRadians(227)))
-                .splineToLinearHeading(new Pose2d(-10,-20,Math.toRadians(90)),Math.toRadians(227))
-                .strafeTo(new Vector2d(-10, -70))
+        Action path2 = rrDrive.actionBuilder(new Pose2d(55, 13, Math.toRadians(160)))
+                .splineToLinearHeading(new Pose2d(36,28,Math.toRadians(270)),Math.toRadians(160))
+                .strafeTo(new Vector2d(36, 60))
                 .build();
-        Action path3 = rrDrive.actionBuilder(new Pose2d(-10, -50, Math.toRadians(90)))
-                .strafeTo(new Vector2d(-10, -45))
-                .splineToLinearHeading(new Pose2d(-30,-25,Math.toRadians(227)),Math.toRadians(90))
+        Action path3 = rrDrive.actionBuilder(new Pose2d(36, 60, Math.toRadians(270)))
+                .strafeTo(new Vector2d(36, 50))
+                .splineToLinearHeading(new Pose2d(55,13,Math.toRadians(160)),Math.toRadians(270))
                 .build();
-        Action path4 = rrDrive.actionBuilder(new Pose2d(-30, -25, Math.toRadians(227)))
-                .splineToLinearHeading(new Pose2d(10,-25,Math.toRadians(90)),Math.toRadians(227))
-                .strafeTo(new Vector2d(10, -70))
+        Action path4 = rrDrive.actionBuilder(new Pose2d(55, 13, Math.toRadians(160)))
+                .splineToLinearHeading(new Pose2d(12,28,Math.toRadians(270)),Math.toRadians(160))
+                .strafeTo(new Vector2d(12, 60))
                 .build();
-        Action path5 = rrDrive.actionBuilder(new Pose2d(10, -50, Math.toRadians(90)))
-                .strafeTo(new Vector2d(10, -45))
-                .splineToLinearHeading(new Pose2d(-30,-25,Math.toRadians(227)),Math.toRadians(90))
+        Action path5 = rrDrive.actionBuilder(new Pose2d(12, 60, Math.toRadians(270)))
+                .strafeTo(new Vector2d(12, 50))
+                .splineToLinearHeading(new Pose2d(55,13,Math.toRadians(160)),Math.toRadians(270))
 
                 .build();
 
@@ -97,14 +98,14 @@ public class AutonomoOfficialBlue extends CommandOpMode {
 
                         // 3. Disparar las 3 pelotas precargadas
                         // (El Shooter ya debería estar listo porque se prendió al inicio)
-                        new ShootBurstCommand(shooter,hood, kicker, 3),
+                        new ShootBurstLongCommand(shooter,hood, kicker, 3),
 
                         // 4. Ejecutar Path 2 (Simulación ir a recoger)
                         new ActionCommand(path2, drive),
 
                         // 5. "Kicker Kick Poquito" (Acomodar pelotas)
                         new InstantCommand(kicker::kick, kicker),
-                        new WaitCommand(485), // Golpe cortito
+                        new WaitCommand(250), // Golpe cortito
                         new InstantCommand(kicker::stop, kicker),
 
                         // Opcional: Esperar un poco para asegurar que el intake agarre
@@ -119,7 +120,7 @@ public class AutonomoOfficialBlue extends CommandOpMode {
                         new ActionCommand(path4, drive),
 
                         new InstantCommand(kicker::kick, kicker),
-                        new WaitCommand(485), // Golpe cortito
+                        new WaitCommand(250), // Golpe cortito
                         new InstantCommand(kicker::stop, kicker),
 
                         new WaitCommand(500),

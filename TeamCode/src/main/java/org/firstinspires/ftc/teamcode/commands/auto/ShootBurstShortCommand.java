@@ -51,7 +51,7 @@ public class ShootBurstShortCommand extends SequentialCommandGroup {
         for (int i = 0; i < shots; i++) {
             // LÓGICA: Si es la primera iteración (i=0), espera 750ms.
             // Si son las siguientes (i=1, 2...), espera 250ms.
-            long kickTime = (i == 0) ? 250 : 250;
+            long kickTime = (i == 0) ? 475 : 475;
 
             sequence.addCommands(
                     new WaitUntilCommand(shooter::onTarget),

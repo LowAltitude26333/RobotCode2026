@@ -10,7 +10,7 @@ import org.firstinspires.ftc.teamcode.RobotContainer;
 import org.firstinspires.ftc.teamcode.oi.SkywalkerProfile;
 import org.firstinspires.ftc.teamcode.oi.SkywalkerProfileMotorTest;
 
-@TeleOp(name = "Skywalker TeleOp (Manual)", group = "Competition")
+@TeleOp(name = "Motores", group = "Competition")
 public class TeleOpMotoresPrueba extends CommandOpMode {
 
     private RobotContainer robotContainer;

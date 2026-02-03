@@ -30,6 +30,7 @@ public class TeleOpPositionBEta extends LinearOpMode {
 
     // Definir 4 posiciones (por ahora todas en 0,0,0)
     public static Pose2d targetA = new Pose2d(-36, 33, Math.toRadians(127));
+    public static Pose2d targetStacion = new Pose2d(-36, 33, Math.toRadians(127));
     public static Pose2d targetB = new Pose2d(-4, -6, Math.toRadians(127));
     public static Pose2d targetX = new Pose2d(-30, 25, Math.toRadians(127));
     public static Pose2d targetY = new Pose2d(46, -6, Math.toRadians(147));

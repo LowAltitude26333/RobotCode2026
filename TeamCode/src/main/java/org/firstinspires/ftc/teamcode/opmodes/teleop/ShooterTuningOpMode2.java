@@ -11,15 +11,20 @@ import com.arcrobotics.ftclib.gamepad.GamepadEx;
 import com.arcrobotics.ftclib.gamepad.GamepadKeys;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
+import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 import org.firstinspires.ftc.teamcode.commands.ShooterPIDCommand;
 import org.firstinspires.ftc.teamcode.subsystems.IntakeSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.KickerSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.ShooterHoodSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.ShooterSubsystem;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.VoltageSensor;
+import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
+
 
 @Config
-@TeleOp(name = "Tuning: Shooter & Systems (Manual)", group = "Tuning")
-public class ShooterTuningOpMode extends CommandOpMode {
+@TeleOp(name = "Tuning: Dany", group = "Tuning")
+public class ShooterTuningOpMode2 extends CommandOpMode {
 
     // --- VARIABLES EDITABLES EN DASHBOARD ---
     // Ajustado a tu máximo real aprox para evitar saturación del PID
@@ -33,6 +38,11 @@ public class ShooterTuningOpMode extends CommandOpMode {
 
     private GamepadEx gamepad;
 
+    private DcMotorEx shooterLeft, shooterRight;
+    private VoltageSensor batteryVoltageSensor;
+    private FtcDashboard dashboard;
+
+
     @Override
     public void initialize() {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
@@ -41,6 +51,15 @@ public class ShooterTuningOpMode extends CommandOpMode {
         hood = new ShooterHoodSubsystem(hardwareMap, telemetry);
         kicker = new KickerSubsystem(hardwareMap);
         intake = new IntakeSubsystem(hardwareMap);
+        shooterLeft = hardwareMap.get(DcMotorEx.class, "shooterMotorDown");
+        shooterRight = hardwareMap.get(DcMotorEx.class, "shooterMotorUp");
+
+
+
+        batteryVoltageSensor = hardwareMap.voltageSensor.iterator().next();
+
+        dashboard = FtcDashboard.getInstance();
+
 
         gamepad = new GamepadEx(gamepad1);
 
@@ -98,5 +117,15 @@ public class ShooterTuningOpMode extends CommandOpMode {
         telemetry.addData("Target RPM", TARGET_RPM);
         telemetry.addData("Actual RPM", shooter.getShooterRPM());
         telemetry.update();
+        // --- EXTRA: Voltaje y Corriente al Dashboard ---
+        TelemetryPacket packet = new TelemetryPacket();
+        packet.put("Battery Voltage (V)", batteryVoltageSensor.getVoltage());
+        packet.put("Shooter Left Current (A)", shooterLeft.getCurrent(CurrentUnit.AMPS));
+        packet.put("Shooter Right Current (A)", shooterRight.getCurrent(CurrentUnit.AMPS));
+        packet.put("Shooter Left RPM", shooterLeft.getVelocity() * 60.0 / ShooterSubsystem.TICKS_PER_REV);
+        packet.put("Shooter Right RPM", shooterRight.getVelocity() * 60.0 / ShooterSubsystem.TICKS_PER_REV);
+        dashboard.sendTelemetryPacket(packet);
+
+
     }
 }
