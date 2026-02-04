@@ -14,6 +14,7 @@ import org.firstinspires.ftc.teamcode.LowAltitudeConstants;
 import org.firstinspires.ftc.teamcode.RobotContainer;
 import org.firstinspires.ftc.teamcode.commands.GoToPoseCommandAction;
 import org.firstinspires.ftc.teamcode.commands.ShooterPIDCommand;
+import org.firstinspires.ftc.teamcode.commands.TurnToAngleCommand;
 
 public class SkywalkerProfile implements ControlProfile {
 
@@ -84,6 +85,12 @@ public class SkywalkerProfile implements ControlProfile {
                     robot.intakeSubsystem.intakeOff();
                     robot.kickerSubsystem.stop();
                 }));
+
+        new GamepadButton(driverOp, GamepadKeys.Button.A)
+                .whenPressed(new TurnToAngleCommand(robot.driveSubsystem,127));
+
+        new GamepadButton(driverOp, GamepadKeys.Button.X)
+                .whenPressed(new TurnToAngleCommand(robot.driveSubsystem,205));
 
 
         /*
