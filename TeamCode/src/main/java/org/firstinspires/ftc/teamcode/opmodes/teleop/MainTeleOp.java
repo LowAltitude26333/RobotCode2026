@@ -7,6 +7,7 @@ import com.arcrobotics.ftclib.command.CommandOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.RobotContainer;
+import org.firstinspires.ftc.teamcode.commands.PoseStorage;
 import org.firstinspires.ftc.teamcode.oi.SkywalkerProfile;
 
 @TeleOp(name = "Skywalker TeleOp (Manual)", group = "Competition")
@@ -24,9 +25,12 @@ public class MainTeleOp extends CommandOpMode {
         SkywalkerProfile activeProfile = new SkywalkerProfile(gamepad1, gamepad2);
 
         // 3. Definir pose inicial
-        Pose2d startPose = new Pose2d(0, 0, 0);
+       // Pose2d startPose = PoseStorage.currentPose;
+        Pose2d startPose = new Pose2d(0,0,0);
 
-        // 4. Crear el RobotContainer
+
+        telemetry.addData("Init Pose", "X: %.1f, Y: %.1f, H: %.1f",
+                startPose.position.x, startPose.position.y, Math.toDegrees(startPose.heading.toDouble()));        // 4. Crear el RobotContainer
         robotContainer = new RobotContainer(this, activeProfile, startPose);
 
         telemetry.addLine("----------------------------------");

@@ -14,6 +14,7 @@ import org.firstinspires.ftc.teamcode.LowAltitudeConstants;
 import org.firstinspires.ftc.teamcode.MecanumDrive;
 import org.firstinspires.ftc.teamcode.commands.ActionCommand;
 import org.firstinspires.ftc.teamcode.commands.ColorDetectCommand;
+import org.firstinspires.ftc.teamcode.commands.PoseStorage;
 import org.firstinspires.ftc.teamcode.commands.ShooterPIDCommand;
 import org.firstinspires.ftc.teamcode.commands.auto.ShootBurstCommand;
 import org.firstinspires.ftc.teamcode.subsystems.ColorSubsystem;
@@ -37,7 +38,7 @@ public class AutonomoOfficialRed extends CommandOpMode {
     public void initialize() {
         // 1. INIT HARDWARE
         // Empezamos en 0,0,0 para prueba segura
-        Pose2d startPose = new Pose2d(-52, 47, Math.toRadians(127));
+        Pose2d startPose = new Pose2d(-62.5, 36.4, Math.toRadians(180)); // -52 47 127
 
 
 
@@ -51,7 +52,7 @@ public class AutonomoOfficialRed extends CommandOpMode {
         // 2. CONSTRUIR TRAYECTORIAS "DUMMY" (RoadRunner 1.0)
         MecanumDrive rrDrive = drive.getMecanumDrive();
         Action path1 = rrDrive.actionBuilder(startPose)
-                .strafeTo(new Vector2d(-30, 25))// No se mueve
+                .splineToLinearHeading(new Pose2d(-30,25,Math.toRadians(127)),Math.toRadians(180))// No se mueve-30 25
                 .build();
 
         // Path 2: Simula ir a recoger (Se queda en 0,0)
@@ -137,6 +138,7 @@ public class AutonomoOfficialRed extends CommandOpMode {
         ));
 
 
+        PoseStorage.currentPose = drive.getMecanumDrive().localizer.getPose();
         telemetry.addLine("Auto SAFE MODE Cargado. El robot NO se moverá de (0,0).");
         telemetry.update();
     }

@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.oi;
 
+import com.acmerobotics.roadrunner.Pose2d;
 import com.arcrobotics.ftclib.command.CommandScheduler;
 import com.arcrobotics.ftclib.command.InstantCommand;
 import com.arcrobotics.ftclib.command.ParallelCommandGroup;
@@ -11,6 +12,7 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 
 import org.firstinspires.ftc.teamcode.LowAltitudeConstants;
 import org.firstinspires.ftc.teamcode.RobotContainer;
+import org.firstinspires.ftc.teamcode.commands.GoToPoseCommandAction;
 import org.firstinspires.ftc.teamcode.commands.ShooterPIDCommand;
 
 public class SkywalkerProfile implements ControlProfile {
@@ -46,6 +48,21 @@ public class SkywalkerProfile implements ControlProfile {
          * Enfoque: Posicionamiento y Disparo Final
          * =================================================================
          */
+
+        // Definir 4 posiciones (por ahora todas en 0,0,0)
+         Pose2d targetB = new Pose2d(-4, 6, Math.toRadians(227));
+         Pose2d targetX = new Pose2d(-30, 25, Math.toRadians(227));
+         Pose2d targetY = new Pose2d(46, 6, Math.toRadians(227));
+        Pose2d targetParking = new Pose2d(38, 32.5, Math.toRadians(90));
+
+     new GamepadButton(driverOp, GamepadKeys.Button.Y).whenPressed(
+             new GoToPoseCommandAction(robot.driveSubsystem.getMecanumDrive(), targetY));
+     new GamepadButton(driverOp, GamepadKeys.Button.B).whenPressed(
+                new GoToPoseCommandAction(robot.driveSubsystem.getMecanumDrive(), targetB));
+     new GamepadButton(driverOp, GamepadKeys.Button.X).whenPressed(
+                new GoToPoseCommandAction(robot.driveSubsystem.getMecanumDrive(), targetX));
+        new GamepadButton(driverOp, GamepadKeys.Button.A).whenPressed(
+                new GoToPoseCommandAction(robot.driveSubsystem.getMecanumDrive(), targetParking));
 
         // 1. DISPARO (Gatillo) - El driver decide cuándo disparar
         // RB (Hold) -> Activar Kicker

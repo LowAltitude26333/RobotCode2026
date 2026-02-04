@@ -20,10 +20,10 @@ public class LowAltitudeConstants {
 
 
     public enum TargetRPM {
-        WALL_SHOT_RPM(2550.0),    // Tiro cercano + 2750 RPM Target + 17 inches2450
-        SHORT_SHOT_RPM(2650.0), // Tiro en medio medio de la cancha + 2850 RPM Target + 36 inches2550
-        MID_FIELD_RPM(3100.0),    // Tiro media cancha + 3300 RPM Target3000
-        LONG_SHOT_RPM(3525.0);    // Tiro full court + 3625 RPM Target3425
+        WALL_SHOT_RPM(2450.0),    // Tiro cercano + 2750 RPM Target + 17 inches2450
+        SHORT_SHOT_RPM(2550.0), // Tiro en medio medio de la cancha + 2850 RPM Target + 36 inches2550
+        MID_FIELD_RPM(3000.0),    // Tiro media cancha + 3300 RPM Target3000
+        LONG_SHOT_RPM(3425.0);    // Tiro full court + 3625 RPM Target3425
 
         public final double targetRPM;
 

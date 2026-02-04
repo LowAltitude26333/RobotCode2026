@@ -4,7 +4,6 @@ import com.acmerobotics.roadrunner.Action;
 import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.ftc.Actions;
 import com.arcrobotics.ftclib.command.CommandBase;
-
 import org.firstinspires.ftc.teamcode.MecanumDrive;
 
 public class GoToPoseCommandAction extends CommandBase {
@@ -15,26 +14,25 @@ public class GoToPoseCommandAction extends CommandBase {
 
     public GoToPoseCommandAction(MecanumDrive drive, Pose2d targetPose) {
         this.drive = drive;
-        this.targetPose = new Pose2d(-52, 50, Math.toRadians(130));
-
-
+        this.targetPose = targetPose; // <--- CORREGIDO: Usamos el argumento real
     }
 
     @Override
     public void initialize() {
-
         Pose2d currentPose = drive.localizer.getPose();
 
+        // Construimos la trayectoria desde la pose actual real
         action = drive.actionBuilder(currentPose)
                 .strafeTo(targetPose.position)
-                .turn(targetPose.heading.toDouble() - currentPose.heading.toDouble())
+                .turn(targetPose.heading.toDouble() - currentPose.heading.toDouble()) // Giro optimizado
                 .build();
+        // ADVERTENCIA: runBlocking detiene el bucle del TeleOp mientras se mueve.
+        // El robot no responderá al joystick hasta llegar al destino.
         Actions.runBlocking(action);
-        }
+    }
 
-
-        @Override
-        public boolean isFinished() {
-            return true; // El command termina al finalizar la acción
+    @Override
+    public boolean isFinished() {
+        return true;
     }
 }

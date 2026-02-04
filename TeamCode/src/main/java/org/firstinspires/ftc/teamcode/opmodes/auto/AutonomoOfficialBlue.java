@@ -14,6 +14,7 @@ import org.firstinspires.ftc.teamcode.LowAltitudeConstants;
 import org.firstinspires.ftc.teamcode.MecanumDrive;
 import org.firstinspires.ftc.teamcode.commands.ActionCommand;
 import org.firstinspires.ftc.teamcode.commands.ColorDetectCommand;
+import org.firstinspires.ftc.teamcode.commands.PoseStorage;
 import org.firstinspires.ftc.teamcode.commands.ShooterPIDCommand;
 import org.firstinspires.ftc.teamcode.commands.auto.ShootBurstCommand;
 import org.firstinspires.ftc.teamcode.subsystems.ColorSubsystem;
@@ -37,7 +38,7 @@ public class AutonomoOfficialBlue extends CommandOpMode {
     public void initialize() {
         // 1. INIT HARDWARE
         // Empezamos en 0,0,0 para prueba segura
-        Pose2d startPose = new Pose2d(-52, -47, Math.toRadians(227));
+        Pose2d startPose = new Pose2d(-62.5, -36.4, Math.toRadians(180)); // -52 -47 227
 
 
 
@@ -51,7 +52,7 @@ public class AutonomoOfficialBlue extends CommandOpMode {
         // 2. CONSTRUIR TRAYECTORIAS "DUMMY" (RoadRunner 1.0)
         MecanumDrive rrDrive = drive.getMecanumDrive();
         Action path1 = rrDrive.actionBuilder(startPose)
-                .strafeTo(new Vector2d(-30, -25))// No se mueve
+                .splineToLinearHeading(new Pose2d(-30,-25,Math.toRadians(227)), Math.toRadians(180))// No se mueve -30 -25
                 .build();
 
         // Path 2: Simula ir a recoger (Se queda en 0,0)
@@ -70,6 +71,10 @@ public class AutonomoOfficialBlue extends CommandOpMode {
         Action path5 = rrDrive.actionBuilder(new Pose2d(10, -50, Math.toRadians(90)))
                 .strafeTo(new Vector2d(10, -45))
                 .splineToLinearHeading(new Pose2d(-30,-25,Math.toRadians(227)),Math.toRadians(90))
+                .build();
+
+        Action path6 = rrDrive.actionBuilder(new Pose2d(-30, -25, Math.toRadians(227)))
+                .turn(90)
 
                 .build();
 
@@ -128,15 +133,44 @@ public class AutonomoOfficialBlue extends CommandOpMode {
 
                         new ShootBurstCommand(shooter,hood, kicker, 3),
 
+                        new ActionCommand(path6, drive),
+
 
                         // Final: Apagar todo
                         new InstantCommand(shooter::stop),
-                        new InstantCommand(intake::intakeOff)
+                        new InstantCommand(intake::intakeOff),
+
+                        // Final: Apagar todo
+        new InstantCommand(shooter::stop),
+                new InstantCommand(intake::intakeOff),
+
+                // CONFIRMACIÓN FINAL (Opcional, ya que run() lo hace continuo)
+                new InstantCommand(() -> {
+                    PoseStorage.currentPose = drive.getMecanumDrive().pose;
+                    telemetry.speak("Trayectoria Finalizada");
+                })
                 )
         ));
 
+        telemetry.addLine(PoseStorage.currentPose.toString());
+        telemetry.update();
+    }
+    @Override
+    public void run(){
+        // 1. Ejecutar el Scheduler (mantiene vivos los comandos y el drive)
+        super.run();
 
-        telemetry.addLine("Auto SAFE MODE Cargado. El robot NO se moverá de (0,0).");
+        // 2. Guardar la pose actual en la variable estática
+        // Si el match se corta al segundo 29, ¡ya tienes la posición guardada!
+        if (drive != null && drive.getMecanumDrive() != null) {
+            PoseStorage.currentPose = drive.getMecanumDrive().pose;
+        }
+
+        // (Opcional) Telemetría de debug para ver que funciona
+        telemetry.addData("Saving Pose", "X: %.1f, Y: %.1f, H: %.1f",
+                PoseStorage.currentPose.position.x,
+                PoseStorage.currentPose.position.y,
+                Math.toDegrees(PoseStorage.currentPose.heading.toDouble()));
         telemetry.update();
     }
 }
