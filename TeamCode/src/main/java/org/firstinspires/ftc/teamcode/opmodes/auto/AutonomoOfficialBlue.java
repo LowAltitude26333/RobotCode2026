@@ -39,7 +39,7 @@ public class AutonomoOfficialBlue extends CommandOpMode {
         // 1. INIT HARDWARE
         // Empezamos en 0,0,0 para prueba segura
         Pose2d startPose = new Pose2d(-62.5, -36.4, Math.toRadians(180)); // -52 -47 227
-
+        PoseStorage.isRedAlliance = false;
 
 
         drive = new DriveSubsystem(hardwareMap, startPose, telemetry);
@@ -60,7 +60,7 @@ public class AutonomoOfficialBlue extends CommandOpMode {
                 .splineToLinearHeading(new Pose2d(-10,-20,Math.toRadians(90)),Math.toRadians(227))
                 .strafeTo(new Vector2d(-10, -70))
                 .build();
-        Action path3 = rrDrive.actionBuilder(new Pose2d(-10, -50, Math.toRadians(90)))
+        Action path3 = rrDrive.actionBuilder(new Pose2d(-10, -70, Math.toRadians(90)))
                 .strafeTo(new Vector2d(-10, -45))
                 .splineToLinearHeading(new Pose2d(-30,-25,Math.toRadians(227)),Math.toRadians(90))
                 .build();

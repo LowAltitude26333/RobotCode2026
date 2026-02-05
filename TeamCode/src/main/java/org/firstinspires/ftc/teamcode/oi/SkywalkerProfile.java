@@ -13,8 +13,10 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 import org.firstinspires.ftc.teamcode.LowAltitudeConstants;
 import org.firstinspires.ftc.teamcode.RobotContainer;
 import org.firstinspires.ftc.teamcode.commands.GoToPoseCommandAction;
+import org.firstinspires.ftc.teamcode.commands.PoseStorage;
 import org.firstinspires.ftc.teamcode.commands.ShooterPIDCommand;
 import org.firstinspires.ftc.teamcode.commands.TurnToAngleCommand;
+import org.firstinspires.ftc.teamcode.commands.drivetrain.SetPrecisionModeCommand;
 
 public class SkywalkerProfile implements ControlProfile {
 
@@ -51,10 +53,13 @@ public class SkywalkerProfile implements ControlProfile {
          */
 
         // Definir 4 posiciones (por ahora todas en 0,0,0)
+        /*
          Pose2d targetB = new Pose2d(-4, 6, Math.toRadians(227));
          Pose2d targetX = new Pose2d(-30, 25, Math.toRadians(227));
          Pose2d targetY = new Pose2d(46, 6, Math.toRadians(227));
         Pose2d targetParking = new Pose2d(38, 32.5, Math.toRadians(90));
+
+
 
      new GamepadButton(driverOp, GamepadKeys.Button.Y).whenPressed(
              new GoToPoseCommandAction(robot.driveSubsystem.getMecanumDrive(), targetY));
@@ -65,6 +70,8 @@ public class SkywalkerProfile implements ControlProfile {
         new GamepadButton(driverOp, GamepadKeys.Button.A).whenPressed(
                 new GoToPoseCommandAction(robot.driveSubsystem.getMecanumDrive(), targetParking));
 
+         */
+
         // 1. DISPARO (Gatillo) - El driver decide cuándo disparar
         // RB (Hold) -> Activar Kicker
         new GamepadButton(driverOp, GamepadKeys.Button.RIGHT_BUMPER)
@@ -72,8 +79,16 @@ public class SkywalkerProfile implements ControlProfile {
                 .whenReleased(new InstantCommand(robot.kickerSubsystem::stop, robot.kickerSubsystem));
 
         // 2. RESET GIROSCOPIO (Start)
-        new GamepadButton(driverOp, GamepadKeys.Button.START)
+        // RESET HEADING / RE-CALIBRAR GIROSCOPIO
+// Al presionar, el frente actual del robot se convierte en el "Norte" (0 grados).
+        new GamepadButton(driverOp, GamepadKeys.Button.START) // O el botón que prefieras
                 .whenPressed(new InstantCommand(robot.driveSubsystem::resetHeading));
+
+
+
+        new GamepadButton(driverOp, GamepadKeys.Button.LEFT_BUMPER)
+                .whileHeld(new SetPrecisionModeCommand());
+
 
         // 3. GLOBAL EMERGENCY STOP (Back)
         // "Rómpase en caso de emergencia": Mata comandos y frena todo.
@@ -86,12 +101,36 @@ public class SkywalkerProfile implements ControlProfile {
                     robot.kickerSubsystem.stop();
                 }));
 
+        // En SkywalkerProfile.java, dentro de configureButtonBindings:
+
+// Botón A: Apuntar a
         new GamepadButton(driverOp, GamepadKeys.Button.A)
-                .whenPressed(new TurnToAngleCommand(robot.driveSubsystem,127));
+                .whileHeld(new TurnToAngleCommand(
+                        robot.driveSubsystem,
+                        driverOp::getLeftX,  // Driver sigue controlando izquierda/derecha
+                        driverOp::getLeftY,  // Driver sigue controlando adelante/atrás
+                        () -> PoseStorage.isRedAlliance ? 128 : -139 // Ángulo dinámico
+                ));
 
-        new GamepadButton(driverOp, GamepadKeys.Button.X)
-                .whenPressed(new TurnToAngleCommand(robot.driveSubsystem,205));
+// Botón B: Apuntar a
+        new GamepadButton(driverOp, GamepadKeys.Button.B)
+                .whileHeld(new TurnToAngleCommand(
+                        robot.driveSubsystem,
+                        driverOp::getLeftX,
+                        driverOp::getLeftY,
+                        () -> PoseStorage.isRedAlliance ? 110 : -114
+                ));
 
+
+        new GamepadButton(driverOp, GamepadKeys.Button.LEFT_BUMPER)
+                .and(new GamepadButton(driverOp, GamepadKeys.Button.BACK))
+                .whenActive(new InstantCommand(() -> {
+                    // 1. Invertir el valor actual
+                    PoseStorage.isRedAlliance = !PoseStorage.isRedAlliance;
+
+                    // 2. (Opcional) Feedback háptico para saber que funcionó CHECAR
+                    //driverOp.getGamepad().rumble(500);
+                }));
 
         /*
          * =================================================================

@@ -54,7 +54,11 @@ public class SkywalkerProfileMotorTest implements ControlProfile {
                 .whenReleased(new InstantCommand(robot.kickerSubsystem::stop, robot.kickerSubsystem));
 
         // 2. RESET GIROSCOPIO (Start)
-        new GamepadButton(driverOp, GamepadKeys.Button.START)
+        // En configureButtonBindings:
+
+// RESET HEADING / RE-CALIBRAR GIROSCOPIO
+// Al presionar, el frente actual del robot se convierte en el "Norte" (0 grados).
+        new GamepadButton(driverOp, GamepadKeys.Button.START) // O el botón que prefieras
                 .whenPressed(new InstantCommand(robot.driveSubsystem::resetHeading));
 
         // 3. GLOBAL EMERGENCY STOP (Back)

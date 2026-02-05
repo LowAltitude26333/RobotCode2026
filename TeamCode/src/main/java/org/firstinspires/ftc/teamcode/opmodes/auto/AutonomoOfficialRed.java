@@ -39,7 +39,7 @@ public class AutonomoOfficialRed extends CommandOpMode {
         // 1. INIT HARDWARE
         // Empezamos en 0,0,0 para prueba segura
         Pose2d startPose = new Pose2d(-62.5, 36.4, Math.toRadians(180)); // -52 47 127
-
+        PoseStorage.isRedAlliance = true;
 
 
         drive = new DriveSubsystem(hardwareMap, startPose, telemetry);
@@ -58,22 +58,25 @@ public class AutonomoOfficialRed extends CommandOpMode {
         // Path 2: Simula ir a recoger (Se queda en 0,0)
         Action path2 = rrDrive.actionBuilder(new Pose2d(-30, 25, Math.toRadians(127)))
                 .splineToLinearHeading(new Pose2d(-10,20,Math.toRadians(270)),Math.toRadians(130))
-                .strafeTo(new Vector2d(-10, 55))
+                .strafeTo(new Vector2d(-10, 70))
                 .build();
-        Action path3 = rrDrive.actionBuilder(new Pose2d(-10, 50, Math.toRadians(270)))
+        Action path3 = rrDrive.actionBuilder(new Pose2d(-10, 70, Math.toRadians(270)))
                 .strafeTo(new Vector2d(-10, 45))
                 .splineToLinearHeading(new Pose2d(-30,25,Math.toRadians(130)),Math.toRadians(270))
                 .build();
         Action path4 = rrDrive.actionBuilder(new Pose2d(-30, 25, Math.toRadians(130)))
                 .splineToLinearHeading(new Pose2d(10,25,Math.toRadians(270)),Math.toRadians(130))
-                .strafeTo(new Vector2d(10, 55))
+                .strafeTo(new Vector2d(10, 70))
                 .build();
-        Action path5 = rrDrive.actionBuilder(new Pose2d(10, 50, Math.toRadians(270)))
+        Action path5 = rrDrive.actionBuilder(new Pose2d(10, 70, Math.toRadians(270)))
                 .strafeTo(new Vector2d(13, 45))
-                .splineToLinearHeading(new Pose2d(-30,25,Math.toRadians(130)),Math.toRadians(270))
-                .splineToLinearHeading(new Pose2d(-30,25,Math.toRadians(90)),Math.toRadians(130))
+                .splineToLinearHeading(new Pose2d(-30,25,Math.toRadians(127)),Math.toRadians(270))
 
                 .build();
+        Action path6 = rrDrive.actionBuilder(new Pose2d(-30, 25, Math.toRadians(127)))
+                .turn(90)
+                        .build();
+
 
 
 
@@ -106,7 +109,7 @@ public class AutonomoOfficialRed extends CommandOpMode {
 
                         // 5. "Kicker Kick Poquito" (Acomodar pelotas)
                         new InstantCommand(kicker::kick, kicker),
-                        new WaitCommand(150), // Golpe cortito
+                        new WaitCommand(485), // Golpe cortito
                         new InstantCommand(kicker::stop, kicker),
 
                         // Opcional: Esperar un poco para asegurar que el intake agarre
@@ -121,7 +124,7 @@ public class AutonomoOfficialRed extends CommandOpMode {
                         new ActionCommand(path4, drive),
 
                         new InstantCommand(kicker::kick, kicker),
-                        new WaitCommand(150), // Golpe cortito
+                        new WaitCommand(485), // Golpe cortito
                         new InstantCommand(kicker::stop, kicker),
 
                         new WaitCommand(500),
@@ -129,6 +132,8 @@ public class AutonomoOfficialRed extends CommandOpMode {
                         new ActionCommand(path5, drive),
 
                         new ShootBurstCommand(shooter,hood, kicker, 3),
+
+                        new ActionCommand(path6, drive),
 
 
                         // Final: Apagar todo

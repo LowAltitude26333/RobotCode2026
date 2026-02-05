@@ -42,11 +42,11 @@ public class DriveSubsystem extends SubsystemBase {
         // telemetry.addData("Powers", "Fwd: %.2f, Str: %.2f, Turn: %.2f", forwardSpeed, strafeSpeed, turnSpeed);
     }
 
-    public void resetHeading() {
+    /*public void resetHeading() {
         // En RoadRunner 1.0, modificamos la pose actual manteniendo X e Y, pero forzando Heading a 0
         Pose2d currentPose = drive.pose;
         drive.pose = new Pose2d(currentPose.position.x, currentPose.position.y, 0);
-    }
+    }*/
 
     public void stop() {
         drive(0, 0, 0);
@@ -61,6 +61,20 @@ public class DriveSubsystem extends SubsystemBase {
         // RoadRunner 1.0 usa log() o heading.toDouble() dependiendo de la versión exacta,
         // pero generalmente drive.pose.heading.toDouble() es lo correcto.
         return drive.pose.heading.toDouble();
+    }
+
+    public void resetHeading() {
+        // 1. Obtener la pose actual
+        Pose2d currentPose = drive.pose;
+
+        // 2. Crear una nueva pose con las mismas coordenadas X, Y, pero Heading = 0
+        Pose2d newPose = new Pose2d(currentPose.position.x, currentPose.position.y, 0);
+
+        // 3. CRÍTICO: Decirle al localizer que esta es la nueva verdad
+        drive.localizer.setPose(newPose); // <--- ESTO FALTABA
+
+        // 4. Actualizar la variable local también por si acaso
+        drive.pose = newPose;
     }
 
     @Override

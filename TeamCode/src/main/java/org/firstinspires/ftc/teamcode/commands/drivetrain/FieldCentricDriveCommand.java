@@ -1,6 +1,8 @@
 package org.firstinspires.ftc.teamcode.commands.drivetrain;
 
 import com.arcrobotics.ftclib.command.CommandBase;
+
+import org.firstinspires.ftc.teamcode.commands.PoseStorage;
 import org.firstinspires.ftc.teamcode.subsystems.DriveSubsystem;
 import java.util.function.DoubleSupplier;
 
@@ -28,6 +30,13 @@ public class FieldCentricDriveCommand extends CommandBase {
         double strafe = strafeSup.getAsDouble();
         double forward = forwardSup.getAsDouble();
         double turn = turnSup.getAsDouble();
+
+        if (PoseStorage.isPrecisionMode) {
+             strafe = strafeSup.getAsDouble() * 0.5;
+             forward = forwardSup.getAsDouble() * 0.5;
+             turn = turnSup.getAsDouble() * 0.3;
+        }
+
 
         // 2. Obtener el ángulo del robot
         double botHeading = drive.getHeading();

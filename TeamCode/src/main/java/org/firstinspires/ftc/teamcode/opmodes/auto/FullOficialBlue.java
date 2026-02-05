@@ -105,7 +105,7 @@ public class FullOficialBlue extends CommandOpMode {
 
                         // 5. "Kicker Kick Poquito" (Acomodar pelotas)
                         new InstantCommand(kicker::kick, kicker),
-                        new WaitCommand(250), // Golpe cortito
+                        new WaitCommand(485), // Golpe cortito
                         new InstantCommand(kicker::stop, kicker),
 
                         // Opcional: Esperar un poco para asegurar que el intake agarre
@@ -115,19 +115,19 @@ public class FullOficialBlue extends CommandOpMode {
                         new ActionCommand(path3, drive),
 
                         // 7. Disparar las pelotas recogidas
-                        new ShootBurstCommand(shooter,hood, kicker, 3),
+                        new ShootBurstLongCommand(shooter,hood, kicker, 3),
 
                         new ActionCommand(path4, drive),
 
                         new InstantCommand(kicker::kick, kicker),
-                        new WaitCommand(250), // Golpe cortito
+                        new WaitCommand(485), // Golpe cortito
                         new InstantCommand(kicker::stop, kicker),
 
                         new WaitCommand(500),
 
                         new ActionCommand(path5, drive),
 
-                        new ShootBurstCommand(shooter,hood, kicker, 3),
+                        new ShootBurstLongCommand(shooter,hood, kicker, 3),
 
 
                         // Final: Apagar todo

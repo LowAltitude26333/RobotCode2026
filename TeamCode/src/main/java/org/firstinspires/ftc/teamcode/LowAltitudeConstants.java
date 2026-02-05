@@ -51,7 +51,7 @@ public class LowAltitudeConstants {
     // Estos son los límites físicos del servo (0 a 300 en goBILDA, 0 a 270 en REV)
     public static double HOOD_SERVO_MAX_RANGE = 300.0;
 
-    public static final double INTAKE_IN_SPEED = 0.5;
+    public static final double INTAKE_IN_SPEED = 0.6;
     public static final double INTAKE_STOP = 0.0;
     public static final double INTAKE_REVERSE = -0.5;
 

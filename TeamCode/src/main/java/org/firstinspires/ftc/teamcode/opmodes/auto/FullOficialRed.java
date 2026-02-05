@@ -71,6 +71,10 @@ public class FullOficialRed extends CommandOpMode {
         Action path5 = rrDrive.actionBuilder(new Pose2d(12, 60, Math.toRadians(270)))
                 .strafeTo(new Vector2d(12, 50))
                 .splineToLinearHeading(new Pose2d(55,13,Math.toRadians(160)),Math.toRadians(270))
+                .build();
+
+        Action path6 = rrDrive.actionBuilder(new Pose2d(55, 13, Math.toRadians(160)))
+                .turn(90)
 
                 .build();
 
@@ -105,7 +109,7 @@ public class FullOficialRed extends CommandOpMode {
 
                         // 5. "Kicker Kick Poquito" (Acomodar pelotas)
                         new InstantCommand(kicker::kick, kicker),
-                        new WaitCommand(250), // Golpe cortito
+                        new WaitCommand(485), // Golpe cortito
                         new InstantCommand(kicker::stop, kicker),
 
                         // Opcional: Esperar un poco para asegurar que el intake agarre
@@ -114,20 +118,23 @@ public class FullOficialRed extends CommandOpMode {
                         // 6. Ejecutar Path 3 (Simulación regresar)
                         new ActionCommand(path3, drive),
 
-                        // 7. Disparar las pelotas recogidas
-                        new ShootBurstCommand(shooter,hood, kicker, 3),
+                        // 7. Disparar las pelot
+                        // as recogidas
+                        new ShootBurstLongCommand(shooter,hood, kicker, 3),
 
                         new ActionCommand(path4, drive),
 
                         new InstantCommand(kicker::kick, kicker),
-                        new WaitCommand(250), // Golpe cortito
+                        new WaitCommand(485),
                         new InstantCommand(kicker::stop, kicker),
 
                         new WaitCommand(500),
 
                         new ActionCommand(path5, drive),
 
-                        new ShootBurstCommand(shooter,hood, kicker, 3),
+                        new ShootBurstLongCommand(shooter,hood, kicker, 3),
+
+                        new ActionCommand(path6, drive),
 
 
                         // Final: Apagar todo

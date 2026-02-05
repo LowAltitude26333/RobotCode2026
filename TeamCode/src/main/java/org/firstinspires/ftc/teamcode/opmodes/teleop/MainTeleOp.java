@@ -17,37 +17,48 @@ public class MainTeleOp extends CommandOpMode {
 
     @Override
     public void initialize() {
-        // 1. TRUCO POWERHOUSE: Usar MultipleTelemetry
-        // Esto hace que los datos se vean en el celular Y en la computadora (FTC Dashboard) al mismo tiempo.
+        // 1. Telemetría Dual (Dashboard + Celular)
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
 
-        // 2. Crear el perfil
+        // 2. Crear perfil
         SkywalkerProfile activeProfile = new SkywalkerProfile(gamepad1, gamepad2);
 
-        // 3. Definir pose inicial
-       // Pose2d startPose = PoseStorage.currentPose;
-        Pose2d startPose = new Pose2d(0,0,0);
+        // 3. Recuperar pose (con seguridad por si es null)
+        Pose2d startPose = (PoseStorage.currentPose != null) ? PoseStorage.currentPose : new Pose2d(0,0,0);
 
-
-        telemetry.addData("Init Pose", "X: %.1f, Y: %.1f, H: %.1f",
-                startPose.position.x, startPose.position.y, Math.toDegrees(startPose.heading.toDouble()));        // 4. Crear el RobotContainer
+        // 4. Crear contenedor
         robotContainer = new RobotContainer(this, activeProfile, startPose);
 
-        telemetry.addLine("----------------------------------");
-        telemetry.addLine("   SKYWALKER SYSTEMS: ONLINE      ");
-        telemetry.addLine("   Telemetría: Dashboard + Driver Station");
-        telemetry.addLine("----------------------------------");
+        // Mensaje de inicio
+        telemetry.addLine(" SKYWALKER SYSTEMS: ONLINE ");
+        telemetry.addData("Init Pose", "X: %.1f, Y: %.1f, H: %.1f",
+                startPose.position.x, startPose.position.y, Math.toDegrees(startPose.heading.toDouble()));
         telemetry.update();
     }
 
-    /**
-     * ESTA ES LA PARTE QUE FALTABA.
-     * El CommandOpMode corre un bucle interno, pero necesitamos inyectar
-     * el telemetry.update() al final de cada ciclo para ver los cambios.
-     */
     @Override
     public void run() {
-        super.run(); // Esto ejecuta los comandos y los periodic() de los subsistemas
-        telemetry.update(); // Esto envía los datos a la pantalla
+        super.run(); // Ejecuta comandos y subsistemas
+
+        // --- MOVER ESTO AQUÍ PARA QUE SE ACTUALICE EN VIVO ---
+
+        telemetry.addLine("----------------------------------");
+        if (PoseStorage.isRedAlliance) {
+            // Usamos un caracter unicode para resaltar
+            telemetry.addData("ALIANZA", "🟥 ROJO (RED) 🟥");
+        } else {
+            telemetry.addData("ALIANZA", "🟦 AZUL (BLUE) 🟦");
+        }
+
+        // Ver si el 'Precision Mode' está activo
+        if (PoseStorage.isPrecisionMode) {
+            telemetry.addData("MODO", "⚠️ PRECISIÓN (LENTO) ⚠️");
+        } else {
+            telemetry.addData("MODO", "🚀 TURBO (NORMAL)");
+        }
+
+        telemetry.addData("Heading", "%.1f°", Math.toDegrees(robotContainer.driveSubsystem.getHeading()));
+
+        telemetry.update(); // Enviar a pantalla
     }
 }
