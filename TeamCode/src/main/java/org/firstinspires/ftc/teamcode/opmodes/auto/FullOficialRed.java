@@ -13,11 +13,8 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import org.firstinspires.ftc.teamcode.LowAltitudeConstants;
 import org.firstinspires.ftc.teamcode.MecanumDrive;
 import org.firstinspires.ftc.teamcode.commands.ActionCommand;
-import org.firstinspires.ftc.teamcode.commands.ColorDetectCommand;
 import org.firstinspires.ftc.teamcode.commands.ShooterPIDCommand;
 import org.firstinspires.ftc.teamcode.commands.auto.ShootBurstCommand;
-import org.firstinspires.ftc.teamcode.commands.auto.ShootBurstLongCommand;
-import org.firstinspires.ftc.teamcode.subsystems.ColorSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.DriveSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.IntakeSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.KickerSubsystem;
@@ -102,7 +99,9 @@ public class FullOficialRed extends CommandOpMode {
 
                         // 3. Disparar las 3 pelotas precargadas
                         // (El Shooter ya debería estar listo porque se prendió al inicio)
-                        new ShootBurstLongCommand(shooter,hood, kicker, 3),
+
+                        new ShootBurstCommand(shooter,hood, kicker, 3,
+                                LowAltitudeConstants.TargetRPM.LONG_SHOT_RPM, LowAltitudeConstants.HoodPosition.LONG_SHOT),
 
                         // 4. Ejecutar Path 2 (Simulación ir a recoger)
                         new ActionCommand(path2, drive),
@@ -120,7 +119,9 @@ public class FullOficialRed extends CommandOpMode {
 
                         // 7. Disparar las pelot
                         // as recogidas
-                        new ShootBurstLongCommand(shooter,hood, kicker, 3),
+
+                        new ShootBurstCommand(shooter,hood, kicker, 3,
+                                LowAltitudeConstants.TargetRPM.LONG_SHOT_RPM, LowAltitudeConstants.HoodPosition.LONG_SHOT),
 
                         new ActionCommand(path4, drive),
 
@@ -132,7 +133,9 @@ public class FullOficialRed extends CommandOpMode {
 
                         new ActionCommand(path5, drive),
 
-                        new ShootBurstLongCommand(shooter,hood, kicker, 3),
+
+                        new ShootBurstCommand(shooter,hood, kicker, 3,
+                                LowAltitudeConstants.TargetRPM.LONG_SHOT_RPM, LowAltitudeConstants.HoodPosition.LONG_SHOT),
 
                         new ActionCommand(path6, drive),
 

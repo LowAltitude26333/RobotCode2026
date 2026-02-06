@@ -27,7 +27,7 @@ public class ShootSequenceCommand extends SequentialCommandGroup {
                 ),
 
                 // 2. Esperar a que el motor llegue a la velocidad (Ready to fire)
-                new WaitUntilCommand(shooter::onTarget),
+                new WaitUntilCommand(shooter::isReady),
 
                 // 3. DISPARO MECÁNICO (Raw Power)
                 // Encender motor del kicker

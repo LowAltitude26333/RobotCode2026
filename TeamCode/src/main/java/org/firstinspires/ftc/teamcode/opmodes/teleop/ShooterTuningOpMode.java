@@ -88,7 +88,7 @@ public class ShooterTuningOpMode extends CommandOpMode {
         // TRUCO DE TUNING EN VIVO
         // Actualiza el target del subsistema si cambias la variable en Dashboard
         // y el motor ya está corriendo (target != 0)
-        if (shooter.getTargetRPM() != 0 && shooter.getTargetRPM() != TARGET_RPM) {
+        if (shooter.getActualShooterRPM() != 0 && shooter.getActualShooterRPM() != TARGET_RPM) {
             shooter.setTargetRPM(TARGET_RPM);
         }
 
@@ -96,7 +96,7 @@ public class ShooterTuningOpMode extends CommandOpMode {
 
         telemetry.addData(">> DASHBOARD <<", "Edita TARGET_RPM");
         telemetry.addData("Target RPM", TARGET_RPM);
-        telemetry.addData("Actual RPM", shooter.getShooterRPM());
+        telemetry.addData("Actual RPM", shooter.getActualShooterRPM());
         telemetry.update();
     }
 }

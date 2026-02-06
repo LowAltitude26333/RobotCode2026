@@ -105,9 +105,9 @@ public class SkywalkerProfileMotorTest implements ControlProfile {
                 ));
 
         // Y -> LONG SHOT (Lejos)
-        new GamepadButton(toolOp, GamepadKeys.Button.Y)
+        /*new GamepadButton(toolOp, GamepadKeys.Button.Y)
                 .whileHeld(new RunCommand(() -> robot.shooterSubsystem.driveShooter(0.9))
-                );
+                );*/
 
 
 

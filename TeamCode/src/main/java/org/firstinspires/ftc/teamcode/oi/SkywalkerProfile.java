@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.oi;
 
-import com.acmerobotics.roadrunner.Pose2d;
 import com.arcrobotics.ftclib.command.CommandScheduler;
 import com.arcrobotics.ftclib.command.InstantCommand;
 import com.arcrobotics.ftclib.command.ParallelCommandGroup;
@@ -12,10 +11,8 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 
 import org.firstinspires.ftc.teamcode.LowAltitudeConstants;
 import org.firstinspires.ftc.teamcode.RobotContainer;
-import org.firstinspires.ftc.teamcode.commands.GoToPoseCommandAction;
 import org.firstinspires.ftc.teamcode.commands.PoseStorage;
-import org.firstinspires.ftc.teamcode.commands.ShooterPIDCommand;
-import org.firstinspires.ftc.teamcode.commands.TurnToAngleCommand;
+import org.firstinspires.ftc.teamcode.commands.auto.TurnToAngleCommand;
 import org.firstinspires.ftc.teamcode.commands.drivetrain.SetPrecisionModeCommand;
 
 public class SkywalkerProfile implements ControlProfile {
@@ -141,35 +138,35 @@ public class SkywalkerProfile implements ControlProfile {
 
         // --- PRESETS DE DISPARO (Hood + RPM Simultáneos) ---
 
-        // A -> WALL SHOT (Cerca)
+// A -> WALL SHOT (Cerca)
         new GamepadButton(toolOp, GamepadKeys.Button.A)
                 .whenPressed(new ParallelCommandGroup(
-                        new InstantCommand(() -> robot.hoodSubsystem.setPosition(LowAltitudeConstants.HoodPosition.
-                                WALL_SHOT), robot.hoodSubsystem),
-                        new ShooterPIDCommand(robot.shooterSubsystem, LowAltitudeConstants.TargetRPM.WALL_SHOT_RPM.targetRPM)
+                        // Hood: Posición física
+                        new InstantCommand(() -> robot.hoodSubsystem.setPosition(LowAltitudeConstants.HoodPosition.WALL_SHOT), robot.hoodSubsystem),
+                        // Shooter: Solo enviamos la señal de "Target RPM". El periodic() hace el resto.
+                        new InstantCommand(() -> robot.shooterSubsystem.setTargetRPM(LowAltitudeConstants.TargetRPM.WALL_SHOT_RPM.targetRPM), robot.shooterSubsystem)
                 ));
 
-        // X -> SHORT SHOT (Corto alcance / Stack)
+// X -> SHORT SHOT (Stack)
         new GamepadButton(toolOp, GamepadKeys.Button.X)
                 .whenPressed(new ParallelCommandGroup(
                         new InstantCommand(() -> robot.hoodSubsystem.setPosition(LowAltitudeConstants.HoodPosition.SHORT_SHOT), robot.hoodSubsystem),
-                        new ShooterPIDCommand(robot.shooterSubsystem, LowAltitudeConstants.TargetRPM.SHORT_SHOT_RPM.targetRPM)
+                        new InstantCommand(() -> robot.shooterSubsystem.setTargetRPM(LowAltitudeConstants.TargetRPM.SHORT_SHOT_RPM.targetRPM), robot.shooterSubsystem)
                 ));
 
-        // B -> MID FIELD (Media Cancha)
+// B -> MID FIELD
         new GamepadButton(toolOp, GamepadKeys.Button.B)
                 .whenPressed(new ParallelCommandGroup(
                         new InstantCommand(() -> robot.hoodSubsystem.setPosition(LowAltitudeConstants.HoodPosition.MID_FIELD), robot.hoodSubsystem),
-                        new ShooterPIDCommand(robot.shooterSubsystem, LowAltitudeConstants.TargetRPM.MID_FIELD_RPM.targetRPM)
+                        new InstantCommand(() -> robot.shooterSubsystem.setTargetRPM(LowAltitudeConstants.TargetRPM.MID_FIELD_RPM.targetRPM), robot.shooterSubsystem)
                 ));
 
-        // Y -> LONG SHOT (Lejos)
+// Y -> LONG SHOT
         new GamepadButton(toolOp, GamepadKeys.Button.Y)
                 .whenPressed(new ParallelCommandGroup(
                         new InstantCommand(() -> robot.hoodSubsystem.setPosition(LowAltitudeConstants.HoodPosition.LONG_SHOT), robot.hoodSubsystem),
-                        new ShooterPIDCommand(robot.shooterSubsystem, LowAltitudeConstants.TargetRPM.LONG_SHOT_RPM.targetRPM)
+                        new InstantCommand(() -> robot.shooterSubsystem.setTargetRPM(LowAltitudeConstants.TargetRPM.LONG_SHOT_RPM.targetRPM), robot.shooterSubsystem)
                 ));
-
 
 
         // --- INTAKE ---
