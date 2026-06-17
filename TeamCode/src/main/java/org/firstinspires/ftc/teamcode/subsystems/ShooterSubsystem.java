@@ -13,8 +13,8 @@ import org.firstinspires.ftc.teamcode.RobotMap;
 
 public class ShooterSubsystem extends SubsystemBase {
 
+    // 1. UN SOLO MOTOR (Dejamos únicamente al líder)
     private final MotorEx motorLeader;
-    private final MotorEx motorFollower;
     private final VoltageSensor batteryVoltageSensor;
     private final Telemetry telemetry;
 
@@ -24,20 +24,16 @@ public class ShooterSubsystem extends SubsystemBase {
     private double targetShooterRPM = 0;
     private boolean isBangBangEnabled = true;
 
-    // --- NUEVO: Variables de Seguridad ---
-    private int loopCycleCount = 0; // Contador de ciclos para "Warm-Up"
-    private double lastValidRPM = 0; // Para recordar la última velocidad real si hay un pico
+    // --- Variables de Seguridad ---
+    private int loopCycleCount = 0;
+    private double lastValidRPM = 0;
 
     public ShooterSubsystem(HardwareMap hardwareMap, Telemetry telemetry) {
         this.telemetry = telemetry;
         batteryVoltageSensor = hardwareMap.voltageSensor.iterator().next();
 
-        // 1. Inicialización de Hardware
+        // Inicialización del Motor Único
         motorLeader = new MotorEx(hardwareMap, RobotMap.SHOOTER_MOTOR_1,
-                LowAltitudeConstants.MOTOR_TICKS_PER_REV,
-                LowAltitudeConstants.MOTOR_MAX_RPM);
-
-        motorFollower = new MotorEx(hardwareMap, RobotMap.SHOOTER_MOTOR_2,
                 LowAltitudeConstants.MOTOR_TICKS_PER_REV,
                 LowAltitudeConstants.MOTOR_MAX_RPM);
 
@@ -46,29 +42,20 @@ public class ShooterSubsystem extends SubsystemBase {
     }
 
     private void configureMotors() {
-        // 1. Invertir Motores
+        // 1. Invertir Motor si es necesario
         motorLeader.setInverted(RobotMap.SHOOTER_UP_MOTOR_IS_INVERTED);
-        motorFollower.setInverted(RobotMap.SHOOTER_DOWN_MOTOR_IS_INVERTED);
 
-        // 2. Comportamiento Zero Power (Float es mejor para shooters)
+        // 2. Comportamiento Zero Power (Float es ideal para evitar dañar la caja de engranes)
         motorLeader.setZeroPowerBehavior(Motor.ZeroPowerBehavior.FLOAT);
-        motorFollower.setZeroPowerBehavior(Motor.ZeroPowerBehavior.FLOAT);
 
-        // 3. RESETEO MANUAL SEGURO (CORREGIDO)
-        // Accedemos al motor nativo (.motor) para asegurar que el SDK reciba las órdenes
+        // 3. RESETEO MANUAL SEGURO
         motorLeader.motor.setMode(com.qualcomm.robotcore.hardware.DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        motorFollower.motor.setMode(com.qualcomm.robotcore.hardware.DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
-        // --- LA LÍNEA MÁGICA QUE FALTABA ---
-        // Tenemos que explícitamente sacarlo de Reset y ponerlo en modo "Sin Encoder" (Raw Power)
-        // Usamos el objeto nativo para que FTCLib no se confunda.
+        // 4. Configurar modo Raw Power (Sin Encoder nativo) para control manual PIDF en FTCLib
         motorLeader.motor.setMode(com.qualcomm.robotcore.hardware.DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        motorFollower.motor.setMode(com.qualcomm.robotcore.hardware.DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
-        // 4. Sincronizar FTCLib
-        // Ahora le decimos a FTCLib: "Oye, estamos en RawPower, actualiza tu estado interno"
+        // 5. Sincronizar estado interno con FTCLib
         motorLeader.setRunMode(Motor.RunMode.RawPower);
-        motorFollower.setRunMode(Motor.RunMode.RawPower);
     }
 
     public void reloadControllers() {
@@ -98,16 +85,13 @@ public class ShooterSubsystem extends SubsystemBase {
     public void stop() {
         targetShooterRPM = 0;
         motorLeader.set(0);
-        motorFollower.set(0);
     }
 
     /**
-     * Devuelve la velocidad real FILTRADA.
-     * Si el sensor enloquece, devuelve 0 o el último valor conocido.
+     * Devuelve la velocidad real FILTRADA usando solo el encoder del motor líder.
      */
     public double getActualShooterRPM() {
         // SEGURIDAD 1: Warm-Up
-        // Si el robot acaba de arrancar (primeros 30 ciclos), devolvemos 0 para dejar que se estabilice.
         if (loopCycleCount < 30) {
             return 0;
         }
@@ -117,12 +101,8 @@ public class ShooterSubsystem extends SubsystemBase {
         double currentRPM = motorRPM * LowAltitudeConstants.SHOOTER_GEAR_RATIO;
 
         // SEGURIDAD 2: Filtro de Picos "Imposibles"
-        // Ningún motor GoBilda llega a 20,000 RPM. Si leemos eso, es un glitch.
         if (Math.abs(currentRPM) > 20000) {
-            // Opción A: Retornar 0 (Seguro para que el PID no reste potencia loca)
             return 0;
-            // Opción B (Más suave): Retornar el último valor válido
-            // return lastValidRPM;
         }
 
         lastValidRPM = currentRPM;
@@ -130,21 +110,20 @@ public class ShooterSubsystem extends SubsystemBase {
     }
 
     public boolean isReady() {
-        // Usamos el getter filtrado
         return targetShooterRPM > 0 &&
                 Math.abs(targetShooterRPM - getActualShooterRPM()) <= LowAltitudeConstants.SHOOTER_TOLERANCE_RPM;
     }
 
     @Override
     public void periodic() {
-        loopCycleCount++; // Contamos ciclos de vida
+        loopCycleCount++;
 
-        // 1. OBTENER DATOS (Ya filtrados por el método getActualShooterRPM)
+        // 1. Obtener velocidad real actual
         double currentShooterRPM = getActualShooterRPM();
 
+        // Si el objetivo es 0, apagamos por completo el motor y salimos
         if (targetShooterRPM == 0) {
             motorLeader.set(0);
-            motorFollower.set(0);
             return;
         }
 
@@ -155,40 +134,40 @@ public class ShooterSubsystem extends SubsystemBase {
 
         double targetVoltage;
 
-        // --- LÓGICA DE CONTROL ---
+        // --- LÓGICA DE CONTROL (Calculada para el motor único) ---
 
-        // A) BANG-BANG (Recuperación)
+        // A) BANG-BANG (Aceleración y Recuperación Rápida)
         if (isBangBangEnabled && errorShooterRPM > LowAltitudeConstants.SHOOTER_BANG_BANG_THRESHOLD) {
             targetVoltage = 14.0;
         }
-        // B) COAST LOGIC (Frenado)
+        // B) COAST LOGIC (Frenado pasivo si nos pasamos de revoluciones)
         else if (errorShooterRPM < -50) {
             targetVoltage = 0;
         }
-        // C) PIDF (Fino)
+        // C) PIDF (Mantenimiento estable del RPM)
         else {
             double ffVolts = feedforward.calculate(targetMotorRPM);
             double pidVolts = pidController.calculate(currentMotorRPM, targetMotorRPM);
             targetVoltage = ffVolts + pidVolts;
         }
 
-        // --- CORRECCIÓN BATERÍA ---
+        // --- CORRECCIÓN POR VOLTAJE DE BATERÍA ---
         double batteryVoltage = batteryVoltageSensor.getVoltage();
-        if (batteryVoltage <= 1.0) { // Si falla el sensor
+        if (batteryVoltage <= 1.0) {
             batteryVoltage = 12.5;
         }
 
         double finalPower = targetVoltage / batteryVoltage;
 
-        // CLAMP AL 100%
+        // CLAMP DE SEGURIDAD (0.0 a 1.0)
         finalPower = Math.max(0.0, Math.min(1.0, finalPower));
 
+        // Aplicar la potencia calculada al único motor activo
         motorLeader.set(finalPower);
-        motorFollower.set(finalPower);
 
-        // Telemetría
+        // Telemetría de diagnóstico
         telemetry.addData("Shooter/Target", targetShooterRPM);
-        telemetry.addData("Shooter/Actual", currentShooterRPM); // Debería mostrar 0 si hay glitch
+        telemetry.addData("Shooter/Actual", currentShooterRPM);
         telemetry.addData("Shooter/Power", finalPower);
         telemetry.addData("Shooter/LoopCount", loopCycleCount);
     }

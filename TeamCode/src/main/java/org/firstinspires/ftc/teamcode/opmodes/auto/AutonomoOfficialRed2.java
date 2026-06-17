@@ -21,8 +21,8 @@ import org.firstinspires.ftc.teamcode.subsystems.KickerSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.ShooterHoodSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.ShooterSubsystem;
 
-@Autonomous(name = "AutonomoOfficialBlue")
-public class AutonomoOfficialBlue extends CommandOpMode {
+@Autonomous(name = "AutonomoOfficialRed")
+public class AutonomoOfficialRed2 extends CommandOpMode {
 
     // Subsistemas
     private DriveSubsystem drive;
@@ -34,7 +34,7 @@ public class AutonomoOfficialBlue extends CommandOpMode {
     @Override
     public void initialize() {
         // 1. INIT HARDWARE
-        Pose2d startPose = new Pose2d(-62.5, -36.4, Math.toRadians(180));
+        Pose2d startPose = new Pose2d(-62.5, 36.4, Math.toRadians(180)); // -52 47 127
         PoseStorage.isRedAlliance = false;
 
         drive = new DriveSubsystem(hardwareMap, startPose, telemetry);
@@ -43,50 +43,41 @@ public class AutonomoOfficialBlue extends CommandOpMode {
         kicker = new KickerSubsystem(hardwareMap);
         intake = new IntakeSubsystem(hardwareMap);
 
-        // --- CAMBIO 1: SEGURIDAD DE INIT ---
-        // Forzamos el apagado inmediato por si el hardwareMap lo inicia encendido.
-        intake.intakeOff();
-
         // --- SOLUCIÓN AL PROBLEMA DE ARRANQUE (STICTION) ---
         shooter.setTargetRPM(2900);
         sleep(100);
         shooter.stop();
+
+        // Aseguramos que esté apagado en INIT
+        intake.intakeOff();
 
         // 2. CONSTRUIR TRAYECTORIAS (RoadRunner 1.0)
         MecanumDrive rrDrive = drive.getMecanumDrive();
 
         // Path 1: Ir a disparar
         Action path1 = rrDrive.actionBuilder(startPose)
-                .splineToLinearHeading(new Pose2d(-30, -25, Math.toRadians(227)), Math.toRadians(180))
+                .splineToLinearHeading(new Pose2d(-30,25,Math.toRadians(130)),Math.toRadians(180))
                 .build();
 
-        // Path 2: Ir por Stack 1
-        Action path2 = rrDrive.actionBuilder(new Pose2d(-30, -25, Math.toRadians(227)))
-                .splineToLinearHeading(new Pose2d(-10, -20, Math.toRadians(90)), Math.toRadians(227))
-                .strafeTo(new Vector2d(-10, -70))
+        // Path 2: Simula ir a recoger
+        Action path2 = rrDrive.actionBuilder(new Pose2d(-30, 25, Math.toRadians(130)))
+                .splineToLinearHeading(new Pose2d(-10,20,Math.toRadians(270)),Math.toRadians(130))
+                .strafeTo(new Vector2d(-10, 70))
                 .build();
-
-        // Path 3: Regresar a Disparar
-        Action path3 = rrDrive.actionBuilder(new Pose2d(-10, -70, Math.toRadians(90)))
-                .strafeTo(new Vector2d(-10, -45))
-                .splineToLinearHeading(new Pose2d(-30, -25, Math.toRadians(227)), Math.toRadians(90))
+        Action path3 = rrDrive.actionBuilder(new Pose2d(-10, 70, Math.toRadians(270)))
+                .strafeTo(new Vector2d(-10, 45))
+                .splineToLinearHeading(new Pose2d(-30,25,Math.toRadians(130)),Math.toRadians(270))
                 .build();
-
-        // Path 4: Ir por Stack 2
-        Action path4 = rrDrive.actionBuilder(new Pose2d(-30, -25, Math.toRadians(227)))
-                .splineToLinearHeading(new Pose2d(10, -25, Math.toRadians(90)), Math.toRadians(227))
-                .strafeTo(new Vector2d(10, -70))
+        Action path4 = rrDrive.actionBuilder(new Pose2d(-30, 25, Math.toRadians(130)))
+                .splineToLinearHeading(new Pose2d(10,25,Math.toRadians(270)),Math.toRadians(130))
+                .strafeTo(new Vector2d(10, 70))
                 .build();
-
-        // Path 5: Regresar a Disparar Stack 2
-        Action path5 = rrDrive.actionBuilder(new Pose2d(10, -50, Math.toRadians(90)))
-                .strafeTo(new Vector2d(10, -45))
-                .splineToLinearHeading(new Pose2d(-30, -25, Math.toRadians(227)), Math.toRadians(90))
+        Action path5 = rrDrive.actionBuilder(new Pose2d(10, 70, Math.toRadians(270)))
+                .strafeTo(new Vector2d(13, 45))
+                .splineToLinearHeading(new Pose2d(-30,25,Math.toRadians(130)),Math.toRadians(270))
                 .build();
-
-        // Path 6: Park / Final
-        Action path6 = rrDrive.actionBuilder(new Pose2d(-30, -25, Math.toRadians(227)))
-                .splineToLinearHeading(new Pose2d(4, -50, Math.toRadians(270)), Math.toRadians(227))
+        Action path6 = rrDrive.actionBuilder(new Pose2d(-30, 25, Math.toRadians(130)))
+                .splineToLinearHeading(new Pose2d(4, 50, Math.toRadians(90)), Math.toRadians(130))
                 .build();
 
 
@@ -95,14 +86,13 @@ public class AutonomoOfficialBlue extends CommandOpMode {
 
                 // --- GRUPO B: SECUENCIA PRINCIPAL DE ACCIONES ---
                 new SequentialCommandGroup(
-                        // 1. Configuración Inicial
+                        // 1. Configuración Inicial (Hood y Shooter)
 
-                        // NOTA: Quité el intakeOn de aquí para que no prenda en el segundo 0.
+                        // NOTA: Quité el intakeOn de aquí.
                         // Solo prendemos shooter y hood.
                         new InstantCommand(() -> shooter.setTargetRPM(2900)),
-                        new InstantCommand(() -> intake.intakeOn()),
                         new InstantCommand(() -> hood.setPosition(LowAltitudeConstants.HoodPosition.SHORT_SHOT), hood),
-
+                        new InstantCommand(() -> intake.intakeOn()),
                         // 2. Moverse a posición de disparo
                         new ActionCommand(path1, drive),
 
@@ -111,19 +101,18 @@ public class AutonomoOfficialBlue extends CommandOpMode {
                                 LowAltitudeConstants.TargetRPM.SHORT_SHOT_RPM,
                                 LowAltitudeConstants.HoodPosition.SHORT_SHOT),
 
-                        // --- CAMBIO 2: LÓGICA DE JUEGO ---
-                        // Encendemos el Intake AHORA, justo antes de ir a buscar el stack.
-                        // Esto evita ruido eléctrico durante los primeros disparos.
+                        // --- AQUÍ PRENDEMOS EL INTAKE ---
+                        // Justo antes de ir a buscar (Path 2)
                         new InstantCommand(intake::intakeOn, intake),
 
-                        // 4. Ir por Stack 1 (Con intake prendido)
+                        // 4. Ir por Stack 1
                         new ActionCommand(path2, drive),
 
                         // 5. "Kick Poquito" (Acomodar pelotas en intake)
                         new InstantCommand(kicker::kick, kicker),
                         new WaitCommand(386),
                         new InstantCommand(kicker::stop, kicker),
-                        new WaitCommand(300),
+                        new WaitCommand(300), // Esperar que bajen
 
                         // 6. Regresar a disparar
                         new ActionCommand(path3, drive),
@@ -139,6 +128,7 @@ public class AutonomoOfficialBlue extends CommandOpMode {
                         // 9. Acomodar pelotas Stack 2
                         new InstantCommand(kicker::kick, kicker),
                         new WaitCommand(386),
+                        new InstantCommand(kicker::stop, kicker),
                         new InstantCommand(kicker::stop, kicker),
                         new WaitCommand(300),
 
@@ -167,7 +157,7 @@ public class AutonomoOfficialBlue extends CommandOpMode {
                 )
         ));
 
-        telemetry.addLine("✅ AUTO INICIALIZADO - INTAKE OFF");
+        telemetry.addLine("✅ AUTO INICIALIZADO - LISTO PARA START");
         telemetry.update();
     }
 

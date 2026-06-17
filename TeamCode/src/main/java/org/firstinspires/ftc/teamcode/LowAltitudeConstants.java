@@ -22,7 +22,7 @@ public class LowAltitudeConstants {
     // Ajusta esto según tu motor exacto (Ej. GoBilda 5203 1:1)
         public static double MOTOR_TICKS_PER_REV = 28.0;
         public static double MOTOR_MAX_RPM = 6000.0;
-        public static double SHOOTER_TOLERANCE_RPM = 50.0; // Rango aceptable para disparar
+        public static double SHOOTER_TOLERANCE_RPM = 90.0; // Rango aceptable para disparar
 
         // --- SHOOTER CONTROL (FEEDFORWARD) ---
         // kS: Voltaje estático (fricción mínima para empezar a mover).
@@ -63,7 +63,8 @@ public class LowAltitudeConstants {
 
     public enum HoodPosition {
         WALL_SHOT(202.0),    // Tiro cercano + 2450 RPM Target + 17 inches 202
-        SHORT_SHOT(170.0), // Tiro en medio medio de la cancha + 2550 RPM Target + 36 inches 127
+
+        SHORT_SHOT(155.0), // Tiro en medio medio de la cancha + 2550 RPM Target + 36 inches 127
         MID_FIELD(127.0),    // Tiro media cancha + 3000 RPM Target 127
         LONG_SHOT(62.0),    // Tiro full court + 3425 RPM Target 62
         HOME_POS( 0.0);
@@ -79,4 +80,18 @@ public class LowAltitudeConstants {
     public static final double KICKER_OUT_SPEED = 0.7;
     public static final double KICKER_REVERSE_SPEED = -0.7;
 
+    //Torreta
+    public static class TurretConstants {
+        // 1. Baja el KP: Si estaba en 0.04, intenta con 0.015 o 0.02.
+        // Queremos que se mueva más suave.
+        public static double TURRET_KP = 0.012;
+
+        // 2. Baja la potencia máxima: Así, aunque el error sea mucho,
+        // la torreta no saldrá disparada a máxima velocidad.
+        public static double TURRET_MAX_POWER = 0.5;
+
+        // 3. Aumenta la tolerancia: Un margen de 2 o 3 grados ayuda a que
+        // no intente corregir movimientos milimétricos que causan vibración.
+        public static double TURRET_ERROR_TOLERANCE = 2.5;
+    }
 }

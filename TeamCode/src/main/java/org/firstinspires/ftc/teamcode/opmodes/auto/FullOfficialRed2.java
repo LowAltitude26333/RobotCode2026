@@ -13,18 +13,16 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import org.firstinspires.ftc.teamcode.LowAltitudeConstants;
 import org.firstinspires.ftc.teamcode.MecanumDrive;
 import org.firstinspires.ftc.teamcode.commands.ActionCommand;
-import org.firstinspires.ftc.teamcode.commands.ColorDetectCommand;
-import org.firstinspires.ftc.teamcode.commands.ShooterPIDCommand;
+import org.firstinspires.ftc.teamcode.commands.PoseStorage;
 import org.firstinspires.ftc.teamcode.commands.auto.ShootBurstCommand;
-import org.firstinspires.ftc.teamcode.subsystems.ColorSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.DriveSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.IntakeSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.KickerSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.ShooterHoodSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.ShooterSubsystem;
 
-@Autonomous(name = "nada 1")
-public class FullOficialBlue extends CommandOpMode {
+@Autonomous(name = "FullOfficialRed")
+public class FullOfficialRed2 extends CommandOpMode {
 
     // Subsistemas
     private DriveSubsystem drive;
@@ -36,10 +34,9 @@ public class FullOficialBlue extends CommandOpMode {
     @Override
     public void initialize() {
         // 1. INIT HARDWARE
-        // Empezamos en 0,0,0 para prueba segura
-        Pose2d startPose = new Pose2d(61, -10, Math.toRadians(180));
-
-
+        // Empezamos en la posición inicial (Blue Alliance)
+        Pose2d startPose = new Pose2d(61, 10, Math.toRadians(180));
+        PoseStorage.isRedAlliance = false;
 
         drive = new DriveSubsystem(hardwareMap, startPose, telemetry);
         shooter = new ShooterSubsystem(hardwareMap, telemetry);
@@ -47,57 +44,62 @@ public class FullOficialBlue extends CommandOpMode {
         kicker = new KickerSubsystem(hardwareMap);
         intake = new IntakeSubsystem(hardwareMap);
 
+        // --- CAMBIO 1: SEGURIDAD DE INIT ---
+        // Forzamos el apagado inmediato por si el hardwareMap lo inicia encendido.
+        intake.intakeOff();
+
         // --- SOLUCIÓN AL PROBLEMA DE ARRANQUE (STICTION) ---
         shooter.setTargetRPM(2900);
         sleep(100);
         shooter.stop();
 
-        // Aseguramos que esté apagado en INIT
-        intake.intakeOff();
-
-        // 2. CONSTRUIR TRAYECTORIAS "DUMMY" (RoadRunner 1.0)
+        // 2. CONSTRUIR TRAYECTORIAS (RoadRunner 1.0)
         MecanumDrive rrDrive = drive.getMecanumDrive();
+
         Action path1 = rrDrive.actionBuilder(startPose)
-                .splineToLinearHeading(new Pose2d(48,-13,Math.toRadians(205)),Math.toRadians(180))
+                .splineToLinearHeading(new Pose2d(55,13,Math.toRadians(160)),Math.toRadians(180))
                 .build();
 
         // Path 2: Simula ir a recoger (Se queda en 0,0)
-        Action path2 = rrDrive.actionBuilder(new Pose2d(48, -13, Math.toRadians(205)))
-                .splineToLinearHeading(new Pose2d(36,-28,Math.toRadians(90)),Math.toRadians(205))
-                .strafeTo(new Vector2d(36, -60))
+        Action path2 = rrDrive.actionBuilder(new Pose2d(55, 13, Math.toRadians(160)))
+                .splineToLinearHeading(new Pose2d(36,28,Math.toRadians(270)),Math.toRadians(160))
+                .strafeTo(new Vector2d(36, 60))
                 .build();
-        Action path3 = rrDrive.actionBuilder(new Pose2d(36, -60, Math.toRadians(90)))
-                .strafeTo(new Vector2d(36, -50))
-                .splineToLinearHeading(new Pose2d(48,-13,Math.toRadians(205)),Math.toRadians(90))
+        Action path3 = rrDrive.actionBuilder(new Pose2d(36, 60, Math.toRadians(270)))
+                .strafeTo(new Vector2d(36, 50))
+                .splineToLinearHeading(new Pose2d(55,13,Math.toRadians(160)),Math.toRadians(270))
                 .build();
-        Action path4 = rrDrive.actionBuilder(new Pose2d(48, -13, Math.toRadians(205)))
-                .splineToLinearHeading(new Pose2d(12,-28,Math.toRadians(90)),Math.toRadians(205))
-                .strafeTo(new Vector2d(12, -60))
+        Action path4 = rrDrive.actionBuilder(new Pose2d(55, 13, Math.toRadians(160)))
+                .splineToLinearHeading(new Pose2d(12,28,Math.toRadians(270)),Math.toRadians(160))
+                .strafeTo(new Vector2d(12, 60))
                 .build();
-        Action path5 = rrDrive.actionBuilder(new Pose2d(12, -60, Math.toRadians(90)))
-                .strafeTo(new Vector2d(12, -50))
-                .splineToLinearHeading(new Pose2d(48,-13,Math.toRadians(205)),Math.toRadians(90))
+        Action path5 = rrDrive.actionBuilder(new Pose2d(12, 60, Math.toRadians(270)))
+                .strafeTo(new Vector2d(12, 50))
+                .splineToLinearHeading(new Pose2d(55,13,Math.toRadians(160)),Math.toRadians(270))
+                .build();
+
+        Action path6 = rrDrive.actionBuilder(new Pose2d(55, 13, Math.toRadians(160)))
+                .turn(90)
 
                 .build();
-
 
 
         // 3. SECUENCIA MAESTRA
         schedule(new ParallelCommandGroup(
 
-                // --- GRUPO A: TAREAS DE FONDO (Corren todo el tiempo) ---
-                // El Shooter mantendrá al target de RPM desde el inicio
-                new ShooterPIDCommand(shooter, 2550),
-                // El Intake estará prendido siempre
-                new InstantCommand(intake::intakeOn, intake),
+                // --- GRUPO A: TAREAS DE FONDO (Sin requerimientos conflictivos) ---
 
-                //Color detect
-                //new ColorDetectCommand(colorSensor),
+                // Shooter prendido desde el inicio (Spin-Up Temprano)
+                // ¡IMPORTANTE! Aquí quitamos ", shooter" para que no bloquee al subsistema.
+                // Esto permite que ShootBurstCommand (que sí requiere shooter) corra en paralelo después.
 
-                // --- GRUPO B: SECUENCIA DE "MOVIMIENTOS" ---
+
+                // --- GRUPO B: SECUENCIA PRINCIPAL DE ACCIONES ---
                 new SequentialCommandGroup(
                         // 1. Configuración Inicial (Hood)
                         new InstantCommand(() -> hood.setPosition(LowAltitudeConstants.HoodPosition.SHORT_SHOT), hood),
+                        new InstantCommand(() -> shooter.setTargetRPM(2900)),
+                        new InstantCommand(() -> intake.intakeOn()),
 
                         // 2. Ejecutar Path 1 (Simulación de viaje)
                         new ActionCommand(path1, drive),
@@ -122,7 +124,8 @@ public class FullOficialBlue extends CommandOpMode {
                         // 6. Ejecutar Path 3 (Simulación regresar)
                         new ActionCommand(path3, drive),
 
-                        // 7. Disparar las pelotas recogidas
+                        // 7. Disparar las pelot
+                        // as recogidas
 
                         new ShootBurstCommand(shooter,hood, kicker, 3,
                                 LowAltitudeConstants.TargetRPM.LONG_SHOT_RPM, LowAltitudeConstants.HoodPosition.LONG_SHOT),
@@ -130,25 +133,39 @@ public class FullOficialBlue extends CommandOpMode {
                         new ActionCommand(path4, drive),
 
                         new InstantCommand(kicker::kick, kicker),
-                        new WaitCommand(485), // Golpe cortito
+                        new WaitCommand(485),
                         new InstantCommand(kicker::stop, kicker),
 
                         new WaitCommand(500),
 
                         new ActionCommand(path5, drive),
 
+
                         new ShootBurstCommand(shooter,hood, kicker, 3,
                                 LowAltitudeConstants.TargetRPM.LONG_SHOT_RPM, LowAltitudeConstants.HoodPosition.LONG_SHOT),
+
+                        new ActionCommand(path6, drive),
 
 
                         // Final: Apagar todo
                         new InstantCommand(shooter::stop),
                         new InstantCommand(intake::intakeOff)
+
                 )
         ));
 
-
-        telemetry.addLine("Auto SAFE MODE Cargado. El robot NO se moverá de (0,0).");
+        telemetry.addLine("✅ AUTO INICIALIZADO - LISTO PARA START");
         telemetry.update();
+    }
+
+    @Override
+    public void run(){
+        // Ejecutar el Scheduler (mantiene vivos los comandos)
+        super.run();
+
+        // Guardar la pose actual continuamente por seguridad
+        if (drive != null && drive.getMecanumDrive() != null) {
+            PoseStorage.currentPose = drive.getMecanumDrive().pose;
+        }
     }
 }

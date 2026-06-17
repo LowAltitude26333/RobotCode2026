@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.opmodes.auto;
+/*package org.firstinspires.ftc.teamcode.opmodes.auto;
 
 import com.acmerobotics.roadrunner.Action;
 import com.acmerobotics.roadrunner.Pose2d;
@@ -24,7 +24,7 @@ import org.firstinspires.ftc.teamcode.subsystems.KickerSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.ShooterHoodSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.ShooterSubsystem;
 
-@Autonomous(name = "AutonomoOfficialRed 1")
+@Autonomous(name = "nada 1")
 public class AutonomoOfficialRed extends CommandOpMode {
 
     // Subsistemas
@@ -48,6 +48,8 @@ public class AutonomoOfficialRed extends CommandOpMode {
         kicker = new KickerSubsystem(hardwareMap);
         intake = new IntakeSubsystem(hardwareMap);
         // colorSensor = new ColorSubsystem(hardwareMap, telemetry);
+
+        intake.intakeOff();
 
         // 2. CONSTRUIR TRAYECTORIAS "DUMMY" (RoadRunner 1.0)
         MecanumDrive rrDrive = drive.getMecanumDrive();
@@ -83,17 +85,18 @@ public class AutonomoOfficialRed extends CommandOpMode {
         // 3. SECUENCIA MAESTRA
         schedule(new ParallelCommandGroup(
 
-                // --- GRUPO A: TAREAS DE FONDO (Corren todo el tiempo) ---
-                // El Shooter mantendrá al target de RPM desde el inicio
-                new ShooterPIDCommand(shooter, 2550),
-                // El Intake estará prendido siempre
-                new InstantCommand(intake::intakeOn, intake),
+
 
                 //Color detect
                 //new ColorDetectCommand(colorSensor),
 
                 // --- GRUPO B: SECUENCIA DE "MOVIMIENTOS" ---
                 new SequentialCommandGroup(
+                        // --- GRUPO A: TAREAS DE FONDO (Corren todo el tiempo) ---
+                        // El Shooter mantendrá al target de RPM desde el inicio
+                        new ShooterPIDCommand(shooter, 2550),
+                        // El Intake estará prendido siempre
+                        new InstantCommand(intake::intakeOn, intake),
                         // 1. Configuración Inicial (Hood)
                         new InstantCommand(() -> hood.setPosition(LowAltitudeConstants.HoodPosition.SHORT_SHOT), hood),
 
@@ -148,3 +151,5 @@ public class AutonomoOfficialRed extends CommandOpMode {
         telemetry.update();
     }
 }
+
+ */

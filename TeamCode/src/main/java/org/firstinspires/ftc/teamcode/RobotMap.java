@@ -15,11 +15,11 @@ public class RobotMap {
     public static final boolean BACK_RIGHT_MOTOR_IS_INVERTED = false;
 
     //Shooter
-    public static final String SHOOTER_MOTOR_1 = "shooterMotorDown" ;
-    public static final String SHOOTER_MOTOR_2 = "shooterMotorUp";
+    public static final String SHOOTER_MOTOR_1 = "Shooter" ;
+
+    public static final String SHOOTER_MOTOR_2 = "Shooter2" ;
 
     public static final boolean SHOOTER_UP_MOTOR_IS_INVERTED = true;
-    public static final boolean SHOOTER_DOWN_MOTOR_IS_INVERTED = true;
 
     public static final String INTAKE_MOTOR = "intakeMotor";
     public static final boolean INTAKE_MOTOR_IS_INVERTED = true;
@@ -30,7 +30,10 @@ public class RobotMap {
     public static final boolean HOOD_RIGHT_INVERTED = false;
 
 
-    public static final String KICKER_MOTOR = "kickerMotor";
+    public static final String KICKER_MOTOR = "kickerM otor";
     public static final boolean KICKER_IS_INVERTED = false;
 
+    //Torreta
+    public static final String TORRETA_MOTOR = "torretaMotor";
+    public static final boolean TORRETA_IS_INVERTED = true;
 }

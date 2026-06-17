@@ -21,7 +21,7 @@ import org.firstinspires.ftc.teamcode.subsystems.KickerSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.ShooterHoodSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.ShooterSubsystem;
 
-@Autonomous(name = "FullOficialRed1")
+@Autonomous(name = "nada1")
 public class FullOficialRed extends CommandOpMode {
 
     // Subsistemas
@@ -49,28 +49,28 @@ public class FullOficialRed extends CommandOpMode {
         // 2. CONSTRUIR TRAYECTORIAS "DUMMY" (RoadRunner 1.0)
         MecanumDrive rrDrive = drive.getMecanumDrive();
         Action path1 = rrDrive.actionBuilder(startPose)
-                .splineToLinearHeading(new Pose2d(55,13,Math.toRadians(160)),Math.toRadians(180))
+                .splineToLinearHeading(new Pose2d(52,13,Math.toRadians(160)),Math.toRadians(180))
                 .build();
 
         // Path 2: Simula ir a recoger (Se queda en 0,0)
-        Action path2 = rrDrive.actionBuilder(new Pose2d(55, 13, Math.toRadians(160)))
+        Action path2 = rrDrive.actionBuilder(new Pose2d(52, 13, Math.toRadians(160)))
                 .splineToLinearHeading(new Pose2d(36,28,Math.toRadians(270)),Math.toRadians(160))
                 .strafeTo(new Vector2d(36, 60))
                 .build();
         Action path3 = rrDrive.actionBuilder(new Pose2d(36, 60, Math.toRadians(270)))
                 .strafeTo(new Vector2d(36, 50))
-                .splineToLinearHeading(new Pose2d(55,13,Math.toRadians(160)),Math.toRadians(270))
+                .splineToLinearHeading(new Pose2d(52,13,Math.toRadians(160)),Math.toRadians(270))
                 .build();
-        Action path4 = rrDrive.actionBuilder(new Pose2d(55, 13, Math.toRadians(160)))
+        Action path4 = rrDrive.actionBuilder(new Pose2d(52, 13, Math.toRadians(160)))
                 .splineToLinearHeading(new Pose2d(12,28,Math.toRadians(270)),Math.toRadians(160))
                 .strafeTo(new Vector2d(12, 60))
                 .build();
         Action path5 = rrDrive.actionBuilder(new Pose2d(12, 60, Math.toRadians(270)))
                 .strafeTo(new Vector2d(12, 50))
-                .splineToLinearHeading(new Pose2d(55,13,Math.toRadians(160)),Math.toRadians(270))
+                .splineToLinearHeading(new Pose2d(52,13,Math.toRadians(160)),Math.toRadians(270))
                 .build();
 
-        Action path6 = rrDrive.actionBuilder(new Pose2d(55, 13, Math.toRadians(160)))
+        Action path6 = rrDrive.actionBuilder(new Pose2d(52, 13, Math.toRadians(160)))
                 .turn(90)
 
                 .build();
