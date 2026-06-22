@@ -3,20 +3,20 @@ package org.firstinspires.ftc.teamcode.opmodes.teleop;
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.acmerobotics.roadrunner.Pose2d;
-import com.arcrobotics.ftclib.command.CommandOpMode;
-import com.arcrobotics.ftclib.command.RunCommand;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.teamcode.RobotContainer;
 import org.firstinspires.ftc.teamcode.commands.PoseStorage;
 import org.firstinspires.ftc.teamcode.commands.TurretFollowTagCommand;
 import org.firstinspires.ftc.teamcode.oi.SkywalkerProfile;
+import org.firstinspires.ftc.teamcode.opmodes.SafeCommandOpMode;
 import org.firstinspires.ftc.teamcode.subsystems.TurretSubsystem;
+import org.firstinspires.ftc.teamcode.vision.DecodeGoalTags;
 import org.firstinspires.ftc.vision.VisionPortal;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 
 @TeleOp(name = "Skywalker TeleOp (Manual Principal)", group = "Competition")
-public class MainTeleOp extends CommandOpMode {
+public class MainTeleOp extends SafeCommandOpMode {
 
     private RobotContainer robotContainer;
 
@@ -24,6 +24,7 @@ public class MainTeleOp extends CommandOpMode {
     private TurretSubsystem turretSubsystem;
     private AprilTagProcessor aprilTag;
     private VisionPortal visionPortal;
+    private boolean emergencyStopLatched;
 
     @Override
     public void initialize() {
@@ -38,11 +39,16 @@ public class MainTeleOp extends CommandOpMode {
 
         // 4. Inicializar Hardware de la Torreta y su Procesador AprilTag
         turretSubsystem = new TurretSubsystem(hardwareMap);
+        if (gamepad2.start && gamepad2.back) {
+            turretSubsystem.confirmCenteredAndResetEncoder();
+        }
 
         aprilTag = new AprilTagProcessor.Builder()
+                .setTagLibrary(DecodeGoalTags.createLibrary())
                 .setDrawAxes(true)
                 .setDrawTagOutline(true)
                 .build();
+        addResourceCleanup(visionPortal::close);
 
         visionPortal = new VisionPortal.Builder()
                 .setCamera(hardwareMap.get(WebcamName.class, "Webcam 1"))
@@ -52,28 +58,10 @@ public class MainTeleOp extends CommandOpMode {
 
         // 5. Crear el Contenedor Central de Hardware
         robotContainer = new RobotContainer(this, activeProfile, startPose);
-// =====================================================================
-        // 🔥 CONTROL DIRECTO POR JOYSTICK CORREGIDO (Ejes alineados) 🔥
-        // =====================================================================
-        robotContainer.driveSubsystem.setDefaultCommand(
-                new RunCommand(() -> {
-                    // Intercambiamos los ejes para que adelante/atrás sea avance y lados sea strafe
-                    double y = -gamepad1.left_stick_x; // Antes era left_stick_y
-                    double x = gamepad1.left_stick_y; // Antes era left_stick_x
-
-                    // Giro (Joystick derecho)
-                    double rx = gamepad1.right_stick_x;
-
-                    // Mandamos las señales corregidas al chasis Mecanum
-                    robotContainer.driveSubsystem.drive(y, x, rx);
-
-                }, robotContainer.driveSubsystem)
-        );
-        // =====================================================================
-
         // 6. Asignar comando por defecto a la torreta
         turretSubsystem.setDefaultCommand(
-                new TurretFollowTagCommand(turretSubsystem, aprilTag)
+                new TurretFollowTagCommand(
+                        turretSubsystem, aprilTag, () -> PoseStorage.isRedAlliance)
         );
 
         telemetry.addLine("🚀 SKYWALKER SYSTEMS: JOYSTICKS CORREGIDOS 🚀");
@@ -82,7 +70,14 @@ public class MainTeleOp extends CommandOpMode {
 
     @Override
     public void run() {
-        super.run();
+        if (!emergencyStopLatched && gamepad1.back) {
+            emergencyStopLatched = true;
+            latchEmergencyStop();
+        }
+
+        if (!emergencyStopLatched) {
+            super.run();
+        }
 
         // --- MONITOR DE TELEMETRÍA EN TIEMPO REAL ---
         telemetry.addLine("----------------------------------");
@@ -110,9 +105,11 @@ public class MainTeleOp extends CommandOpMode {
         telemetry.addLine("--- SISTEMA SENTINELA ---");
         telemetry.addData("Torreta Ticks", turretSubsystem.getPosition());
         telemetry.addData("Tags Visibles", aprilTag.getDetections().size());
+        telemetry.addData("Torreta Armada", turretSubsystem.isArmed());
+        telemetry.addData("PARO EMERGENCIA", emergencyStopLatched ? "ACTIVO" : "Listo");
 
         if (aprilTag.getDetections().isEmpty()) {
-            telemetry.addData("Estado Torreta", "🔍 BUSCANDO APRILTAG...");
+            telemetry.addData("Estado Torreta", "SIN TARGET - DETENIDA");
         } else {
             telemetry.addData("Estado Torreta", "🎯 TARGET TOTALMENTE FIJADO");
         }

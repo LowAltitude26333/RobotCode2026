@@ -3,14 +3,15 @@ package org.firstinspires.ftc.teamcode.opmodes.auto;
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
-import com.arcrobotics.ftclib.command.CommandOpMode;
 import com.arcrobotics.ftclib.command.InstantCommand;
 import com.arcrobotics.ftclib.command.SequentialCommandGroup;
 import com.arcrobotics.ftclib.command.WaitCommand;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 
 import org.firstinspires.ftc.teamcode.LowAltitudeConstants;
 import org.firstinspires.ftc.teamcode.commands.auto.ShootBurstCommand;
+import org.firstinspires.ftc.teamcode.opmodes.SafeCommandOpMode;
 import org.firstinspires.ftc.teamcode.subsystems.IntakeSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.KickerSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.ShooterHoodSubsystem;
@@ -18,7 +19,8 @@ import org.firstinspires.ftc.teamcode.subsystems.ShooterSubsystem;
 
 @Config
 @Autonomous(name = "TEST: Shoot Burst Command", group = "Test")
-public class TestShootBurstAuto extends CommandOpMode {
+@Disabled
+public class TestShootBurstAuto extends SafeCommandOpMode {
 
     // --- VARIABLES EDITABLES EN DASHBOARD ---
     // Modifica estos valores en http://192.168.43.1:8080/dash antes de dar Start

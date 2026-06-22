@@ -14,6 +14,11 @@ public class RobotMap {
     public static final String BACK_RIGHT_MOTOR = "rightBack";//1
     public static final boolean BACK_RIGHT_MOTOR_IS_INVERTED = false;
 
+    // Provisional names: verify against the Robot Controller configuration before tuning.
+    public static final String ODOMETRY_PARALLEL_0 = "par0";
+    public static final String ODOMETRY_PARALLEL_1 = "par1";
+    public static final String ODOMETRY_PERPENDICULAR = "perp";
+
     //Shooter
     public static final String SHOOTER_MOTOR_1 = "Shooter" ;
 

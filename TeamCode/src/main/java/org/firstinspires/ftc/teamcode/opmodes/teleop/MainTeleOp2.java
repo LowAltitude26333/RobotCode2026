@@ -3,15 +3,15 @@ package org.firstinspires.ftc.teamcode.opmodes.teleop;
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.acmerobotics.roadrunner.Pose2d;
-import com.arcrobotics.ftclib.command.CommandOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.RobotContainer;
 import org.firstinspires.ftc.teamcode.commands.PoseStorage;
 import org.firstinspires.ftc.teamcode.oi.SkywalkerProfile;
+import org.firstinspires.ftc.teamcode.opmodes.SafeCommandOpMode;
 
 @TeleOp(name = "Skywalker TeleOp 2", group = "Competition")
-public class MainTeleOp2 extends CommandOpMode {
+public class MainTeleOp2 extends SafeCommandOpMode {
 
     private RobotContainer robotContainer;
 

@@ -6,17 +6,21 @@ import com.acmerobotics.roadrunner.Vector2d;
 import com.arcrobotics.ftclib.command.SubsystemBase;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.MecanumDrive;
+import org.firstinspires.ftc.teamcode.RobotSafety;
 
 public class DriveSubsystem extends SubsystemBase {
 
     private final MecanumDrive drive;
     private final Telemetry telemetry;
+    private double headingOffsetRadians;
 
     public DriveSubsystem(HardwareMap hardwareMap, Pose2d startPose, Telemetry telemetry) {
         // Inicializa RoadRunner (esto ya configura los motores internamente)
         this.drive = new MecanumDrive(hardwareMap, startPose);
         this.telemetry = telemetry;
+        RobotSafety.registerShutdown(this::stop);
     }
 
     /**
@@ -58,12 +62,15 @@ public class DriveSubsystem extends SubsystemBase {
     }
 
     public double getHeading() {
-        // RoadRunner 1.0 usa log() o heading.toDouble() dependiendo de la versión exacta,
-        // pero generalmente drive.pose.heading.toDouble() es lo correcto.
-        return drive.pose.heading.toDouble();
+        double rawHeading = drive.lazyImu.get().getRobotYawPitchRollAngles()
+                .getYaw(AngleUnit.RADIANS);
+        return normalizeRadians(rawHeading - headingOffsetRadians);
     }
 
     public void resetHeading() {
+        headingOffsetRadians = drive.lazyImu.get().getRobotYawPitchRollAngles()
+                .getYaw(AngleUnit.RADIANS);
+
         // 1. Obtener la pose actual
         Pose2d currentPose = drive.pose;
 
@@ -75,6 +82,16 @@ public class DriveSubsystem extends SubsystemBase {
 
         // 4. Actualizar la variable local también por si acaso
         drive.pose = newPose;
+    }
+
+    private static double normalizeRadians(double angle) {
+        while (angle > Math.PI) {
+            angle -= 2 * Math.PI;
+        }
+        while (angle <= -Math.PI) {
+            angle += 2 * Math.PI;
+        }
+        return angle;
     }
 
     @Override

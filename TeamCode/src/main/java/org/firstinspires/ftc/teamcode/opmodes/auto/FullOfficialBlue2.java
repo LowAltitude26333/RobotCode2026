@@ -3,18 +3,19 @@ package org.firstinspires.ftc.teamcode.opmodes.auto;
 import com.acmerobotics.roadrunner.Action;
 import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.Vector2d;
-import com.arcrobotics.ftclib.command.CommandOpMode;
 import com.arcrobotics.ftclib.command.InstantCommand;
 import com.arcrobotics.ftclib.command.ParallelCommandGroup;
 import com.arcrobotics.ftclib.command.SequentialCommandGroup;
 import com.arcrobotics.ftclib.command.WaitCommand;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 
 import org.firstinspires.ftc.teamcode.LowAltitudeConstants;
 import org.firstinspires.ftc.teamcode.MecanumDrive;
 import org.firstinspires.ftc.teamcode.commands.ActionCommand;
 import org.firstinspires.ftc.teamcode.commands.PoseStorage;
 import org.firstinspires.ftc.teamcode.commands.auto.ShootBurstCommand;
+import org.firstinspires.ftc.teamcode.opmodes.SafeAutonomousOpMode;
 import org.firstinspires.ftc.teamcode.subsystems.DriveSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.IntakeSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.KickerSubsystem;
@@ -22,7 +23,8 @@ import org.firstinspires.ftc.teamcode.subsystems.ShooterHoodSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.ShooterSubsystem;
 
 @Autonomous(name = "FullOfficialBlue")
-public class FullOfficialBlue2 extends CommandOpMode {
+@Disabled
+public class FullOfficialBlue2 extends SafeAutonomousOpMode {
 
     // Subsistemas
     private DriveSubsystem drive;
@@ -49,9 +51,6 @@ public class FullOfficialBlue2 extends CommandOpMode {
         intake.intakeOff();
 
         // --- SOLUCIÓN AL PROBLEMA DE ARRANQUE (STICTION) ---
-        shooter.setTargetRPM(2900);
-        sleep(100);
-        shooter.stop();
 
         // 2. CONSTRUIR TRAYECTORIAS (RoadRunner 1.0)
         MecanumDrive rrDrive = drive.getMecanumDrive();
@@ -102,7 +101,9 @@ public class FullOfficialBlue2 extends CommandOpMode {
                         // (El Shooter ya debería estar listo porque se prendió al inicio)
 
                         new ShootBurstCommand(shooter,hood, kicker, 3,
-                                LowAltitudeConstants.TargetRPM.LONG_SHOT_RPM, LowAltitudeConstants.HoodPosition.LONG_SHOT),
+                                LowAltitudeConstants.TargetRPM.LONG_SHOT_RPM,
+                                LowAltitudeConstants.HoodPosition.LONG_SHOT,
+                                this::requestSafePark),
 
                         // 4. Ejecutar Path 2 (Simulación ir a recoger)
                         new ActionCommand(path2, drive),
@@ -121,7 +122,9 @@ public class FullOfficialBlue2 extends CommandOpMode {
                         // 7. Disparar las pelotas recogidas
 
                         new ShootBurstCommand(shooter,hood, kicker, 3,
-                                LowAltitudeConstants.TargetRPM.LONG_SHOT_RPM, LowAltitudeConstants.HoodPosition.LONG_SHOT),
+                                LowAltitudeConstants.TargetRPM.LONG_SHOT_RPM,
+                                LowAltitudeConstants.HoodPosition.LONG_SHOT,
+                                this::requestSafePark),
 
                         new ActionCommand(path4, drive),
 
@@ -134,7 +137,9 @@ public class FullOfficialBlue2 extends CommandOpMode {
                         new ActionCommand(path5, drive),
 
                         new ShootBurstCommand(shooter,hood, kicker, 3,
-                                LowAltitudeConstants.TargetRPM.LONG_SHOT_RPM, LowAltitudeConstants.HoodPosition.LONG_SHOT),
+                                LowAltitudeConstants.TargetRPM.LONG_SHOT_RPM,
+                                LowAltitudeConstants.HoodPosition.LONG_SHOT,
+                                this::requestSafePark),
 
 
                         // Final: Apagar todo
@@ -149,10 +154,7 @@ public class FullOfficialBlue2 extends CommandOpMode {
     }
 
     @Override
-    public void run(){
-        // Ejecutar el Scheduler (mantiene vivos los comandos)
-        super.run();
-
+    protected void afterSchedulerRun(){
         // Guardar la pose actual continuamente por seguridad
         if (drive != null && drive.getMecanumDrive() != null) {
             PoseStorage.currentPose = drive.getMecanumDrive().pose;

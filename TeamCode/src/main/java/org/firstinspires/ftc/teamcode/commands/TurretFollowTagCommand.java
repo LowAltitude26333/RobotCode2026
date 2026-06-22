@@ -1,66 +1,95 @@
 package org.firstinspires.ftc.teamcode.commands;
 
 import com.arcrobotics.ftclib.command.CommandBase;
+
 import org.firstinspires.ftc.teamcode.LowAltitudeConstants;
 import org.firstinspires.ftc.teamcode.subsystems.TurretSubsystem;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
-import java.util.List;
+
+import java.util.function.BooleanSupplier;
 
 public class TurretFollowTagCommand extends CommandBase {
-
-    // VARIABLES GLOBALES (Esto es lo que le falta a tu código para que 'end' y 'execute' lo reconozcan)
     private final TurretSubsystem turret;
     private final AprilTagProcessor aprilTag;
-    private double searchDirection = 1.0;
+    private final BooleanSupplier redAllianceSupplier;
 
-    // CONSTRUCTOR
-    public TurretFollowTagCommand(TurretSubsystem turret, AprilTagProcessor aprilTag) {
+    private double lastTrackingPower;
+    private long lastDetectionNanos;
+    private int lastDesiredId;
+
+    public TurretFollowTagCommand(TurretSubsystem turret,
+                                  AprilTagProcessor aprilTag,
+                                  BooleanSupplier redAllianceSupplier) {
         this.turret = turret;
         this.aprilTag = aprilTag;
-        addRequirements(turret); // Le dice al Scheduler que este comando usa la torreta
+        this.redAllianceSupplier = redAllianceSupplier;
+        addRequirements(turret);
+    }
+
+    @Override
+    public void initialize() {
+        lastTrackingPower = 0;
+        lastDetectionNanos = 0;
+        lastDesiredId = -1;
     }
 
     @Override
     public void execute() {
-        List<AprilTagDetection> detections = aprilTag.getDetections();
+        if (!turret.isArmed()) {
+            turret.stop();
+            return;
+        }
 
-        if (!detections.isEmpty()) {
-            // --- MODO TRACKING (Viendo AprilTag) ---
-            AprilTagDetection target = detections.get(0);
+        int desiredId = redAllianceSupplier.getAsBoolean()
+                ? LowAltitudeConstants.TurretConstants.RED_GOAL_TAG_ID
+                : LowAltitudeConstants.TurretConstants.BLUE_GOAL_TAG_ID;
 
-            // Signo negativo (-) corregido para que apunte en la dirección correcta
-            double error = -target.ftcPose.bearing;
+        if (desiredId != lastDesiredId) {
+            lastTrackingPower = 0;
+            lastDetectionNanos = 0;
+            lastDesiredId = desiredId;
+            turret.stop();
+        }
 
-            searchDirection = Math.signum(error);
+        AprilTagDetection target = null;
+        for (AprilTagDetection detection : aprilTag.getDetections()) {
+            if (detection.id == desiredId && detection.ftcPose != null) {
+                target = detection;
+                break;
+            }
+        }
 
-            if (Math.abs(error) > LowAltitudeConstants.TurretConstants.TURRET_ERROR_TOLERANCE) {
-                double power = error * LowAltitudeConstants.TurretConstants.TURRET_KP;
-                double max = LowAltitudeConstants.TurretConstants.TURRET_MAX_POWER;
+        if (target != null) {
+            double errorDegrees = -target.ftcPose.bearing;
+            double maxPower = LowAltitudeConstants.TurretConstants.TURRET_MAX_POWER;
 
-                turret.setPower(Math.max(-max, Math.min(max, power)));
-            } else {
+            if (Math.abs(errorDegrees)
+                    <= LowAltitudeConstants.TurretConstants.TURRET_ERROR_TOLERANCE) {
+                lastTrackingPower = 0;
                 turret.stop();
+            } else {
+                lastTrackingPower = Math.max(-maxPower, Math.min(maxPower,
+                        errorDegrees * LowAltitudeConstants.TurretConstants.TURRET_KP));
+                turret.setPower(lastTrackingPower);
             }
 
+            lastDetectionNanos = System.nanoTime();
+            return;
+        }
+
+        long lossNanos = System.nanoTime() - lastDetectionNanos;
+        if (lastDetectionNanos != 0
+                && lossNanos <= LowAltitudeConstants.TurretConstants.TAG_LOSS_HOLD_MS * 1_000_000L) {
+            turret.setPower(lastTrackingPower);
         } else {
-            // --- MODO BÚSQUEDA CON REBOTE (No hay AprilTag) ---
-            double currentPos = turret.getPosition();
-
-            if (currentPos <= TurretSubsystem.LIMIT_LEFT + 10) {
-                searchDirection = 1.0;
-            } else if (currentPos >= TurretSubsystem.LIMIT_RIGHT - 10) {
-                searchDirection = -1.0;
-            }
-
-            // Potencia de búsqueda constante y suave
-            turret.setPower(searchDirection * 0.3);
+            lastTrackingPower = 0;
+            turret.stop();
         }
     }
 
     @Override
     public void end(boolean interrupted) {
-        // Al estar declarada arriba como variable global, 'turret' ya funciona aquí sin problemas
         turret.stop();
     }
 }

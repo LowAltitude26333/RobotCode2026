@@ -8,6 +8,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.teamcode.LowAltitudeConstants;
 import org.firstinspires.ftc.teamcode.RobotMap;
+import org.firstinspires.ftc.teamcode.RobotSafety;
 
 public class KickerSubsystem extends SubsystemBase {
 
@@ -22,6 +23,7 @@ public class KickerSubsystem extends SubsystemBase {
         kickerMotor.setZeroPowerBehavior(Motor.ZeroPowerBehavior.BRAKE);
 
         kickerMotor.setInverted(RobotMap.KICKER_IS_INVERTED);
+        RobotSafety.registerShutdown(this::stop);
     }
 
     /**

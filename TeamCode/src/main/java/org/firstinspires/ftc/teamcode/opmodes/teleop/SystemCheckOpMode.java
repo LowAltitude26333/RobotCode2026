@@ -3,7 +3,6 @@ package org.firstinspires.ftc.teamcode.opmodes.teleop;
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
-import com.arcrobotics.ftclib.command.CommandOpMode;
 import com.arcrobotics.ftclib.command.InstantCommand;
 import com.arcrobotics.ftclib.command.RunCommand;
 import com.arcrobotics.ftclib.command.button.GamepadButton;
@@ -12,6 +11,7 @@ import com.arcrobotics.ftclib.gamepad.GamepadKeys;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.LowAltitudeConstants;
+import org.firstinspires.ftc.teamcode.opmodes.SafeCommandOpMode;
 import org.firstinspires.ftc.teamcode.subsystems.IntakeSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.KickerSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.ShooterHoodSubsystem;
@@ -19,7 +19,7 @@ import org.firstinspires.ftc.teamcode.subsystems.ShooterSubsystem;
 
 @Config // ¡Crucial! Permite editar variables estáticas desde Dashboard
 @TeleOp(name = "SYSTEM CHECK and TUNING", group = "Test")
-public class SystemCheckOpMode extends CommandOpMode {
+public class SystemCheckOpMode extends SafeCommandOpMode {
 
     // --- VARIABLES EDITABLES EN DASHBOARD ---
     // Edita esto en vivo en la sección "SystemCheckOpMode" del Dashboard
@@ -33,6 +33,7 @@ public class SystemCheckOpMode extends CommandOpMode {
     private IntakeSubsystem intake;
 
     private GamepadEx driverPad;
+    private boolean shooterEnabled;
 
     @Override
     public void initialize() {
@@ -53,11 +54,13 @@ public class SystemCheckOpMode extends CommandOpMode {
         new GamepadButton(driverPad, GamepadKeys.Button.A)
                 .whenPressed(new InstantCommand(() -> {
                     shooter.setTargetRPM(TEST_TARGET_RPM);
+                    shooterEnabled = true;
                 }));
 
         new GamepadButton(driverPad, GamepadKeys.Button.B)
                 .whenPressed(new InstantCommand(() -> {
                     shooter.stop();
+                    shooterEnabled = false;
                 }));
 
         // 2. INTAKE & KICKER (Para probar recuperación bajo carga)
@@ -91,11 +94,12 @@ public class SystemCheckOpMode extends CommandOpMode {
     public void run() {
         // 1. IMPORTANTE: Recargar constantes del PID/FF en cada ciclo
         // Esto permite que si cambias SHOOTER_KV en el Dashboard, el motor lo sienta DE INMEDIATO.
-        shooter.reloadControllers();
+        shooter.reloadControllersIfConstantsChanged();
 
         // 2. Actualizar target en vivo si el motor ya está andando
         // Si ya le diste a la 'A' y cambias el número en el dashboard, se actualiza solo.
-        if (shooter.getActualShooterRPM() > 100 || shooter.getActualShooterRPM() > 0) {
+        if (shooterEnabled
+                && Double.compare(shooter.getTargetRPM(), TEST_TARGET_RPM) != 0) {
             shooter.setTargetRPM(TEST_TARGET_RPM);
         }
 
@@ -106,6 +110,7 @@ public class SystemCheckOpMode extends CommandOpMode {
         // En Dashboard, verás dos líneas. Si se superponen perfectamente, tu PID es Dios.
         telemetry.addData("Target RPM", TEST_TARGET_RPM);
         telemetry.addData("Actual RPM", shooter.getActualShooterRPM());
+        telemetry.addData("Shooter Enabled", shooterEnabled);
 
         // Datos extra para diagnóstico
         telemetry.addData("Error", TEST_TARGET_RPM - shooter.getActualShooterRPM());

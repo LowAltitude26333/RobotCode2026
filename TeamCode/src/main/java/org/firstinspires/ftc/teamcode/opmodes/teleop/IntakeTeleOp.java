@@ -1,15 +1,15 @@
 package org.firstinspires.ftc.teamcode.opmodes.teleop;
 
-import com.arcrobotics.ftclib.command.CommandOpMode;
 import com.arcrobotics.ftclib.command.InstantCommand;
 import com.arcrobotics.ftclib.gamepad.GamepadEx;
 import com.arcrobotics.ftclib.gamepad.GamepadKeys;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.subsystems.IntakeSubsystem;
+import org.firstinspires.ftc.teamcode.opmodes.SafeCommandOpMode;
 
 @TeleOp(name = "TeleOp Intake Control")
-public class IntakeTeleOp extends CommandOpMode {
+public class IntakeTeleOp extends SafeCommandOpMode {
 
     private IntakeSubsystem intake;
     private GamepadEx driverGamepad;

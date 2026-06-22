@@ -3,18 +3,18 @@ package org.firstinspires.ftc.teamcode.opmodes.teleop;
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.acmerobotics.roadrunner.Pose2d;
-import com.arcrobotics.ftclib.command.CommandOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.RobotContainer;
 import org.firstinspires.ftc.teamcode.commands.DriveToAprilTagCommand;
 import org.firstinspires.ftc.teamcode.oi.SkywalkerProfile;
+import org.firstinspires.ftc.teamcode.opmodes.SafeCommandOpMode;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 
 import java.util.List;
 
 @TeleOp(name = "Skywalker TeleOp w/ April", group = "Competition")
-public class TeleOpApril extends CommandOpMode {
+public class TeleOpApril extends SafeCommandOpMode {
 
     private RobotContainer robotContainer;
 

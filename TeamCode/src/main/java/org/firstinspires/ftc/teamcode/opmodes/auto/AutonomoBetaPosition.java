@@ -3,20 +3,20 @@ package org.firstinspires.ftc.teamcode.opmodes.auto;
 import com.acmerobotics.roadrunner.Action;
 import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.Vector2d;
-import com.arcrobotics.ftclib.command.CommandOpMode;
 import com.arcrobotics.ftclib.command.InstantCommand;
 import com.arcrobotics.ftclib.command.ParallelCommandGroup;
 import com.arcrobotics.ftclib.command.SequentialCommandGroup;
 import com.arcrobotics.ftclib.command.WaitCommand;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 
 import org.firstinspires.ftc.teamcode.LowAltitudeConstants;
 import org.firstinspires.ftc.teamcode.MecanumDrive;
 import org.firstinspires.ftc.teamcode.commands.ActionCommand;
 import org.firstinspires.ftc.teamcode.commands.ColorDetectCommand;
 import org.firstinspires.ftc.teamcode.commands.PoseStorage;
-import org.firstinspires.ftc.teamcode.commands.ShooterPIDCommand;
 import org.firstinspires.ftc.teamcode.commands.auto.ShootBurstCommand;
+import org.firstinspires.ftc.teamcode.opmodes.SafeCommandOpMode;
 import org.firstinspires.ftc.teamcode.subsystems.ColorSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.DriveSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.IntakeSubsystem;
@@ -25,7 +25,8 @@ import org.firstinspires.ftc.teamcode.subsystems.ShooterHoodSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.ShooterSubsystem;
 
 @Autonomous(name = "Beta")
-public class AutonomoBetaPosition extends CommandOpMode {
+@Disabled
+public class AutonomoBetaPosition extends SafeCommandOpMode {
 
     private DriveSubsystem drive;
     private ShooterSubsystem shooter;
@@ -71,7 +72,6 @@ public class AutonomoBetaPosition extends CommandOpMode {
                 .build();
 
         schedule(new ParallelCommandGroup(
-                new ShooterPIDCommand(shooter, 2550),
                 new InstantCommand(intake::intakeOn, intake),
 
                 new SequentialCommandGroup(

@@ -262,7 +262,7 @@ public final class MecanumDrive {
 
         //localizer = new DriveLocalizer(pose);
 
-        localizer = new TwoDeadWheelLocalizer(hardwareMap, lazyImu.get(), PARAMS.inPerTick, pose);
+        localizer = new ThreeDeadWheelLocalizer(hardwareMap, pose);
 
 
         FlightRecorder.write("MECANUM_PARAMS", PARAMS);
@@ -279,7 +279,7 @@ public final class MecanumDrive {
 
         double maxPowerMag = 1;
         for (DualNum<Time> power : wheelVels.all()) {
-            maxPowerMag = Math.max(maxPowerMag, power.value());
+            maxPowerMag = Math.max(maxPowerMag, Math.abs(power.value()));
         }
 
         leftFront.setPower(wheelVels.leftFront.get(0) / maxPowerMag);

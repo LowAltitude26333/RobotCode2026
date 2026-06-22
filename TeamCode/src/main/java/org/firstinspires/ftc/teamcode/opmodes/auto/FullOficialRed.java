@@ -3,18 +3,18 @@ package org.firstinspires.ftc.teamcode.opmodes.auto;
 import com.acmerobotics.roadrunner.Action;
 import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.Vector2d;
-import com.arcrobotics.ftclib.command.CommandOpMode;
 import com.arcrobotics.ftclib.command.InstantCommand;
 import com.arcrobotics.ftclib.command.ParallelCommandGroup;
 import com.arcrobotics.ftclib.command.SequentialCommandGroup;
 import com.arcrobotics.ftclib.command.WaitCommand;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 
 import org.firstinspires.ftc.teamcode.LowAltitudeConstants;
 import org.firstinspires.ftc.teamcode.MecanumDrive;
 import org.firstinspires.ftc.teamcode.commands.ActionCommand;
-import org.firstinspires.ftc.teamcode.commands.ShooterPIDCommand;
 import org.firstinspires.ftc.teamcode.commands.auto.ShootBurstCommand;
+import org.firstinspires.ftc.teamcode.opmodes.SafeCommandOpMode;
 import org.firstinspires.ftc.teamcode.subsystems.DriveSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.IntakeSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.KickerSubsystem;
@@ -22,7 +22,8 @@ import org.firstinspires.ftc.teamcode.subsystems.ShooterHoodSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.ShooterSubsystem;
 
 @Autonomous(name = "nada1")
-public class FullOficialRed extends CommandOpMode {
+@Disabled
+public class FullOficialRed extends SafeCommandOpMode {
 
     // Subsistemas
     private DriveSubsystem drive;
@@ -71,7 +72,7 @@ public class FullOficialRed extends CommandOpMode {
                 .build();
 
         Action path6 = rrDrive.actionBuilder(new Pose2d(52, 13, Math.toRadians(160)))
-                .turn(90)
+                .turn(Math.toRadians(90))
 
                 .build();
 
@@ -82,7 +83,6 @@ public class FullOficialRed extends CommandOpMode {
 
                 // --- GRUPO A: TAREAS DE FONDO (Corren todo el tiempo) ---
                 // El Shooter mantendrá al target de RPM desde el inicio
-                new ShooterPIDCommand(shooter, 2550),
                 // El Intake estará prendido siempre
                 new InstantCommand(intake::intakeOn, intake),
 

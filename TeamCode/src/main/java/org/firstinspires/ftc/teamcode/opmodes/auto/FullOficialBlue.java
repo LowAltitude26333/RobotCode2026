@@ -3,19 +3,19 @@ package org.firstinspires.ftc.teamcode.opmodes.auto;
 import com.acmerobotics.roadrunner.Action;
 import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.Vector2d;
-import com.arcrobotics.ftclib.command.CommandOpMode;
 import com.arcrobotics.ftclib.command.InstantCommand;
 import com.arcrobotics.ftclib.command.ParallelCommandGroup;
 import com.arcrobotics.ftclib.command.SequentialCommandGroup;
 import com.arcrobotics.ftclib.command.WaitCommand;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 
 import org.firstinspires.ftc.teamcode.LowAltitudeConstants;
 import org.firstinspires.ftc.teamcode.MecanumDrive;
 import org.firstinspires.ftc.teamcode.commands.ActionCommand;
 import org.firstinspires.ftc.teamcode.commands.ColorDetectCommand;
-import org.firstinspires.ftc.teamcode.commands.ShooterPIDCommand;
 import org.firstinspires.ftc.teamcode.commands.auto.ShootBurstCommand;
+import org.firstinspires.ftc.teamcode.opmodes.SafeCommandOpMode;
 import org.firstinspires.ftc.teamcode.subsystems.ColorSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.DriveSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.IntakeSubsystem;
@@ -24,7 +24,8 @@ import org.firstinspires.ftc.teamcode.subsystems.ShooterHoodSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.ShooterSubsystem;
 
 @Autonomous(name = "nada 1")
-public class FullOficialBlue extends CommandOpMode {
+@Disabled
+public class FullOficialBlue extends SafeCommandOpMode {
 
     // Subsistemas
     private DriveSubsystem drive;
@@ -48,9 +49,6 @@ public class FullOficialBlue extends CommandOpMode {
         intake = new IntakeSubsystem(hardwareMap);
 
         // --- SOLUCIÓN AL PROBLEMA DE ARRANQUE (STICTION) ---
-        shooter.setTargetRPM(2900);
-        sleep(100);
-        shooter.stop();
 
         // Aseguramos que esté apagado en INIT
         intake.intakeOff();
@@ -87,7 +85,6 @@ public class FullOficialBlue extends CommandOpMode {
 
                 // --- GRUPO A: TAREAS DE FONDO (Corren todo el tiempo) ---
                 // El Shooter mantendrá al target de RPM desde el inicio
-                new ShooterPIDCommand(shooter, 2550),
                 // El Intake estará prendido siempre
                 new InstantCommand(intake::intakeOn, intake),
 

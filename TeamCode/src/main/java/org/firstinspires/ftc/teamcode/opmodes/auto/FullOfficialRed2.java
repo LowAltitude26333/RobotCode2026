@@ -3,18 +3,19 @@ package org.firstinspires.ftc.teamcode.opmodes.auto;
 import com.acmerobotics.roadrunner.Action;
 import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.Vector2d;
-import com.arcrobotics.ftclib.command.CommandOpMode;
 import com.arcrobotics.ftclib.command.InstantCommand;
 import com.arcrobotics.ftclib.command.ParallelCommandGroup;
 import com.arcrobotics.ftclib.command.SequentialCommandGroup;
 import com.arcrobotics.ftclib.command.WaitCommand;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 
 import org.firstinspires.ftc.teamcode.LowAltitudeConstants;
 import org.firstinspires.ftc.teamcode.MecanumDrive;
 import org.firstinspires.ftc.teamcode.commands.ActionCommand;
 import org.firstinspires.ftc.teamcode.commands.PoseStorage;
 import org.firstinspires.ftc.teamcode.commands.auto.ShootBurstCommand;
+import org.firstinspires.ftc.teamcode.opmodes.SafeAutonomousOpMode;
 import org.firstinspires.ftc.teamcode.subsystems.DriveSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.IntakeSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.KickerSubsystem;
@@ -22,7 +23,8 @@ import org.firstinspires.ftc.teamcode.subsystems.ShooterHoodSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.ShooterSubsystem;
 
 @Autonomous(name = "FullOfficialRed")
-public class FullOfficialRed2 extends CommandOpMode {
+@Disabled
+public class FullOfficialRed2 extends SafeAutonomousOpMode {
 
     // Subsistemas
     private DriveSubsystem drive;
@@ -36,7 +38,7 @@ public class FullOfficialRed2 extends CommandOpMode {
         // 1. INIT HARDWARE
         // Empezamos en la posición inicial (Blue Alliance)
         Pose2d startPose = new Pose2d(61, 10, Math.toRadians(180));
-        PoseStorage.isRedAlliance = false;
+        PoseStorage.isRedAlliance = true;
 
         drive = new DriveSubsystem(hardwareMap, startPose, telemetry);
         shooter = new ShooterSubsystem(hardwareMap, telemetry);
@@ -49,9 +51,6 @@ public class FullOfficialRed2 extends CommandOpMode {
         intake.intakeOff();
 
         // --- SOLUCIÓN AL PROBLEMA DE ARRANQUE (STICTION) ---
-        shooter.setTargetRPM(2900);
-        sleep(100);
-        shooter.stop();
 
         // 2. CONSTRUIR TRAYECTORIAS (RoadRunner 1.0)
         MecanumDrive rrDrive = drive.getMecanumDrive();
@@ -79,7 +78,7 @@ public class FullOfficialRed2 extends CommandOpMode {
                 .build();
 
         Action path6 = rrDrive.actionBuilder(new Pose2d(55, 13, Math.toRadians(160)))
-                .turn(90)
+                .turn(Math.toRadians(90))
 
                 .build();
 
@@ -108,7 +107,9 @@ public class FullOfficialRed2 extends CommandOpMode {
                         // (El Shooter ya debería estar listo porque se prendió al inicio)
 
                         new ShootBurstCommand(shooter,hood, kicker, 3,
-                                LowAltitudeConstants.TargetRPM.LONG_SHOT_RPM, LowAltitudeConstants.HoodPosition.LONG_SHOT),
+                                LowAltitudeConstants.TargetRPM.LONG_SHOT_RPM,
+                                LowAltitudeConstants.HoodPosition.LONG_SHOT,
+                                this::requestSafePark),
 
                         // 4. Ejecutar Path 2 (Simulación ir a recoger)
                         new ActionCommand(path2, drive),
@@ -128,7 +129,9 @@ public class FullOfficialRed2 extends CommandOpMode {
                         // as recogidas
 
                         new ShootBurstCommand(shooter,hood, kicker, 3,
-                                LowAltitudeConstants.TargetRPM.LONG_SHOT_RPM, LowAltitudeConstants.HoodPosition.LONG_SHOT),
+                                LowAltitudeConstants.TargetRPM.LONG_SHOT_RPM,
+                                LowAltitudeConstants.HoodPosition.LONG_SHOT,
+                                this::requestSafePark),
 
                         new ActionCommand(path4, drive),
 
@@ -142,7 +145,9 @@ public class FullOfficialRed2 extends CommandOpMode {
 
 
                         new ShootBurstCommand(shooter,hood, kicker, 3,
-                                LowAltitudeConstants.TargetRPM.LONG_SHOT_RPM, LowAltitudeConstants.HoodPosition.LONG_SHOT),
+                                LowAltitudeConstants.TargetRPM.LONG_SHOT_RPM,
+                                LowAltitudeConstants.HoodPosition.LONG_SHOT,
+                                this::requestSafePark),
 
                         new ActionCommand(path6, drive),
 
@@ -159,10 +164,7 @@ public class FullOfficialRed2 extends CommandOpMode {
     }
 
     @Override
-    public void run(){
-        // Ejecutar el Scheduler (mantiene vivos los comandos)
-        super.run();
-
+    protected void afterSchedulerRun(){
         // Guardar la pose actual continuamente por seguridad
         if (drive != null && drive.getMecanumDrive() != null) {
             PoseStorage.currentPose = drive.getMecanumDrive().pose;

@@ -6,19 +6,23 @@ import com.acmerobotics.roadrunner.Action;
 import com.arcrobotics.ftclib.command.CommandBase;
 import com.arcrobotics.ftclib.command.Subsystem;
 
+import org.firstinspires.ftc.teamcode.subsystems.DriveSubsystem;
+
 public class ActionCommand extends CommandBase {
     private final Action action;
+    private final Runnable cleanup;
     private boolean finished = false;
 
-    // Constructor para acciones genéricas (sin requisitos de subsistema)
-    public ActionCommand(Action action) {
+    /** Road Runner drive action with deterministic motor cleanup. */
+    public ActionCommand(Action action, DriveSubsystem drive) {
         this.action = action;
+        this.cleanup = drive::stop;
+        addRequirements(drive);
     }
 
-    // Constructor "PowerHouse": Permite pasar los subsistemas que esta acción usa.
-    // EJEMPLO: Para trayectorias, pasas el DriveSubsystem para bloquearlo.
-    public ActionCommand(Action action, Subsystem... requirements) {
+    public ActionCommand(Action action, Runnable cleanup, Subsystem... requirements) {
         this.action = action;
+        this.cleanup = java.util.Objects.requireNonNull(cleanup);
         addRequirements(requirements);
     }
 
@@ -46,5 +50,10 @@ public class ActionCommand extends CommandBase {
     @Override
     public boolean isFinished() {
         return finished;
+    }
+
+    @Override
+    public void end(boolean interrupted) {
+        cleanup.run();
     }
 }

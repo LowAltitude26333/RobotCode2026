@@ -49,6 +49,9 @@ public class LowAltitudeConstants {
     // (Polea Grande en Motor -> Polea Pequeña en Shooter)
     public static double SHOOTER_GEAR_RATIO = 2.0;
 
+    public static long SHOOTER_READY_TIMEOUT_MS = 2000;
+    public static int SHOOTER_READY_MAX_ATTEMPTS = 3;
+
     // --- SHOOTER HOOD ---
     // Estos son los ángulos físicos que permitimos por software
     public static final double HOOD_MIN_LIMIT = 5.0;
@@ -79,6 +82,8 @@ public class LowAltitudeConstants {
     // --- KICKER CONSTANTS ---
     public static final double KICKER_OUT_SPEED = 0.7;
     public static final double KICKER_REVERSE_SPEED = -0.7;
+    public static long KICKER_EXTEND_TIME_MS = 632;
+    public static long KICKER_RETRACT_DELAY_MS = 60;
 
     //Torreta
     public static class TurretConstants {
@@ -93,5 +98,8 @@ public class LowAltitudeConstants {
         // 3. Aumenta la tolerancia: Un margen de 2 o 3 grados ayuda a que
         // no intente corregir movimientos milimétricos que causan vibración.
         public static double TURRET_ERROR_TOLERANCE = 2.5;
+        public static long TAG_LOSS_HOLD_MS = 250;
+        public static int BLUE_GOAL_TAG_ID = 20;
+        public static int RED_GOAL_TAG_ID = 24;
     }
 }

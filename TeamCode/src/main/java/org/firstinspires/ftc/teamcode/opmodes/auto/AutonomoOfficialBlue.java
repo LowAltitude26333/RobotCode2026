@@ -3,18 +3,19 @@ package org.firstinspires.ftc.teamcode.opmodes.auto;
 import com.acmerobotics.roadrunner.Action;
 import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.Vector2d;
-import com.arcrobotics.ftclib.command.CommandOpMode;
 import com.arcrobotics.ftclib.command.InstantCommand;
 import com.arcrobotics.ftclib.command.ParallelCommandGroup;
 import com.arcrobotics.ftclib.command.SequentialCommandGroup;
 import com.arcrobotics.ftclib.command.WaitCommand;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 
 import org.firstinspires.ftc.teamcode.LowAltitudeConstants;
 import org.firstinspires.ftc.teamcode.MecanumDrive;
 import org.firstinspires.ftc.teamcode.commands.ActionCommand;
 import org.firstinspires.ftc.teamcode.commands.PoseStorage;
 import org.firstinspires.ftc.teamcode.commands.auto.ShootBurstCommand;
+import org.firstinspires.ftc.teamcode.opmodes.SafeAutonomousOpMode;
 import org.firstinspires.ftc.teamcode.subsystems.DriveSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.IntakeSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.KickerSubsystem;
@@ -22,7 +23,8 @@ import org.firstinspires.ftc.teamcode.subsystems.ShooterHoodSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.ShooterSubsystem;
 
 @Autonomous(name = "AutonomoOfficialBlue")
-public class AutonomoOfficialBlue extends CommandOpMode {
+@Disabled
+public class AutonomoOfficialBlue extends SafeAutonomousOpMode {
 
     // Subsistemas
     private DriveSubsystem drive;
@@ -46,11 +48,6 @@ public class AutonomoOfficialBlue extends CommandOpMode {
         // --- CAMBIO 1: SEGURIDAD DE INIT ---
         // Forzamos el apagado inmediato por si el hardwareMap lo inicia encendido.
         intake.intakeOff();
-
-        // --- SOLUCIÓN AL PROBLEMA DE ARRANQUE (STICTION) ---
-        shooter.setTargetRPM(2900);
-        sleep(100);
-        shooter.stop();
 
         // 2. CONSTRUIR TRAYECTORIAS (RoadRunner 1.0)
         MecanumDrive rrDrive = drive.getMecanumDrive();
@@ -79,7 +76,7 @@ public class AutonomoOfficialBlue extends CommandOpMode {
                 .build();
 
         // Path 5: Regresar a Disparar Stack 2
-        Action path5 = rrDrive.actionBuilder(new Pose2d(10, -50, Math.toRadians(90)))
+        Action path5 = rrDrive.actionBuilder(new Pose2d(10, -70, Math.toRadians(90)))
                 .strafeTo(new Vector2d(10, -45))
                 .splineToLinearHeading(new Pose2d(-30, -25, Math.toRadians(227)), Math.toRadians(90))
                 .build();
@@ -88,6 +85,15 @@ public class AutonomoOfficialBlue extends CommandOpMode {
         Action path6 = rrDrive.actionBuilder(new Pose2d(-30, -25, Math.toRadians(227)))
                 .splineToLinearHeading(new Pose2d(4, -50, Math.toRadians(270)), Math.toRadians(227))
                 .build();
+
+        configureSafePark(new SequentialCommandGroup(
+                new ActionCommand(path6, drive),
+                new InstantCommand(() -> {
+                    shooter.stop();
+                    intake.intakeOff();
+                    kicker.stop();
+                })
+        ));
 
 
         // 3. SECUENCIA MAESTRA
@@ -109,7 +115,8 @@ public class AutonomoOfficialBlue extends CommandOpMode {
                         // 3. Disparar precargadas (3 tiros)
                         new ShootBurstCommand(shooter, hood, kicker, 3,
                                 LowAltitudeConstants.TargetRPM.SHORT_SHOT_RPM,
-                                LowAltitudeConstants.HoodPosition.SHORT_SHOT),
+                                LowAltitudeConstants.HoodPosition.SHORT_SHOT,
+                                this::requestSafePark),
 
                         // --- CAMBIO 2: LÓGICA DE JUEGO ---
                         // Encendemos el Intake AHORA, justo antes de ir a buscar el stack.
@@ -131,7 +138,8 @@ public class AutonomoOfficialBlue extends CommandOpMode {
                         // 7. Disparar Stack 1
                         new ShootBurstCommand(shooter, hood, kicker, 3,
                                 LowAltitudeConstants.TargetRPM.SHORT_SHOT_RPM,
-                                LowAltitudeConstants.HoodPosition.SHORT_SHOT),
+                                LowAltitudeConstants.HoodPosition.SHORT_SHOT,
+                                this::requestSafePark),
 
                         // 8. Ir por Stack 2
                         new ActionCommand(path4, drive),
@@ -148,7 +156,8 @@ public class AutonomoOfficialBlue extends CommandOpMode {
                         // 11. Disparar Stack 2
                         new ShootBurstCommand(shooter, hood, kicker, 3,
                                 LowAltitudeConstants.TargetRPM.SHORT_SHOT_RPM,
-                                LowAltitudeConstants.HoodPosition.SHORT_SHOT),
+                                LowAltitudeConstants.HoodPosition.SHORT_SHOT,
+                                this::requestSafePark),
 
                         // 12. Park
                         new ActionCommand(path6, drive),
@@ -172,8 +181,7 @@ public class AutonomoOfficialBlue extends CommandOpMode {
     }
 
     @Override
-    public void run(){
-        super.run();
+    protected void afterSchedulerRun(){
         if (drive != null && drive.getMecanumDrive() != null) {
             PoseStorage.currentPose = drive.getMecanumDrive().pose;
         }

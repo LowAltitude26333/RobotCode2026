@@ -2,7 +2,6 @@ package org.firstinspires.ftc.teamcode.opmodes.teleop;
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
-import com.arcrobotics.ftclib.command.CommandOpMode;
 import com.arcrobotics.ftclib.command.InstantCommand;
 import com.arcrobotics.ftclib.command.RunCommand;
 import com.arcrobotics.ftclib.command.button.GamepadButton;
@@ -16,11 +15,14 @@ import org.firstinspires.ftc.teamcode.subsystems.TurretSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.IntakeSubsystem; // Asegúrate de que apunte a tu clase real
 import org.firstinspires.ftc.teamcode.subsystems.KickerSubsystem; // Asegúrate de que apunte a tu clase real
 import org.firstinspires.ftc.teamcode.commands.TurretFollowTagCommand;
+import org.firstinspires.ftc.teamcode.commands.PoseStorage;
+import org.firstinspires.ftc.teamcode.opmodes.SafeCommandOpMode;
+import org.firstinspires.ftc.teamcode.vision.DecodeGoalTags;
 import org.firstinspires.ftc.vision.VisionPortal;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 
 @TeleOp(name = "Skywalker Turret: SENTINEL (Solo Conectados)", group = "Competition")
-public class TeleopTorreta extends CommandOpMode {
+public class TeleopTorreta extends SafeCommandOpMode {
 
     // Subsistemas que SÍ tienes conectados
     private TurretSubsystem turretSubsystem;
@@ -41,15 +43,20 @@ public class TeleopTorreta extends CommandOpMode {
 
         // 1. Inicializar SÓLO los subsistemas que vas a usar
         turretSubsystem = new TurretSubsystem(hardwareMap);
+        if (gamepad2.start && gamepad2.back) {
+            turretSubsystem.confirmCenteredAndResetEncoder();
+        }
         intakeSubsystem = new IntakeSubsystem(hardwareMap);
         kickerSubsystem = new KickerSubsystem(hardwareMap);
         shooterMotor = new ShooterMotor(hardwareMap, telemetry);
 
         // 2. Configurar Visión para AprilTags
         aprilTag = new AprilTagProcessor.Builder()
+                .setTagLibrary(DecodeGoalTags.createLibrary())
                 .setDrawAxes(true)
                 .setDrawTagOutline(true)
                 .build();
+        addResourceCleanup(visionPortal::close);
 
         visionPortal = new VisionPortal.Builder()
                 .setCamera(hardwareMap.get(WebcamName.class, "Webcam 1"))
@@ -58,7 +65,8 @@ public class TeleopTorreta extends CommandOpMode {
 
         // 3. Asignar comando por defecto a la torreta (Tracking automático)
         turretSubsystem.setDefaultCommand(
-                new TurretFollowTagCommand(turretSubsystem, aprilTag)
+                new TurretFollowTagCommand(
+                        turretSubsystem, aprilTag, () -> PoseStorage.isRedAlliance)
         );
 
         // 4. Configurar el Gamepad 2 de forma directa e independiente
@@ -106,9 +114,10 @@ public class TeleopTorreta extends CommandOpMode {
         telemetry.addLine("=== MONITOR DE SUBSISTEMAS ===");
         telemetry.addData("Torreta Pos (Ticks)", turretSubsystem.getPosition());
         telemetry.addData("Tags en Vista", aprilTag.getDetections().size());
+        telemetry.addData("Torreta Armada", turretSubsystem.isArmed());
 
         if (aprilTag.getDetections().isEmpty()) {
-            telemetry.addData("Torreta", "🔍 BUSCANDO TARGET...");
+            telemetry.addData("Torreta", "SIN TARGET - DETENIDA");
         } else {
             telemetry.addData("Torreta", "🎯 TARGET FIJADO");
         }

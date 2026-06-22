@@ -6,6 +6,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.LowAltitudeConstants;
 import org.firstinspires.ftc.teamcode.RobotMap;
+import org.firstinspires.ftc.teamcode.RobotSafety;
 
 public class ShooterMotor extends SubsystemBase {
     private final MotorEx motorLeader;
@@ -15,6 +16,7 @@ public class ShooterMotor extends SubsystemBase {
 
 
         motorLeader = new MotorEx(hardwareMap, RobotMap.SHOOTER_MOTOR_1);
+        RobotSafety.registerShutdown(this::stop);
 
 
     }

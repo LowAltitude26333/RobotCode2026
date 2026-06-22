@@ -10,6 +10,7 @@ import com.qualcomm.robotcore.hardware.VoltageSensor;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.LowAltitudeConstants;
 import org.firstinspires.ftc.teamcode.RobotMap;
+import org.firstinspires.ftc.teamcode.RobotSafety;
 
 public class ShooterSubsystem extends SubsystemBase {
 
@@ -20,6 +21,12 @@ public class ShooterSubsystem extends SubsystemBase {
 
     private PIDController pidController;
     private SimpleMotorFeedforward feedforward;
+    private double loadedKp;
+    private double loadedKi;
+    private double loadedKd;
+    private double loadedKs;
+    private double loadedKv;
+    private double loadedKa;
 
     private double targetShooterRPM = 0;
     private boolean isBangBangEnabled = true;
@@ -39,6 +46,7 @@ public class ShooterSubsystem extends SubsystemBase {
 
         configureMotors();
         reloadControllers();
+        RobotSafety.registerShutdown(this::stop);
     }
 
     private void configureMotors() {
@@ -69,6 +77,23 @@ public class ShooterSubsystem extends SubsystemBase {
                 LowAltitudeConstants.SHOOTER_KV,
                 LowAltitudeConstants.SHOOTER_KA
         );
+        loadedKp = LowAltitudeConstants.SHOOTER_KP;
+        loadedKi = LowAltitudeConstants.SHOOTER_KI;
+        loadedKd = LowAltitudeConstants.SHOOTER_KD;
+        loadedKs = LowAltitudeConstants.SHOOTER_KS;
+        loadedKv = LowAltitudeConstants.SHOOTER_KV;
+        loadedKa = LowAltitudeConstants.SHOOTER_KA;
+    }
+
+    public void reloadControllersIfConstantsChanged() {
+        if (Double.compare(loadedKp, LowAltitudeConstants.SHOOTER_KP) != 0
+                || Double.compare(loadedKi, LowAltitudeConstants.SHOOTER_KI) != 0
+                || Double.compare(loadedKd, LowAltitudeConstants.SHOOTER_KD) != 0
+                || Double.compare(loadedKs, LowAltitudeConstants.SHOOTER_KS) != 0
+                || Double.compare(loadedKv, LowAltitudeConstants.SHOOTER_KV) != 0
+                || Double.compare(loadedKa, LowAltitudeConstants.SHOOTER_KA) != 0) {
+            reloadControllers();
+        }
     }
 
     public void setTargetRPM(double shooterRPM) {
@@ -80,6 +105,10 @@ public class ShooterSubsystem extends SubsystemBase {
 
     public void setTargetEnum(LowAltitudeConstants.TargetRPM preset) {
         setTargetRPM(preset.targetRPM);
+    }
+
+    public double getTargetRPM() {
+        return targetShooterRPM;
     }
 
     public void stop() {

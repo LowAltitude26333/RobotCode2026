@@ -7,6 +7,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.teamcode.LowAltitudeConstants;
 import org.firstinspires.ftc.teamcode.RobotMap;
+import org.firstinspires.ftc.teamcode.RobotSafety;
 
 public class IntakeSubsystem extends SubsystemBase {
     private final MotorEx intakeMotor;
@@ -15,6 +16,7 @@ public class IntakeSubsystem extends SubsystemBase {
         intakeMotor = new MotorEx(hardwareMap, RobotMap.INTAKE_MOTOR);
 
         intakeMotor.setInverted(RobotMap.INTAKE_MOTOR_IS_INVERTED);
+        RobotSafety.registerShutdown(this::intakeOff);
     }
 
     public void intakeOn (){

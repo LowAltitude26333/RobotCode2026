@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.oi;
 
-import com.arcrobotics.ftclib.command.CommandScheduler;
 import com.arcrobotics.ftclib.command.InstantCommand;
 import com.arcrobotics.ftclib.command.ParallelCommandGroup;
 import com.arcrobotics.ftclib.command.RunCommand;
@@ -88,17 +87,11 @@ public class SkywalkerProfile implements ControlProfile {
         new GamepadButton(driverOp, GamepadKeys.Button.LEFT_BUMPER)
                 .whileHeld(new SetPrecisionModeCommand());
 
+        // D-pad Right deliberately changes the target alliance without sharing E-stop controls.
+        new GamepadButton(driverOp, GamepadKeys.Button.DPAD_RIGHT)
+                .whenPressed(new InstantCommand(() ->
+                        PoseStorage.isRedAlliance = !PoseStorage.isRedAlliance));
 
-        // 3. GLOBAL EMERGENCY STOP (Back)
-        // "Rómpase en caso de emergencia": Mata comandos y frena todo.
-        new GamepadButton(driverOp, GamepadKeys.Button.BACK)
-                .whenPressed(new InstantCommand(() -> {
-                    CommandScheduler.getInstance().cancelAll(); // Cancela PID, trayectorias, etc.
-                    robot.driveSubsystem.stop();
-                    robot.shooterSubsystem.stop();
-                    robot.intakeSubsystem.intakeOff();
-                    robot.kickerSubsystem.stop();
-                }));
 
         // En SkywalkerProfile.java, dentro de configureButtonBindings:
 
@@ -120,16 +113,6 @@ public class SkywalkerProfile implements ControlProfile {
                         () -> PoseStorage.isRedAlliance ? 110 : -114
                 ));
 
-
-        new GamepadButton(driverOp, GamepadKeys.Button.LEFT_BUMPER)
-                .and(new GamepadButton(driverOp, GamepadKeys.Button.BACK))
-                .whenActive(new InstantCommand(() -> {
-                    // 1. Invertir el valor actual
-                    PoseStorage.isRedAlliance = !PoseStorage.isRedAlliance;
-
-                    // 2. (Opcional) Feedback háptico para saber que funcionó CHECAR
-                    //driverOp.getGamepad().rumble(500);
-                }));
 
         /*
          * =================================================================

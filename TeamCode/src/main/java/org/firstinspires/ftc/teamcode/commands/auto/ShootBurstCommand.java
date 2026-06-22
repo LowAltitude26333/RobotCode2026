@@ -1,44 +1,60 @@
 package org.firstinspires.ftc.teamcode.commands.auto;
 
-import com.arcrobotics.ftclib.command.InstantCommand;
-import com.arcrobotics.ftclib.command.ParallelCommandGroup;
-import com.arcrobotics.ftclib.command.SequentialCommandGroup;
-import com.arcrobotics.ftclib.command.WaitCommand;
-import com.arcrobotics.ftclib.command.WaitUntilCommand;
+import com.arcrobotics.ftclib.command.CommandBase;
 
 import org.firstinspires.ftc.teamcode.LowAltitudeConstants;
 import org.firstinspires.ftc.teamcode.subsystems.KickerSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.ShooterHoodSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.ShooterSubsystem;
 
-public class ShootBurstCommand extends SequentialCommandGroup {
+public class ShootBurstCommand extends CommandBase {
+    private enum State {
+        WAITING_FOR_READY,
+        KICKING,
+        RETRACT_DELAY,
+        FINISHED
+    }
 
-    // Constructor Principal
+    private final ShooterSubsystem shooter;
+    private final ShooterHoodSubsystem hood;
+    private final KickerSubsystem kicker;
+    private final int requestedShots;
+    private final LowAltitudeConstants.TargetRPM targetRpm;
+    private final LowAltitudeConstants.HoodPosition targetAngle;
+    private final Runnable failureCallback;
+
+    private State state;
+    private long stateDeadlineNanos;
+    private int completedShots;
+    private int readyAttempt;
+    private boolean failed;
+
+    public ShootBurstCommand(ShooterSubsystem shooter,
+                             ShooterHoodSubsystem hood,
+                             KickerSubsystem kicker,
+                             int shots,
+                             LowAltitudeConstants.TargetRPM targetRpm,
+                             LowAltitudeConstants.HoodPosition targetAngle,
+                             Runnable failureCallback) {
+        this.shooter = shooter;
+        this.hood = hood;
+        this.kicker = kicker;
+        this.requestedShots = Math.max(0, shots);
+        this.targetRpm = targetRpm;
+        this.targetAngle = targetAngle;
+        this.failureCallback = failureCallback;
+        addRequirements(shooter, hood, kicker);
+    }
+
     public ShootBurstCommand(ShooterSubsystem shooter,
                              ShooterHoodSubsystem hood,
                              KickerSubsystem kicker,
                              int shots,
                              LowAltitudeConstants.TargetRPM targetRpm,
                              LowAltitudeConstants.HoodPosition targetAngle) {
-
-        addCommands(
-                // 1. Preparar Sistemas (Shooter y Hood al mismo tiempo)
-                new ParallelCommandGroup(
-                        // Ajustar ángulo del hood (usando el valor double del enum)
-                        new InstantCommand(() -> hood.setAngle(targetAngle.angle), hood),
-                        // Encender Shooter
-                        new InstantCommand(() -> shooter.setTargetEnum(targetRpm), shooter)
-                ),
-
-                // 2. Esperar a que el Shooter llegue a la velocidad objetivo por primera vez
-                new WaitUntilCommand(shooter::isReady),
-
-                // 3. Ejecutar la ráfaga de disparos
-                getBurstSequence(kicker, shooter, shots)
-        );
+        this(shooter, hood, kicker, shots, targetRpm, targetAngle, () -> { });
     }
 
-    // Constructor Simplificado (Overload)
     public ShootBurstCommand(ShooterSubsystem shooter,
                              ShooterHoodSubsystem hood,
                              KickerSubsystem kicker,
@@ -48,34 +64,103 @@ public class ShootBurstCommand extends SequentialCommandGroup {
                 LowAltitudeConstants.HoodPosition.SHORT_SHOT);
     }
 
-    /**
-     * Genera la secuencia de movimientos del Kicker (Gatillo).
-     * Incluye verificación de RPM entre cada disparo para máxima precisión.
-     */
-    private SequentialCommandGroup getBurstSequence(KickerSubsystem kicker, ShooterSubsystem shooter, int shots) {
-        SequentialCommandGroup sequence = new SequentialCommandGroup();
+    @Override
+    public void initialize() {
+        completedShots = 0;
+        readyAttempt = 1;
+        failed = false;
+        hood.setAngle(targetAngle.angle);
+        shooter.setTargetEnum(targetRpm);
 
-        for (int i = 0; i < shots; i++) {
-            // Tiempos de empuje del servo
-            // Nota: 632ms es bastante tiempo para un servo, asegúrate que no sea el ciclo total.
-            // Si el kicker es rápido, podrías bajar esto a 200-300ms para disparar más rápido.
-            long extendTime = 632;
-            long retractTime = 60; // Tiempo para volver atrás
-
-            sequence.addCommands(
-                    // A. Validar RPM (Recuperación Bang-Bang)
-                    // Si el disparo anterior bajó mucho la velocidad, esperamos aquí.
-                    new WaitUntilCommand(shooter::isReady),
-
-                    // B. Disparar (Empujar)
-                    new InstantCommand(kicker::kick, kicker),
-                    new WaitCommand(extendTime),
-
-                    // C. Retraer
-                    new InstantCommand(kicker::stop, kicker), // O kicker::retract si tienes ese método
-                    new WaitCommand(retractTime)
-            );
+        if (requestedShots == 0) {
+            state = State.FINISHED;
+        } else {
+            beginReadyWindow();
         }
-        return sequence;
+    }
+
+    private void beginReadyWindow() {
+        state = State.WAITING_FOR_READY;
+        stateDeadlineNanos = System.nanoTime()
+                + Math.max(1, LowAltitudeConstants.SHOOTER_READY_TIMEOUT_MS) * 1_000_000L;
+    }
+
+    @Override
+    public void execute() {
+        long now = System.nanoTime();
+
+        switch (state) {
+            case WAITING_FOR_READY:
+                if (shooter.isReady()) {
+                    kicker.kick();
+                    state = State.KICKING;
+                    stateDeadlineNanos = now
+                            + Math.max(0, LowAltitudeConstants.KICKER_EXTEND_TIME_MS) * 1_000_000L;
+                } else if (now >= stateDeadlineNanos) {
+                    if (readyAttempt < Math.max(1,
+                            LowAltitudeConstants.SHOOTER_READY_MAX_ATTEMPTS)) {
+                        readyAttempt++;
+                        shooter.setTargetEnum(targetRpm);
+                        beginReadyWindow();
+                    } else {
+                        failBurst();
+                    }
+                }
+                break;
+
+            case KICKING:
+                if (now >= stateDeadlineNanos) {
+                    kicker.stop();
+                    state = State.RETRACT_DELAY;
+                    stateDeadlineNanos = now
+                            + Math.max(0,
+                            LowAltitudeConstants.KICKER_RETRACT_DELAY_MS) * 1_000_000L;
+                }
+                break;
+
+            case RETRACT_DELAY:
+                if (now >= stateDeadlineNanos) {
+                    completedShots++;
+                    if (completedShots >= requestedShots) {
+                        state = State.FINISHED;
+                    } else {
+                        readyAttempt = 1;
+                        beginReadyWindow();
+                    }
+                }
+                break;
+
+            case FINISHED:
+                break;
+        }
+    }
+
+    private void failBurst() {
+        failed = true;
+        kicker.stop();
+        shooter.stop();
+        state = State.FINISHED;
+        failureCallback.run();
+    }
+
+    public boolean hasFailed() {
+        return failed;
+    }
+
+    public int getReadyAttempt() {
+        return readyAttempt;
+    }
+
+    @Override
+    public boolean isFinished() {
+        return state == State.FINISHED;
+    }
+
+    @Override
+    public void end(boolean interrupted) {
+        kicker.stop();
+        if (interrupted) {
+            shooter.stop();
+        }
     }
 }
