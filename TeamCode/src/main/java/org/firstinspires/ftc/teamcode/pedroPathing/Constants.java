@@ -17,6 +17,9 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 Uso de "Panels" para el tuning. Ir a https://panels.bylazar.com/docs/com.bylazar.docs/Accessing%20Panels/ para info.
 
 Evaluar el uso de Predictive Braking.
+
+Evaluar el uso de un doble PID
+
 =======
  */
 public class Constants {
