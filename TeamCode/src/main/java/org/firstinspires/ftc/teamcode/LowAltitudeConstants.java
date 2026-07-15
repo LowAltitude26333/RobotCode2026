@@ -80,7 +80,7 @@ public class LowAltitudeConstants {
     }
 
     // --- KICKER CONSTANTS ---
-    public static final double KICKER_OUT_SPEED = 0.7;
+    public static final double   KICKER_OUT_SPEED = 0.7;
     public static final double KICKER_REVERSE_SPEED = -0.7;
     public static long KICKER_EXTEND_TIME_MS = 632;
     public static long KICKER_RETRACT_DELAY_MS = 60;

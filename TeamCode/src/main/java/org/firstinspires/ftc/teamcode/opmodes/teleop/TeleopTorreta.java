@@ -48,7 +48,6 @@ public class TeleopTorreta extends SafeCommandOpMode {
         }
         intakeSubsystem = new IntakeSubsystem(hardwareMap);
         kickerSubsystem = new KickerSubsystem(hardwareMap);
-        shooterMotor = new ShooterMotor(hardwareMap, telemetry);
 
         // 2. Configurar Visión para AprilTags
         aprilTag = new AprilTagProcessor.Builder()

@@ -8,12 +8,15 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import org.firstinspires.ftc.teamcode.subsystems.IntakeSubsystem;
 import org.firstinspires.ftc.teamcode.opmodes.SafeCommandOpMode;
 import org.firstinspires.ftc.teamcode.subsystems.KickerSubsystem;
+import org.firstinspires.ftc.teamcode.subsystems.ShooterMotor;
+import org.firstinspires.ftc.teamcode.subsystems.ShooterSubsystem;
 
 @TeleOp(name = "TeleOp Intake Control")
 public class IntakeTeleOp extends SafeCommandOpMode {
 
     private IntakeSubsystem intake;
     private KickerSubsystem kicker;
+    private ShooterMotor shooter;
     private GamepadEx driverGamepad;
 
     @Override
@@ -21,6 +24,7 @@ public class IntakeTeleOp extends SafeCommandOpMode {
         // Inicializamos el subsistema y el mando
         intake = new IntakeSubsystem(hardwareMap);
         kicker = new KickerSubsystem(hardwareMap);
+        shooter = new ShooterMotor(hardwareMap);
         driverGamepad = new GamepadEx(gamepad1);
 
         // --- ASIGNACIÓN DE BOTONES ---
@@ -39,10 +43,19 @@ public class IntakeTeleOp extends SafeCommandOpMode {
         driverGamepad.getGamepadButton(GamepadKeys.Button.B)
                 .whenPressed(new InstantCommand(kicker::reverse, kicker));
 
+        driverGamepad.getGamepadButton(GamepadKeys.Button.X)
+                .whenPressed(new InstantCommand(shooter::right2, shooter));
+
+        driverGamepad.getGamepadButton(GamepadKeys.Button.Y)
+                .whenPressed(new InstantCommand(shooter::left2, shooter));
+
         // D-pad Down: Apagar (Intake Off)
         driverGamepad.getGamepadButton(GamepadKeys.Button.DPAD_DOWN)
                 .whenPressed(new InstantCommand(intake::intakeOff, intake))
-                .whenPressed(new InstantCommand(kicker::stop, kicker));
+                .whenPressed(new InstantCommand(kicker::stop, kicker))
+                .whenPressed(new InstantCommand(shooter::stop, shooter));
+
+
 
     }
 }

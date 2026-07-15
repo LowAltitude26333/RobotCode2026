@@ -29,7 +29,7 @@ public class TeleOpShooter extends SafeCommandOpMode {
         GamepadEx drivertwo = new GamepadEx(gamepad2);
 
         // Subsystems
-        this.shooter = new ShooterMotor(hardwareMap, telemetry);
+        this.shooter = new ShooterMotor(hardwareMap);
         hood = new ShooterHoodSubsystem(hardwareMap, telemetry);
         kicker = new KickerSubsystem(hardwareMap);
         intake = new IntakeSubsystem(hardwareMap);
