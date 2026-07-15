@@ -1,7 +1,7 @@
 # 03 — Auto-aim, Limelight y cancha
 
 > Estado: investigación y diseño inicial; medidas y transforms pendientes de commissioning
-> Baseline de referencia: `main` en `f91af18`
+> Baseline de referencia: `origin/main@b5a134260456565df9d0295722ebecad900f21b4`
 > Última actualización: 2026-07-15
 > Alcance: fuentes oficiales, geometría, Limelight 3A, fusión, bearing y modelo de RPM
 > Responsable sugerido: responsable de localización/visión con revisión de software y mecánica
@@ -36,7 +36,7 @@ Respuesta de diseño:
 | [Limelight documentation](https://docs.limelightvision.io/) | Configuración, pipelines, MegaTag/field localization y diagnóstico | Reglas FTC o seguridad del mecanismo. |
 | [Limelight Field Map Builder](https://tools.limelightvision.io/map-builder) | Crear/verificar field map versionado | Que un mapa cargado esté alineado físicamente con la cancha. |
 
-Antes de una competencia se debe revisar la revisión vigente del manual, no congelar TU32 para siempre.
+Antes de una competencia se debe revisar la revisión vigente del manual, no congelar TU32 para siempre. La tabla anterior registra fuentes de investigación, no autoriza usar coordenadas o APIs sin fijar revisión, fecha y versión efectiva.
 
 ## 3. Hechos de cancha útiles
 
@@ -99,6 +99,8 @@ Validar transforms colocando el robot en cuatro poses conocidas, idealmente cerc
 También se debe girar el robot en el mismo punto para separar error de extrínseca de error de traslación.
 
 ## 5. Montaje y configuración de Limelight
+
+El equipo reporta Limelight instalada y webcam retirada. Esta observación física no confirma el string `limelight`, firmware, pipeline, red, orientación ni extrínseca; todos permanecen `TBD-BLOCKING` hasta completar la guía 08. No se planea coexistencia con webcam/VisionPortal.
 
 ### 5.1 Requisitos físicos
 
@@ -251,7 +253,7 @@ Para cada intento guardar:
 - resultado categórico: corto, anotado, largo, rebote u otro;
 - notas mecánicas y video/log ID.
 
-Calibrar primero en posiciones estacionarias y con piezas consistentes. Mezclar datos de mecanismos distintos invalida el modelo.
+Calibrar primero en posiciones estacionarias y con piezas consistentes. Cada distancia candidata requiere al menos 10 tiros por sesión en dos sesiones separadas; las distancias retenidas también requieren 10 por sesión y no se combinan sesiones para ocultar una falla. Mezclar datos de mecanismos distintos invalida el modelo.
 
 ### 10.2 Modelos candidatos
 
@@ -270,6 +272,7 @@ Separar datos de entrenamiento/calibración y puntos retenidos/intermedios. Eleg
 - clamp físico: siempre activo;
 - slew rate: medir para evitar cambios agresivos y waits largos;
 - readiness inicial: error ≤100 RPM durante ≥250 ms.
+- readiness de movimiento: velocidades lineal y angular bajo umbrales medidos; ambos son `TBD-BLOCKING` hasta T9.
 
 El operador corrige overshoot con trim negativo y undershoot con trim positivo. El sistema registra el trim para mejorar la calibración futura; el trim no se persiste automáticamente al siguiente init.
 
@@ -288,7 +291,7 @@ La visión sola puede ayudar a relocalizar, pero el diseño no permite que un fr
 ## 12. Plan de implementación técnica
 
 1. Crear tipos/contratos y tests de wrap/transforms sin hardware.
-2. Encapsular Pedro detrás de `PoseProvider`; calibrar.
+2. Encapsular Pedro detrás de `PoseProvider` y `PedroDriveAdapter`; calibrar pose y movimiento como una sola migración.
 3. Encapsular Limelight; shadow logging sin consumidor.
 4. Completar tabla de marcos y extrínsecas.
 5. Implementar gates y replay de logs.
@@ -322,6 +325,6 @@ La fase de investigación termina cuando existe evidencia, no sólo enlaces:
 - ¿Cuál es el arco seguro real de la torreta con margen de cables?
 - ¿Qué punto del goal maximiza consistencia con el shooter fijo?
 - ¿Qué rango de distancia y RPM puede soportarse sin extrapolación?
-- ¿El criterio 2.5°/±100 RPM/9 de 10 es suficiente para el juego real o necesita estrecharse?
+- ¿El criterio 2.5°/±100 RPM, ≥9/10 por distancia calibrada y ≥8/10 por distancia retenida en cada sesión es suficiente para el juego real o necesita estrecharse mediante una decisión con datos?
 
 Hasta responderlas, auto-aim permanece en commissioning.

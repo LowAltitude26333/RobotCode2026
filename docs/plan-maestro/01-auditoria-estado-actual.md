@@ -1,7 +1,7 @@
 # 01 — Auditoría del estado actual
 
-> Estado: auditoría estática inicial; requiere confirmación física
-> Baseline: `main` en `f91af18`
+> Estado: auditoría estática actualizada; requiere confirmación física
+> Baseline vigente: `origin/main` en `b5a134260456565df9d0295722ebecad900f21b4`
 > Última actualización: 2026-07-15
 > Alcance: repo, composición activa, hardware observado, findings históricos y brechas
 > Responsable sugerido: líder de software con revisión mecánica/eléctrica
@@ -9,26 +9,29 @@
 
 ## 1. Resumen ejecutivo
 
-El `main` actual ya no coincide con la fotografía descrita al inicio de [critical-findings.md](../critical-findings.md): contiene el código completo restaurado y varias remediaciones. El reporte histórico sigue siendo valioso como evidencia, pero no debe leerse como inventario actual.
+El baseline vigente ya no coincide ni con la fotografía descrita al inicio de [critical-findings.md](../critical-findings.md) ni con el baseline documental histórico `main@f91af18`. El reporte histórico sigue siendo valioso como evidencia, pero no debe leerse como inventario actual.
 
 El robot activo todavía mezcla una composición command-based con componentes de torreta/visión construidos fuera de `RobotContainer`. El drivetrain de competencia usa Road Runner y un `ThreeDeadWheelLocalizer`; Pedro existe como scaffold de tuning con constantes provisionales. La torreta ya tiene mejor protección que el baseline histórico —armado, soft limits, stop y filtro de goal tag— pero el flujo actual de inicialización presenta dos bloqueadores probables: cleanup de `VisionPortal` registrado antes de construirlo y un chord de centrado evaluado sólo una vez durante `initialize()`.
 
-El shooter activo es de un motor y su controlador tiene PID/feedforward, compensación por voltaje y stop. El control de disparo, sin embargo, aún está repartido entre perfiles, comandos y adapters; al menos una secuencia conserva una espera de readiness sin timeout. La futura arquitectura debe centralizar el interlock de feeder.
+El shooter activo es de un motor y su controlador tiene PID/feedforward, compensación por voltaje y stop. Sin embargo, valores imposibles de RPM se convierten a cero y voltaje ≤1 V se sustituye por 12.5 V; con target positivo, esa combinación puede pedir la salida máxima ante encoder o sensor de voltaje defectuoso. El control de disparo también sigue repartido entre perfiles, comandos y adapters; al menos una secuencia conserva una espera de readiness sin timeout.
+
+`origin/main` incorpora además controles X/Y de shooter en `IntakeTeleOp` que quedan latched hasta otra orden/Stop, y `TeleopTorreta` conserva un camino que programa `ShooterCommand2` sin haber inicializado su `ShooterMotor`. Ambos son bloqueadores de MP-01.
 
 ## 2. Identidad y reproducibilidad del baseline
 
 | Elemento | Observación en el baseline | Implicación |
 |---|---|---|
-| Rama | `main` | Es la base seleccionada; no asumir que una feature branch es más nueva por nombre. |
-| Commit | `f91af18` | Toda evidencia de este documento debe compararse contra este SHA. |
-| Worktree al auditar | Limpio | No había cambios del usuario que separar en esta auditoría. |
+| Ref fuente | `origin/main` | Se inspecciona sin mezclarla en la rama documental. |
+| Commit | `b5a134260456565df9d0295722ebecad900f21b4` | Toda evidencia vigente debe citar este SHA o declarar uno posterior. |
+| Rama documental | `agent/document-robot-master-plan-20260715` en `c0d93bd` antes de esta edición | Contiene los docs; estaba 2 commits detrás de `origin/main`, cuyo merge incluye el commit documental y cambios de código posteriores. |
+| Worktree al iniciar la corrección | Limpio | No había cambios del usuario que separar. |
 | Baseline restaurado | `backup/main-before-split-20260619` en `e42e7cf` | Referencia histórica completa, no base de implementación actual. |
 | Lenguaje/arquitectura | Java, FTCLib command-based, Road Runner, FTC Dashboard; scaffold de Pedro | Evitar una reescritura general; migrar por interfaces y gates. |
 | Fuente SDK declarada | `TeamCode/build.gradle` aún declara FTC SDK 10.3.0 | En conflicto con el include común descrito abajo. |
 | Fuente SDK común | `build.dependencies.gradle` resuelve SDK 11.0 y otras dependencias | La versión efectiva debe verificarse en Gradle; consolidarla es trabajo futuro y revisado. |
 | Dashboard | Versiones duplicadas observadas en Gradle | No normalizar incidentalmente durante auto-aim. |
 
-Una compilación de baseline realizada durante la investigación con el JBR de Android Studio 21 terminó correctamente. Como medición puntual —no benchmark universal— el build frío tomó aproximadamente 192.3 s y produjo `TeamCode-debug.apk` de 81,278,696 bytes. Se contaron 77 archivos Java y aproximadamente 7,347 líneas. MP-00 debe repetir la medición con cachés/entorno registrados; MP-09 comparará build frío, caliente, APK e instalación real.
+Como evidencia histórica de `main@f91af18`, una compilación con el JBR de Android Studio 21 terminó correctamente: aproximadamente 192.3 s en frío y `TeamCode-debug.apk` de 81,278,696 bytes, con 77 archivos Java y cerca de 7,347 líneas. No se reutiliza esa cifra como build de `b5a1342`. Esta corrección documental no ejecuta Gradle; el próximo paquete de código deberá crear su propio baseline reproducible.
 
 ## 3. Superficie de OpModes actual
 
@@ -56,7 +59,7 @@ Esto importa por dos razones:
 1. buscar sólo anotaciones no descubre registros dinámicos;
 2. borrar archivos para “acelerar deploy” sin medir puede no atacar el costo real, aunque sí reduce ruido, caminos alternos y riesgo operativo.
 
-El objetivo final es uno más uno: un TeleOp de competencia y un System Check seguro. Los modos restantes no se deben borrar hasta completar MP-08 y crear el snapshot de MP-09.
+Durante commissioning deben seguir visibles `MainTeleOp`, System Check, Shooter Tuning, tuning Pedro y los registradores dinámicos Road Runner porque el robot todavía no está calibrado. Visibilidad no autoriza uso: cada tuner debe documentar ownership, potencia, límites, Stop y E-stop. Sólo después de MP-08 se crea el snapshot de MP-09; el artefacto final reduce el menú y se revalida en MP-10.
 
 ## 4. Camino activo de composición
 
@@ -148,9 +151,9 @@ El `ShooterSubsystem` activo usa sólo `Shooter`; `Shooter2` permanece como decl
 - clamp de salida;
 - stop que pone target y potencia en cero.
 
-La readiness actual se basa principalmente en tolerancia instantánea. El diseño objetivo agregará dwell y combinará shooter, torreta, pose y feeder.
+La readiness actual se basa principalmente en tolerancia instantánea y no incorpora velocidad lineal/angular del chasis. Además, `getActualShooterRPM()` transforma RPM imposibles en cero y la compensación sustituye voltaje ≤1 V por 12.5 V; esto es fail-open porque el bang-bang puede pedir máximo power. El diseño objetivo agregará health explícito, dwell, movimiento del chasis, torreta, pose y feeder, y fallará cerrado a target/power cero.
 
-`ShooterHoodSubsystem` controla dos servos, pero el equipo definió que el robot final tendrá ángulo mecánico fijo y retirará esos servos. No se debe borrar el código hasta confirmar la modificación física y completar el replacement.
+`ShooterHoodSubsystem` todavía controla dos servos en código, pero el equipo confirmó que el hood ya fue retirado físicamente y el robot final tendrá ángulo mecánico fijo. El retiro físico aún necesita evidencia/configuración; el código se limpia únicamente después del replacement validado.
 
 El feeder físico está representado por `KickerSubsystem`; el hardware string observado es exactamente `kickerM otor`, con espacio interno. Renombrar la clase/concepto a feeder es razonable, pero cambiar el string sin revisar la configuración puede romper el robot.
 
@@ -172,6 +175,8 @@ Los bindings de `SkywalkerProfile` observados incluyen:
 
 Estos bindings no coinciden con el contrato final. En especial, la alianza no debe ser toggle durante el match, el hood desaparecerá y el feeder no debe energizarse fuera de un interlock central.
 
+En `origin/main`, `IntakeTeleOp` también liga X/Y a `ShooterMotor.right2/left2` con power aproximado ±0.9. La salida permanece hasta `DPAD_DOWN` o Stop; no es un pulso ni pasa por readiness. `TeleopTorreta` dejó de construir `ShooterMotor` pero todavía crea un `ShooterCommand2` que puede recibir `null`.
+
 ## 5. Inventario de nombres de hardware observados
 
 | Función | Nombre en código | Estado de confianza |
@@ -180,18 +185,18 @@ Estos bindings no coinciden con el contrato final. En especial, la alianza no de
 | Shooter | `Shooter` | Activo, un motor confirmado por el usuario; faltan constantes físicas. |
 | Shooter legado | `Shooter2` | Declarado pero no mapeado por el subsistema activo; candidato a borrar al final. |
 | Intake | `intakeMotor` | Observado; confirmar dirección/corriente/límites. |
-| Hood | `hoodLeft`, `hoodRight` | Código activo hoy; hardware destinado a removerse. |
+| Hood | `hoodLeft`, `hoodRight` | Código activo; el equipo reporta hardware ya retirado, pendiente de evidencia/configuración. |
 | Feeder/kicker | `kickerM otor` | Preservar exactamente hasta confirmar configuración. |
 | Turret | `torretaMotor` | Observado; dirección, signo, ticks y arco pendientes. |
-| Webcam actual | `Webcam 1` | Usada por tracking actual; objetivo final es Limelight. |
-| Webcam dormida | `Webcam` | Camino alterno/dormido; candidato a limpiar. |
+| Webcam actual | `Webcam 1` | Usada por código de tracking; el equipo reporta webcam físicamente retirada. |
+| Webcam dormida | `Webcam` | Camino alterno/dormido; hardware reportado retirado. |
 | Odometría | `par0`, `par1`, `perp` | Tres pods confirmados conceptualmente; geometría pendiente. |
 | IMU | `imu` | Observado; orientación física pendiente. |
-| Limelight propuesta | `limelight` | Aún no confirmada en configuración; no inventar el mapping. |
+| Limelight instalada | `limelight` propuesto | Equipo reporta dispositivo instalado; mapping, firmware, pipeline, red y extrínseca no están confirmados. |
 
 ## 6. Reconciliación de hallazgos históricos
 
-| Finding histórico | Estado en `f91af18` | Evidencia/limitación actual | Acción del plan |
+| Finding histórico | Estado histórico en `f91af18` | Evidencia/limitación en `b5a1342` | Acción del plan |
 |---|---|---|---|
 | Giros enviados como 90 radianes | **Contenido/reemplazado** | Autos afectados están deshabilitados o comentados; el legado sigue en source. | No gastar commissioning en repararlos; borrar tras snapshot en MP-09. |
 | Encoders de drive usados como two dead wheels | **Reemplazado con nuevo blocker** | El camino activo usa tres pods `par0/par1/perp`; offsets actuales son placeholders. | Calibrar Pedro en MP-02. |
@@ -224,12 +229,25 @@ Estos bindings no coinciden con el contrato final. En especial, la alianza no de
 | FND-010 | Media | 14+ TeleOps y tuners dinámicos abarrotan el Driver Station. | Selección errónea y caminos de seguridad distintos. | Mantener durante commissioning; reducir al final. |
 | FND-011 | Alta | `IntakeTeleOp` puede dejar feeder activo tras comandos instantáneos hasta otro botón. | Motor energizado por estado latched no evidente. | No usar como diagnóstico; reemplazar con System Check hold-to-run. |
 | FND-012 | Baja | Nombres/conceptos `kicker`, `feeder`, hood y `Shooter2` no reflejan el robot final. | Mantenimiento confuso; cambios de mapping accidentales. | Renombrado controlado en MP-06/09 tras contrato físico. |
+| FND-013 | Crítica | `IntakeTeleOp` vigente añade outputs directos/latched de shooter además de caminos directos de mecanismos. | Shooter puede permanecer energizado fuera de readiness. | Bloquear su uso y reemplazarlo por System Check seguro. |
+| FND-014 | Crítica | `TeleopTorreta` puede programar `ShooterCommand2` con `ShooterMotor == null`. | Excepción o pérdida de control al usar el binding. | Contener el modo y corregir ownership en MP-01. |
+| FND-015 | Crítica | Encoder/RPM/voltaje inválidos del shooter pueden traducirse en power máximo. | Overspeed ante sensor congelado/desconectado. | Health explícito y fail-closed a cero en MP-01/06. |
+| FND-016 | Alta | `SafeCommandOpMode` no ejecuta un init-loop antes de `waitForStart()`. | Armado/E-stop/telemetry pre-start no pueden evaluarse de forma repetitiva. | Hook de init-loop y test de lifecycle. |
+| FND-017 | Alta | MP-02 sólo abstraía pose mientras RR seguía poseyendo movimiento. | Dual-stack implícito y rollback ambiguo. | Migrar pose y control de drivetrain como unidad. |
+| FND-018 | Alta | Feeder no tiene duración máxima/cooldown obligatorios por pieza. | Request sostenido puede energizar indefinidamente. | Máquina `IDLE/WAITING/PULSING/COOLDOWN/FAULT`. |
+| FND-019 | Alta | Readiness no exige chasis estacionario. | Feed durante movimiento lineal/angular no validado. | Medir umbrales de velocidad y bloquear fuera de ellos. |
+| FND-020 | Alta | El cero manual no detecta falso centro y se pierde tras reset/brownout. | Setpoint/límites desplazados aunque el encoder diga cero. | Marca/fixture, `zeroValid`, zona de frenado y rearmado. |
+| FND-021 | Alta | No existe export RC; contrato omite hechos de drive, pods, IMU, intake y Limelight. | Mappings/direcciones inventados o ownership incompleto. | Completar guía 08 antes de habilitar el componente. |
+| FND-022 | Alta | La limpieza MP-09 ocurre después de aceptación pero sólo exigía smoke test. | El SHA liberado puede no ser el SHA validado. | MP-10 repite T0–T10 y dos sesiones. |
+| FND-023 | Media | Rollback/final tags se materializaban tarde o no existían. | Recuperación no demostrada. | Tags baseline, pre-cleanup y release en gates separados. |
+| FND-024 | Media | Gates omitían muestras, elapsed time y tratamiento de build ambiental. | Resultados no comparables o aprobación falsa. | Criterios exactos en el programa de pruebas. |
+| FND-025 | Media | Estados y catálogo de poses iniciales no estaban sincronizados. | Transiciones/arranque ambiguos. | Unificar enums y bloquear poses no verificadas. |
 
 Los registros editables y su evidencia viven en [hallazgos.md](hallazgos.md).
 
 ## 8. Hechos físicos faltantes
 
-Nada en la compilación responde estas preguntas. Deben medirse y firmarse:
+Nada en la compilación responde estas preguntas. Deben medirse y firmarse usando la [guía de verificación de hardware](08-guia-verificacion-hardware.md):
 
 | Área | Dato requerido | Unidad/formato | Método mínimo |
 |---|---|---|---|
@@ -262,18 +280,18 @@ Nada en la compilación responde estas preguntas. Deben medirse y firmarse:
 | Feed | Múltiples bindings directos | Request sostenido + readiness central | MP-06 |
 | Alianza | Toggle durante run | Selección directa y lock en init | MP-07 |
 | Degradación | Implícita/fragmentada | `DEGRADED_FIXED_FORWARD` deliberado | MP-05/06 |
-| Diagnóstico | Muchos TeleOps/tuners | Un System Check seguro | MP-07/09 |
-| Release | Muchos modos/caminos | Un TeleOp + un diagnóstico, rollback Git | MP-09 |
+| Diagnóstico | Muchos TeleOps/tuners sin clasificación uniforme | Tuners visibles y controlados en commissioning; System Check seguro | MP-00/07 |
+| Release | Muchos modos/caminos | Un TeleOp + un diagnóstico, rollback y revalidación Git | MP-09/10 |
 
 ## 10. Condición para cerrar esta auditoría
 
 MP-00 puede cerrarse cuando:
 
-- el SHA y la versión de dependencias efectiva estén registrados;
+- el SHA y las dependencias declaradas estén registradas; la resolución efectiva queda bloqueada hasta autorizar build;
 - exista un export o captura verificable del hardware map;
 - todos los nombres y dueños de actuadores estén confirmados;
 - cada finding crítico/alto tenga responsable y sesión de prueba programada;
-- el equipo haya revisado la discrepancia entre el informe histórico y `main`;
+- el equipo haya revisado la discrepancia entre el informe histórico y `origin/main@b5a1342`;
 - las medidas físicas faltantes estén asignadas, no inventadas.
 
 Esta auditoría no autoriza movimiento automático. Su siguiente paso es MP-01, no Limelight ni tuning de aim.

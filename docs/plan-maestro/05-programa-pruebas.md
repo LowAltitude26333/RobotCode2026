@@ -1,7 +1,7 @@
 # 05 — Programa de pruebas
 
 > Estado: plan inicial; no se ha ejecutado contra la arquitectura objetivo
-> Baseline de referencia: `main` en `f91af18`
+> Baseline de referencia: `origin/main@b5a134260456565df9d0295722ebecad900f21b4`
 > Última actualización: 2026-07-15
 > Alcance: pruebas estáticas, simuladas, físicas, fallas, aceptación y registro
 > Responsable sugerido: test lead independiente del implementador de cada fase
@@ -63,7 +63,7 @@ Abort inmediato ante:
 - overspeed o corriente fuera de límite aprobado;
 - pose/heading que salta y mueve la torreta;
 - proyectil fuera de la zona segura;
-- E-stop que no actúa en el siguiente ciclo esperado;
+- E-stop que no ordena cero en el primer scheduler cycle o tarda más de 50 ms;
 - pérdida de comunicación o telemetry necesaria para la prueba.
 
 Un abort es un resultado útil, no una invitación a repetir sin diagnosticar. Crear finding, llevar actuadores a cero, desenergizar si hace falta y revisar.
@@ -107,7 +107,7 @@ git diff --check
 
 Registrar cold/warm, warnings relevantes, APK y hash. No cambiar Gradle/SDK para “arreglar” un ambiente sin autorización.
 
-**Aceptación:** build exitoso o fallo ambiental documentado; cero errores introducidos por el paquete.
+**Aceptación:** build exitoso y cero errores introducidos por el paquete. Un fallo ambiental se documenta, pero deja T0 bloqueado; no cuenta como aceptación.
 
 ## 6. Gate T1 — Tests puros y estáticos
 
@@ -155,7 +155,7 @@ Inyectar observaciones:
 - distancia fuera de soporte;
 - base + trim positivo/negativo;
 - trim normal ±500;
-- override normal desactivado pero clamp absoluto intacto;
+- intento de exceder trim/clamp sin camino de override;
 - NaN/infinito/dato inválido;
 - slew y reset en init.
 
@@ -165,9 +165,12 @@ Inyectar observaciones:
 
 - request no sostenido;
 - shooter entrando/saliendo de tolerancia;
+- health de encoder/voltaje y overspeed;
 - dwell incompleto/completo;
 - turret at limit/fault;
 - pose degradada/invalid;
+- drive estacionario/movimiento lineal/movimiento angular;
+- feeder `WAITING_READINESS/PULSING/COOLDOWN`;
 - cámara perdida con odometría buena;
 - entrada/salida de `DEGRADED_FIXED_FORWARD`;
 - interruption/E-stop.
@@ -218,6 +221,7 @@ Sin habilitar motores:
 - observar Limelight pipeline, frames, ID y timestamps;
 - probar hold de armado sin permitir potencia si el estado no corresponde;
 - desconectar cámara y verificar fault seguro.
+- confirmar físicamente hood/webcam retiradas y Limelight instalada, sin asumir mapping/configuración.
 
 **Aceptación:** init y stop repetibles; cero movimiento; todos los hechos físicos críticos registrados.
 
@@ -234,7 +238,7 @@ Para cada actuador, a potencia reducida:
 5. presionar E-stop;
 6. Stop de OpMode.
 
-**Aceptación:** potencia cero como máximo en el siguiente ciclo de scheduler; no se reactiva en periodic.
+**Aceptación:** comando cero en el primer scheduler cycle y ≤50 ms de tiempo de pared; no se reactiva en periodic. El spin-down físico se registra aparte y no sustituye esta medida.
 
 ### T4.2 Torreta manual y límites
 
@@ -252,12 +256,12 @@ Para cada actuador, a potencia reducida:
 
 - confirmar sentido a baja potencia;
 - medir RPM vs comando y voltaje sin pieza;
-- verificar overspeed/timeout/stop;
-- feeder sólo hold-to-run en System Check;
+- verificar overspeed/timeout/stop y fault injection de encoder congelado, salto/RPM imposible y voltaje inválido;
+- feeder sólo hold-to-run en System Check; en integración usa pulsos acotados/cooldown;
 - probar reversa anti-jam sólo con procedimiento;
 - medir temperatura/corriente si disponible.
 
-**Aceptación:** clamps y stop; ninguna alimentación por un botón no interlocked en TeleOp de competencia.
+**Aceptación:** clamps y stop; un sensor inválido deja target/power cero; ninguna alimentación por un botón no interlocked en TeleOp de competencia.
 
 ### T4.4 Drive/odometría
 
@@ -272,14 +276,14 @@ Para cada actuador, a potencia reducida:
 
 Usar marcas/medición independiente. Mínimo:
 
-1. forward recto varias distancias y ambos sentidos;
-2. strafe ambos sentidos;
-3. giro 360° CW/CCW, varias repeticiones;
+1. forward recto varias distancias y ambos sentidos, mínimo cinco repeticiones por sentido;
+2. strafe ambos sentidos, mínimo cinco repeticiones por sentido;
+3. giro 360° CW/CCW, mínimo cinco repeticiones por sentido;
 4. cuadrado/rectángulo que vuelve al inicio;
 5. ruta mixta acordada;
 6. repetir con aceleraciones típicas.
 
-Registrar error inicial/final X/Y/heading y distribución, no sólo mejor intento.
+Registrar error por segmento e inicial/final X/Y/heading, media, máximo y distribución, no sólo mejor intento.
 
 **Gate inicial:** error final ≤2 in y ≤2° en la ruta repetida acordada. También revisar que no haya error sistemático creciente. Si el equipo cambia el gate, registrar decisión y datos.
 
@@ -369,24 +373,26 @@ Seleccionar distancias que cubran el rango de juego. En cada una:
 
 - hacer warmup definido;
 - usar pose/aim estacionario;
-- registrar al menos suficientes tiros para una proporción significativa;
+- registrar al menos 10 tiros por distancia en cada una de dos sesiones separadas;
 - separar datos para ajustar y distancias intermedias retenidas;
 - no ajustar después de cada miss sin registrar la intervención.
 
 Comparar lineal, cuadrático máximo grado 2 y piecewise-linear.
 
-**Gate inicial:** ≥9/10 en cada distancia soportada de calibración y ≥8/10 en puntos retenidos/intermedios, con mecanismo y piezas representativas. Elegir el modelo más simple que lo cumpla.
+**Gate inicial:** en cada sesión, ≥9/10 en cada distancia soportada de calibración y ≥8/10 en cada punto retenido/intermedio, con mecanismo y piezas representativas. No combinar sesiones para ocultar una celda fallida. Elegir el modelo más simple que lo cumpla.
 
-### T8.3 Trim/override del operador
+### T8.3 Controles manuales y trim del operador
 
 - DPAD up/down exactamente 100 por flanco;
 - mantener botón no repite sin política definida;
 - X vuelve a cero;
 - init siempre reinicia trim;
 - ±500 normal;
-- override claramente visible;
 - clamp absoluto permanece;
-- Y cambia modo sin doble toggle.
+- A inicia/arma RPM manual sólo con health sano;
+- B detiene target y power;
+- Y cambia modo sin doble toggle sólo después del gate MP-06;
+- no existe override desde gamepad.
 
 **Aceptación:** el operador corrige overshoot/undershoot sin perder conciencia del target final; logs guardan base/trim/clamp.
 
@@ -394,14 +400,15 @@ Comparar lineal, cuadrático máximo grado 2 y piecewise-linear.
 
 Matriz de permisos:
 
-| Request held | RPM ready | Turret ready | Pose/mode ready | Fault | Esperado |
-|---|---|---|---|---|---|
-| No | Cualquiera | Cualquiera | Cualquiera | No | Feeder 0. |
-| Sí | No | Sí | Sí | No | Feeder 0; razón RPM. |
-| Sí | Sí | No | Sí | No | Feeder 0; razón turret. |
-| Sí | Sí | Sí | No | No | Feeder 0; razón pose/mode. |
-| Sí | Sí | Sí | Sí | Sí | Feeder 0; fault. |
-| Sí | Sí | Sí | Sí | No | Feed sólo mientras se sostenga. |
+| Request held | RPM/health ready | Turret/zero ready | Pose/mode ready | Drive stationary | Fault | Esperado |
+|---|---|---|---|---|---|---|
+| No | Cualquiera | Cualquiera | Cualquiera | Cualquiera | No | Feeder 0. |
+| Sí | No | Sí | Sí | Sí | No | Feeder 0; razón RPM/sensor. |
+| Sí | Sí | No | Sí | Sí | No | Feeder 0; razón turret/zero. |
+| Sí | Sí | Sí | No | Sí | No | Feeder 0; razón pose/mode. |
+| Sí | Sí | Sí | Sí | No | No | Feeder 0; razón drive moving. |
+| Sí | Sí | Sí | Sí | Sí | Sí | Feeder 0; fault. |
+| Sí | Sí | Sí | Sí | Sí | No | Pulso acotado, cooldown y revalidación. |
 
 Casos extra:
 
@@ -412,8 +419,10 @@ Casos extra:
 - camera dropout;
 - E-stop/Stop;
 - jam y reversa manual.
+- sostener RB durante al menos 20 secuencias y contar pulsos/cooldowns;
+- cruzar en ambos sentidos los umbrales lineal/angular de chasis.
 
-**Aceptación:** cero feed no solicitado y stop en siguiente ciclo. Definir si un shot ya iniciado puede completar sólo después de evidencia; default es corte seguro.
+**Aceptación:** cero feed no solicitado; ningún pulso extra en 20 secuencias; release/fault/E-stop corta en el primer ciclo y ≤50 ms. Un pulso iniciado no se completa después de perder permiso.
 
 ## 15. Gate T10 — Modos degradados y fallas
 
@@ -445,6 +454,8 @@ Cuando sea seguro y sin dañar hardware:
 - pipeline equivocado;
 - pose jump;
 - encoder freeze/jump simulado;
+- encoder/RPM/voltaje inválido de shooter;
+- reset/brownout simulado que invalida `zeroValid` de torreta;
 - scheduler interruption;
 - battery low condition controlada;
 - init/stop repetido;
@@ -472,7 +483,7 @@ El test lead introduce fallas sin avisar cuál, dentro de un guion seguro. El op
 
 ### Scrimmage
 
-Ejecutar al menos dos sesiones separadas con:
+Ejecutar al menos dos sesiones separadas sobre el mismo SHA candidato con:
 
 - batería/piezas representativas;
 - posiciones de campo relevantes;
@@ -480,7 +491,7 @@ Ejecutar al menos dos sesiones separadas con:
 - logs completos;
 - inspección mecánica posterior.
 
-**Gate de release:** dos sesiones cumplen criterios, no hay critical/high abierto y el equipo completa el manual sin ayuda del programador.
+**Gate pre-cleanup:** dos sesiones cumplen criterios, no hay critical/high abierto y el equipo completa el manual sin ayuda del programador. Después de MP-09, MP-10 repite T0–T10 y estas dos sesiones sobre el SHA limpio antes del release.
 
 ## 17. Plantilla de caso de prueba
 
@@ -544,12 +555,13 @@ Un finding se cierra sólo cuando:
 - [ ] Transform de cuatro anclas en ambas alianzas.
 - [ ] Torreta cero/límites/error ≤2.5°.
 - [ ] Shooter ±100 RPM por 250 ms.
-- [ ] Modelo ≥9/10 calibración y ≥8/10 retenido.
-- [ ] Trim/manual/override dentro de clamp.
+- [ ] Modelo ≥9/10 calibración y ≥8/10 retenido en cada distancia y sesión, 10 tiros por celda.
+- [ ] Trim/manual dentro de clamp; cero override de gamepad.
 - [ ] Cero feed involuntario.
-- [ ] Stop en siguiente ciclo.
+- [ ] Pulsos/cooldown acotados y robot estacionario antes de cada feed.
+- [ ] Stop en primer ciclo y ≤50 ms.
 - [ ] Normal, odometry-only y degradado ensayados.
-- [ ] Dos scrimmages aceptados.
+- [ ] Dos scrimmages aceptados antes y después de cleanup sobre sus SHAs exactos.
 - [ ] Sin critical/high abiertos.
 - [ ] Operadores aprueban el manual.
 - [ ] Snapshot/tag y rollback verificados antes de limpieza.

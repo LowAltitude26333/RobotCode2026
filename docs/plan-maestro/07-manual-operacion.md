@@ -1,7 +1,7 @@
 # 07 — Manual de operación del robot
 
 > Estado: borrador de diseño; **no usar para operar hardware hasta implementar y validar los controles**
-> Baseline de referencia: arquitectura objetivo posterior a MP-07, no el `main` actual
+> Baseline de referencia: arquitectura objetivo posterior a MP-07; código actual inspeccionado en `origin/main@b5a134260456565df9d0295722ebecad900f21b4`
 > Última actualización: 2026-07-15
 > Alcance: preparación, operadores, disparo normal/degradado, fallas y shutdown
 > Responsables sugeridos: operadores 1 y 2, drive coach y safety lead
@@ -9,7 +9,7 @@
 
 ## 1. Advertencia
 
-Este manual describe el comportamiento que se va a construir. El repo `main@f91af18` todavía no implementa todos estos controles ni estados. No entrenar muscle memory ni habilitar el robot suponiendo que este documento ya corresponde al APK.
+Este manual describe el comportamiento que se va a construir. `origin/main@b5a1342` todavía no implementa todos estos controles ni estados y contiene caminos críticos documentados en hallazgos. No entrenar muscle memory ni habilitar el robot suponiendo que este documento ya corresponde al APK.
 
 La versión de competencia deberá mostrar en telemetry su SHA/versión y enlazar con la revisión exacta del manual.
 
@@ -25,11 +25,11 @@ La versión de competencia deberá mostrar en telemetry su SHA/versión y enlaza
 ### 3.1 Armed no significa ready
 
 - `TURRET ARMED`: el cero se confirmó y el motor puede obedecer dentro de límites.
-- `SHOT READY`: además, pose/modo, aim, RPM y feeder cumplen todos los interlocks.
+- `SHOT READY`: además, pose/modo, aim, health/RPM, feeder y chasis estacionario cumplen todos los interlocks.
 
 ### 3.2 Request no significa feed
 
-Mantener `gamepad1 RB` pide un disparo. El feeder sólo actúa cuando `SHOT READY`. Soltar RB debe cortar el feeder.
+Mantener `gamepad1 RB` solicita disparos repetidos. El feeder sólo inicia cada pulso cuando `SHOT READY`, impone cooldown y revalida antes de la siguiente pieza. Soltar RB debe cortar el pulso en el primer scheduler cycle y ≤50 ms.
 
 ### 3.3 Modos de targeting
 
@@ -42,7 +42,8 @@ Mantener `gamepad1 RB` pide un disparo. El feeder sólo actúa cuando `SHOT READ
 
 - `AUTO_DISTANCE`: modelo calcula RPM por distancia y luego aplica trim.
 - `MANUAL_RPM`: operador selecciona/ajusta setpoint dentro del rango físico.
-- `OVERRIDE`: sólo el límite normal de trim fue desactivado deliberadamente; el clamp físico sigue activo.
+
+No existe override de trim o clamp desde gamepad.
 
 ## 4. Checklist pre-match en pits
 
@@ -53,6 +54,7 @@ Con robot apagado/deshabilitado:
 - [ ] Batería cargada y asegurada; conectores firmes.
 - [ ] Control/Expansion Hub, cables de odometría e IMU firmes.
 - [ ] Limelight firme, lente limpia, cable/alimentación seguros.
+- [ ] Webcam y hood reportados retirados; ningún checklist depende de ellos.
 - [ ] Pipeline/fieldmap/firmware esperados.
 - [ ] Tres pods bajan, giran libres y no tienen residuos.
 - [ ] Ruedas/drivetrain sin obstrucción.
@@ -70,7 +72,7 @@ No mover la torreta a mano con el mecanismo energizado salvo procedimiento mecá
 
 ### Paso 1 — Seleccionar el OpMode
 
-Elegir el único TeleOp de competencia. Si aparecen múltiples versiones/tuners o un nombre inesperado, no iniciar: probablemente se desplegó el APK equivocado.
+En release, elegir el único TeleOp de competencia; si aparecen tuners, probablemente se desplegó el APK equivocado. En commissioning sí pueden aparecer `MainTeleOp`, System Check, Shooter Tuning y tuners Pedro/Road Runner: usar sólo el modo autorizado en la hoja de sesión y nunca interpretar visibilidad como permiso de movimiento.
 
 ### Paso 2 — Revisar boot
 
@@ -117,8 +119,10 @@ La falta de visión puede permitir odometría según política, pero debe ser vi
 1. confirmar físicamente la marca central y cable slack;
 2. operador 2 mantiene `START+BACK` durante 1 segundo;
 3. la barra/contador de hold progresa; soltar cancela;
-4. al completar, el encoder se pone en cero y aparece `TURRET ARMED` con rumble/confirmación;
+4. al completar, el encoder se pone en cero, `zeroValid=true` y aparece `TURRET ARMED` con rumble/confirmación;
 5. si aparece fault o la torreta no está realmente centrada, Stop; no “compensar” conduciendo.
+
+Cada nuevo init, reset o brownout invalida el cero. La marca/fixture es una referencia humana: si parece desplazada o el cable slack no coincide, no armar.
 
 El chord se evalúa durante init loop. No debe requerir adivinar el instante de `initialize()`.
 
@@ -142,7 +146,9 @@ Sólo se fijan aquí los controles ya decididos; intake/drive restantes deben co
 | Control | Acción | Nota |
 |---|---|---|
 | Sticks | Conducir mecanum field-centric según perfil final | Reset de heading se documentará tras cerrar bindings. |
-| `RB` sostenido | Solicitud de disparo/feed | No salta readiness; soltar corta feeder. |
+| `RB` sostenido | Solicitud de disparos repetidos | Cada pulso/cooldown es acotado y revalida readiness; soltar corta. |
+| `BACK` | E-stop inmediato y latched | Primario; requiere validación con DS/gamepad exactos. |
+| `START+Y` sostenido 0.5 s | E-stop fallback | Sólo si `BACK` falla la validación y el release documenta el fallback. |
 | `X` durante init | Seleccionar BLUE | Sin efecto de cambio de alianza durante run. |
 | `B` durante init | Seleccionar RED | Sin efecto de cambio de alianza durante run. |
 | Feedback de límite | Orientar chasis en la dirección indicada | El robot no gira automáticamente. |
@@ -151,15 +157,16 @@ Sólo se fijan aquí los controles ya decididos; intake/drive restantes deben co
 
 | Control | Acción | Nota |
 |---|---|---|
+| `A` | Armar/iniciar RPM manual | Sólo con health de shooter sano y constants verificadas. |
+| `B` | Detener shooter | Target y power cero; no toggle. |
 | `DPAD_UP` | Trim +100 RPM | Por pulsación/flanco. |
 | `DPAD_DOWN` | Trim -100 RPM | Por pulsación/flanco. |
 | `X` | Trim a 0 | Confirmación visible. |
-| `Y` | Alternar `AUTO_DISTANCE`/`MANUAL_RPM` | Modo siempre visible. |
+| `Y` | Alternar `AUTO_DISTANCE`/`MANUAL_RPM` | Disponible sólo después de aceptar MP-06; modo visible. |
 | `START+BACK` sostenido 1 s en init | Confirmar centro y armar torreta | Sólo si el init state lo permite. |
 | `START+BACK` sostenido 1 s durante run | Entrar/salir de `DEGRADED_FIXED_FORWARD` | Feedback distinto al arm. |
-| Chord de override por definir | Desactivar/activar límite normal de trim | Nunca desactiva clamp físico. |
 
-El chord de override y controles finales de intake/reversa/jam deben documentarse antes de marcar el manual como aprobado. No reutilizar un botón con una acción contextual peligrosa sin feedback.
+Los controles finales de intake/reversa/jam deben documentarse antes de marcar el manual como aprobado. No reutilizar un botón con una acción contextual peligrosa sin feedback.
 
 ## 7. Disparo normal
 
@@ -170,8 +177,8 @@ El chord de override y controles finales de intake/reversa/jam deben documentars
 5. Telemetry muestra `base + trim = target`, RPM medida y error.
 6. Driver sostiene `RB`.
 7. Si no está listo, feeder permanece cero y aparece la razón principal.
-8. Al cumplir pose/modo, torreta y RPM durante dwell, se permite feed.
-9. Soltar `RB` corta feeder aunque el sistema siga listo.
+8. Al cumplir pose/modo, torreta, sensor/RPM y velocidades lineal/angular estacionarias durante dwell, se permite un pulso acotado.
+9. Tras cada pulso existe cooldown y se revalida todo; soltar `RB` corta feeder aunque el sistema siga listo.
 
 No pulsar repetidamente RB intentando “forzar” el interlock. Leer la razón: RPM, turret limit, pose, target, fault o request.
 
@@ -189,11 +196,11 @@ Aplicar una corrección por vez y observar varios tiros si el ritmo lo permite. 
 
 El equipo debe revisar después los logs: un trim repetitivo por distancia probablemente indica que el modelo necesita recalibración.
 
-## 9. Manual RPM y override
+## 9. Manual RPM y límites
 
 ### 9.1 Entrar a `MANUAL_RPM`
 
-Operador 2 pulsa `Y`. Confirmar que la pantalla cambia a `MANUAL_RPM` y muestra el setpoint. Usarlo sólo cuando la estrategia o el modo degradado lo requieran.
+Durante commissioning, operador 2 usa `A` para armar/iniciar el setpoint manual y `B` para detenerlo. Después de MP-06, `Y` cambia entre `MANUAL_RPM` y `AUTO_DISTANCE`; confirmar siempre el modo visible.
 
 Manual RPM no desactiva:
 
@@ -203,17 +210,9 @@ Manual RPM no desactiva:
 - feeder interlock;
 - E-stop.
 
-### 9.2 Override de trim normal
+### 9.2 Límites no anulables
 
-La implementación final tendrá un chord sostenido que cambia `RPM_TRIM_LIMIT_ENABLED`. Cuando está desactivado:
-
-- aparece `OVERRIDE` dominante;
-- el operador puede recorrer el rango validado, no más;
-- la acción queda en log;
-- se cancela al reiniciar init;
-- el clamp físico absoluto sigue vigente.
-
-Si el target deseado exige superar el clamp físico, abortar y corregir calibración/mecánica; no existe un override desde gamepad para ese límite.
+Trim ±500 y el clamp físico absoluto permanecen activos. Si el target deseado exige rebasarlos, abortar y corregir calibración/mecánica; no existe override desde gamepad. Ampliar un rango requiere una nueva decisión, revisión mecánica y dataset.
 
 ## 10. Target fuera del arco
 
@@ -265,9 +264,9 @@ Si la torreta no está armada o encoder es implausible, el modo no puede moverla
 1. driver apunta el chasis manualmente;
 2. operador elige RPM dentro del rango validado;
 3. sistema exige turret-at-zero y RPM estable;
-4. driver mantiene RB;
-5. feeder actúa sólo durante request y timeout;
-6. soltar RB corta feed.
+4. driver mantiene RB con el chasis estacionario;
+5. feeder actúa por pulsos acotados/cooldown y revalida cada pieza;
+6. soltar RB corta feed en el primer ciclo y ≤50 ms.
 
 ### Salida
 
@@ -287,7 +286,7 @@ Nunca dejar reversa latched ni meter manos con mecanismos energizados.
 
 ## 14. E-stop y Stop
 
-La combinación exacta de E-stop debe confirmarse en el mapa final. Su efecto requerido es:
+El E-stop primario es `gamepad1 BACK`, inmediato y latched. Debe validarse con Advanced Gamepad Features, Driver Station y gamepad exactos. Si esa prueba falla, el release usa `gamepad1 START+Y` sostenido 0.5 s. Su efecto requerido es:
 
 - cancelar/deshabilitar scheduler;
 - `RobotSafety.stopAll()`;
@@ -307,7 +306,6 @@ Usar E-stop/Stop ante movimiento inesperado, limit contact, overspeed, feed no s
 | `TURRET AT_LIMIT` | Goal fuera del arco | Driver gira chasis. |
 | `VISION STALE` | Limelight no aporta frame fresco | Operar según odometría/política; revisar cámara. |
 | `RPM NOT STABLE` | Shooter no completó dwell | Mantener request/esperar; revisar target/batería. |
-| `OVERRIDE` | Límite normal de trim desactivado | Confirmar setpoint; mantener dentro de estrategia aprobada. |
 | `FEED BLOCKED: ...` | Interlock no satisfecho | Corregir la razón; no intentar bypass. |
 | `DEGRADED FIXED FORWARD` | Apuntado manual del chasis | Torreta cero, manual RPM, procedimiento degradado. |
 | `FAULT / E-STOP LATCHED` | Outputs detenidos | Stop, desenergizar/inspeccionar y reiniciar. |
@@ -334,7 +332,7 @@ Cada operador debe demostrar en robot restringido o simulación apropiada:
 - [ ] Solicitar un tiro y leer block reason.
 - [ ] Aplicar +100/-100 y reset.
 - [ ] Cambiar auto/manual.
-- [ ] Explicar override y clamp físico.
+- [ ] Explicar que no existe override y reconocer el clamp físico.
 - [ ] Responder a `AT_LIMIT` girando chasis.
 - [ ] Entrar/salir de degraded.
 - [ ] Resolver un jam simulado.
@@ -346,7 +344,7 @@ Cada operador debe demostrar en robot restringido o simulación apropiada:
 Quitar la advertencia de borrador sólo cuando:
 
 - controles finales no tengan conflictos;
-- E-stop y override chords estén definidos;
+- E-stop primario/fallback estén probados con el equipo exacto;
 - textos/rumble coincidan con implementación;
 - normal/degradado/jam hayan sido probados;
 - operadores completen drills sin ayuda del programador;
