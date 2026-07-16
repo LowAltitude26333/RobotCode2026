@@ -1,7 +1,7 @@
 # 06 — Limpieza y release
 
-> Estado: plan aprobado; ejecución bloqueada hasta aceptar MP-08
-> Baseline de referencia: `main` en `f91af18`
+> Estado: plan aprobado; cleanup bloqueado hasta MP-08 y release bloqueado hasta MP-10
+> Baseline de referencia: `origin/main@b5a134260456565df9d0295722ebecad900f21b4`
 > Última actualización: 2026-07-15
 > Alcance: snapshot Git, eliminación de legado, build/deploy y rollback
 > Responsable sugerido: release lead con revisión del líder de software
@@ -15,6 +15,8 @@ Terminar con una rama `main` enfocada en competencia que sea rápida de entender
 - un System Check seguro;
 - cero autónomos;
 - cero tuners/test OpModes registrados en el build normal.
+
+Durante commissioning el menú es deliberadamente mayor: `MainTeleOp`, System Check, Shooter Tuning, Pedro Tuning y los registradores dinámicos Road Runner permanecen visibles hasta completar sus calibraciones. Esta sección describe el artefacto final, no autoriza ocultarlos ahora.
 
 Reducir archivos y dependencias puede mejorar compilación, APK o instalación, pero no se prometerá una mejora de deploy sin medirla. El beneficio garantizado de la limpieza es reducir superficie de error y ruido operativo, no una cifra de segundos.
 
@@ -35,6 +37,10 @@ No borrar/mover legado mientras cualquiera sea verdadero:
 La limpieza nunca se usa para esconder una implementación fallida.
 
 ## 3. Estrategia de preservación
+
+### 3.0 Baseline previo al primer cambio de código
+
+Antes de MP-01, crear, publicar y verificar `baseline/pre-mp01-YYYYMMDD`. Este tag no se materializa durante la corrección documental; queda como prerrequisito del primer paquete de implementación.
 
 ### 3.1 Snapshot obligatorio
 
@@ -60,7 +66,11 @@ git push origin archive/pre-cleanup-YYYYMMDD
 
 No crear un directorio Java `archive/` dentro de `main`: sus clases podrían seguir compilándose/registrándose y no reducen superficie real. El historial Git es el archivo.
 
-### 3.2 Rama de commissioning
+### 3.2 Tag final
+
+MP-09 no crea el release. Después de repetir T0–T10 y dos sesiones en MP-10, crear `release/competition-YYYYMMDD` sobre el SHA limpio exacto y verificarlo desde otro checkout. Si MP-10 falla, no mover ni recrear el tag para ocultar el resultado.
+
+### 3.3 Rama de commissioning
 
 Mantener una rama claramente nombrada para:
 
@@ -95,7 +105,7 @@ Probar actividad por call path, no por nombre de archivo.
 |---|---|---|
 | TeleOp de competencia nuevo | Conservar | Siempre. |
 | System Check seguro | Conservar | Siempre. |
-| Otros TeleOps habilitados/deshabilitados | Eliminar de `main` tras snapshot | MP-09. |
+| Otros TeleOps no-tuning habilitados/deshabilitados | Eliminar de `main` tras snapshot | MP-09. |
 | Todos los autónomos | Eliminar de `main` tras snapshot | MP-09; no hay autos en scope final. |
 | RR tuning registrars | Eliminar/desactivar físicamente del build final | Tras aceptar Pedro. |
 | Pedro tuners complejos | Mover por historial/rama, no a package archive | Tras calibración. |
@@ -176,7 +186,7 @@ La medición de investigación (`~192.3 s`, APK `81,278,696` bytes) es sólo ref
 
 Si una dependencia “parece” no usada, demostrarlo con imports, Gradle dependency graph y build; no removerla sólo por nombre.
 
-## 10. Release candidate
+## 10. Candidato posterior a limpieza
 
 ### 10.1 Identidad
 
@@ -191,7 +201,7 @@ El candidato debe tener:
 - changelog y findings conocidos;
 - APK/hash guardado según práctica del equipo.
 
-### 10.2 Gate funcional
+### 10.2 Gate para entrar a MP-10
 
 - build exitoso desde checkout limpio;
 - un TeleOp + un System Check visibles;
@@ -199,9 +209,10 @@ El candidato debe tener:
 - normal, odometry-only y degraded probados;
 - alliance/preset/arm init funcional;
 - E-stop/stop paths probados;
-- criterios de MP-08 cumplidos;
-- dos sesiones integradas aceptadas;
+- evidencia de MP-08 vinculada como baseline pre-cleanup;
 - sin critical/high abierto.
+
+Pasar esta lista sólo demuestra que el candidato está listo para revalidación. MP-10 debe repetir T0–T10 y dos sesiones integradas sobre este SHA; sólo entonces se crea el tag final.
 
 ### 10.3 Gate de propiedad del equipo
 
@@ -255,6 +266,7 @@ Road Runner vive en el snapshot, no oculto en producción. Crear una rama desde 
 - [ ] MP-08 aceptado y permiso explícito.
 - [ ] Worktree limpio y SHA registrado.
 - [ ] Tag anotado creado, publicado y verificado.
+- [ ] `baseline/pre-mp01-*` y `archive/pre-cleanup-*` recuperables.
 - [ ] Rama de commissioning definida.
 - [ ] Road Runner recuperable desde snapshot.
 - [ ] Un TeleOp de competencia.
@@ -268,7 +280,9 @@ Road Runner vive en el snapshot, no oculto en producción. Crear una rama desde 
 - [ ] Driver Station verificado.
 - [ ] Manual/changelog/license actualizados.
 - [ ] Rollback reconstruido desde otro checkout.
+- [ ] MP-10 repitió T0–T10 y dos sesiones sobre el SHA limpio.
+- [ ] `release/competition-*` creado únicamente después de MP-10.
 
 ## 14. Definición de terminado
 
-La limpieza termina cuando el release pequeño es funcional, medido y recuperable. “El repo tiene menos archivos” no es suficiente. Si el snapshot no puede reconstruirse o el System Check quedó sin seguridad, la limpieza falló aunque el APK sea menor.
+La limpieza termina con un candidato pequeño, medido y recuperable. El programa termina sólo cuando MP-10 demuestra que ese mismo SHA es funcional y seguro y crea el tag final. “El repo tiene menos archivos” no es suficiente; si el snapshot no se reconstruye, el System Check quedó sin seguridad o la revalidación falla, no existe release aunque el APK sea menor.

@@ -1,7 +1,7 @@
 # 04 — Repositorios de referencia
 
 > Estado: investigación inicial completada; revisión de licencia/API pendiente antes de reutilizar código
-> Baseline de referencia: `main` en `f91af18`
+> Baseline de referencia: `origin/main@b5a134260456565df9d0295722ebecad900f21b4`
 > Última actualización: 2026-07-15
 > Alcance: equipos públicos con torreta/shooter/feeder, mecanum, Limelight u odometría
 > Responsable sugerido: líder de software y estudiante que implementará cada patrón
@@ -50,6 +50,21 @@ Antes de copiar cualquier fragmento, registrar URL de archivo, commit, licencia,
 | [Leviathan Robotics 25667](https://leviathanrobotics.org/) | Intake/spindexer/flywheel/turret/Limelight y regresión descritos públicamente | Arquetipo y enfoque de calibración valiosos | No se verificó repo público de código; cámara reportada en torreta y stack Road Runner | Referencia conceptual secundaria, nunca fuente de código. |
 
 Las páginas oficiales de eventos ayudan a confirmar la identidad de equipos, no a certificar el código: [FTC 6832](https://ftc-events.firstinspires.org/2025/team/6832), [FTC 12808](https://ftc-events.firstinspires.org/team/12808) y [FTC 18011](https://ftc-events.firstinspires.org/team/18011).
+
+### 3.1 Registro de fuentes primarias que bloquean implementación
+
+Cada revisión se registra con URL, versión/commit, fecha de consulta, afirmación usada, impacto y pregunta abierta. Al 2026-07-15:
+
+| Fuente primaria | Versión/ref | Afirmación sustentada | Impacto / pendiente |
+|---|---|---|---|
+| [FTC Robot Controller](https://github.com/FIRST-Tech-Challenge/FTCRobotController) | Release notes 7.1+; repo oficial | `back`/`guide` pueden ligarse con Advanced Gamepad Features | Probar `BACK` con DS/gamepad reales; fallback `START+Y` 0.5 s si falla. |
+| [FTCLib command system](https://docs.ftclib.org/ftclib/command-base/command-system/) | Documentación vigente consultada | Requirements, scheduler e interruption deben conservar ownership/cleanup | Confirmar APIs contra FTCLib declarado antes de código. |
+| [Pedro Pathing](https://pedropathing.com/) | La versión del repo debe fijarse antes de MP-02 | Pose y follower deben migrarse como un solo dueño | Verificar API exacta de la versión resuelta; no copiar constants. |
+| [Road Runner 1.0 tuning](https://rr.brott.dev/docs/v1-0/tuning/) | RR 1.0 | Tuners dinámicos forman parte del commissioning actual | Inventariar registro/power/stop y retirarlos sólo tras aceptar Pedro. |
+| [Limelight docs](https://docs.limelightvision.io/) | Firmware/pipeline local pendientes | Configuración, field map y resultados requieren versión | Dispositivo instalado, pero mapping/extrínseca siguen `TBD-BLOCKING`. |
+| [DECODE Competition Manual TU32](https://ftc-resources.firstinspires.org/ftc/archive/2026/game/cm-html/DECODE_Competition_Manual_TU32.htm) | TU32 archivada | Geometría/IDs nominales de la temporada | Revisar update vigente antes de fijar poses/goal; no inventar coordenadas. |
+
+Si una fuente no fija versión o la API efectiva requiere resolver Gradle, el punto permanece abierto; esta fase documental no ejecuta build para “confirmarlo”.
 
 ## 4. Iron Reign — FTC 6832
 
@@ -175,7 +190,7 @@ No se verificó un repositorio público de código asociado durante esta investi
 | Torreta | Soft limits, armed state, error/dwell | PID/FF según mecanismo medido | Powers/ticks de otro robot. |
 | Shooter | Modelo empírico versionado | Lookup/regresión con nuestros datos | Hood variable/shoot-on-move en primera versión. |
 | Feeder | State machine e interlock | Anti-jam tras medir corriente/tiempo | Botón que energiza sin readiness. |
-| Operación | Selector init, manuals, diagnostics | Layout de controles al contrato local | Muchos TeleOps como menú de pruebas. |
+| Operación | Selector init, manuals, diagnostics | Catálogo visible de commissioning con safety por modo | Legacy no-tuning o tuners sin clasificación/permiso. |
 | Degradado | Modo explícito y entrenado | Condiciones/timeout según robot | Degradación silenciosa o fire permisivo. |
 | Concurrencia | Datos inmutables/timestamps | Thread sólo si se demuestra necesidad | Thread sin ownership/lifecycle claro. |
 
