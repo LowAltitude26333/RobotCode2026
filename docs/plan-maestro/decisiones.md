@@ -1,7 +1,7 @@
 # Registro de decisiones
 
 > Estado: registro vivo de decisiones de producto/arquitectura
-> Baseline inicial: `main` en `f91af18`
+> Baseline histórico inicial: `main` en `f91af18`; baseline vigente: `origin/main@b5a134260456565df9d0295722ebecad900f21b4`
 > Última actualización: 2026-07-15
 > Alcance: elecciones aprobadas, alternativas, consecuencias y condiciones de revisión
 > Responsable sugerido: líder técnico y responsables nombrados en cada decisión
@@ -22,7 +22,7 @@
 | ID | Estado | Decisión | Revisión disparada por |
 |---|---|---|---|
 | DEC-001 | ACCEPTED | Documentación en índice maestro + anexos técnicos | Cambio de estructura del programa. |
-| DEC-002 | ACCEPTED | Pedro Pathing primario; RR rollback Git | Pedro no cumple gate MP-02. |
+| DEC-002 | SUPERSEDED | Pedro primario sólo como proveedor de pose | Reemplazada por DEC-034. |
 | DEC-003 | ACCEPTED | Tres dead wheels | Cambio físico del localizador. |
 | DEC-004 | ACCEPTED | Limelight 3A fija al chasis | Montaje no viable/oclusiones demostradas. |
 | DEC-005 | ACCEPTED | Auto-aim odometría-first con visión gated | Logs demuestran insuficiencia. |
@@ -34,17 +34,27 @@
 | DEC-011 | ACCEPTED | Un motor shooter, ángulo fijo, sin hood activo | Hardware cambia. |
 | DEC-012 | VALIDATING | RPM por distancia: modelo empírico más simple | Dataset/gates seleccionan modelo. |
 | DEC-013 | ACCEPTED | Operador 2 trim ±100, reset X, modo Y | Conflicto final de bindings. |
-| DEC-014 | ACCEPTED | Trim normal ±500, override limitado, clamp absoluto | Límite mecánico cambia con aprobación. |
+| DEC-014 | SUPERSEDED | Trim normal ±500 y override limitado | Reemplazada por DEC-030. |
 | DEC-015 | ACCEPTED | Feeder es kicker actual; request sostenido + interlock | Diseño mecánico cambia. |
 | DEC-016 | ACCEPTED | `DEGRADED_FIXED_FORWARD` deliberado | Safety testing lo invalida. |
 | DEC-017 | ACCEPTED | Chord START+BACK state-aware de 1 s | Human-factors testing pide otro control. |
 | DEC-018 | ACCEPTED | Un owner/composition root | Arquitectura completa cambia formalmente. |
-| DEC-019 | ACCEPTED | Un TeleOp + un System Check, cero autos final | Alcance de competencia cambia. |
-| DEC-020 | ACCEPTED | Snapshot Git y borrar legado de main al final | Política de conservación cambia. |
+| DEC-019 | SUPERSEDED | Un TeleOp + un System Check, cero autos final | Reemplazada por DEC-026. |
+| DEC-020 | SUPERSEDED | Snapshot Git y borrar legado de main al final | Reemplazada por DEC-032. |
 | DEC-021 | ACCEPTED | Sistema y documentación técnica en español | Necesidad del equipo cambia. |
 | DEC-022 | ACCEPTED | No actualizar toolchain/SDK incidentalmente | Upgrade plan separado aprobado. |
 | DEC-023 | ACCEPTED | Métricas, no promesas, para velocidad de deploy | Nueva evidencia/objetivo. |
 | DEC-024 | ACCEPTED | Fuentes externas son patrones, con gate de licencia | Política legal/educativa cambia. |
+| DEC-025 | ACCEPTED | `origin/main@b5a1342` es la fuente documental vigente | El source ref seleccionado cambia. |
+| DEC-026 | ACCEPTED | Tuners visibles en commissioning; menú mínimo en release | Todos los tuners ya fueron validados y archivados. |
+| DEC-027 | VALIDATING | E-stop BACK; fallback START+Y por 0.5 s | Prueba del DS/gamepad exactos. |
+| DEC-028 | ACCEPTED | Hood/webcam retiradas; Limelight instalada pero no configurada | Evidencia física/config contradice el reporte. |
+| DEC-029 | ACCEPTED | Cero manual con marca/fixture y `zeroValid` efímero | Se instala y valida home sensor. |
+| DEC-030 | ACCEPTED | Shooter manual A/B, trim D-pad/X y sin override | Nueva decisión explícita del equipo. |
+| DEC-031 | ACCEPTED | Feeder por pulsos acotados y sólo con robot estacionario | Diseño mecánico o estrategia cambia. |
+| DEC-032 | ACCEPTED | Tags en tres etapas y revalidación posterior a cleanup | Política de release cambia. |
+| DEC-033 | ACCEPTED | Todo dato físico no verificado es `TBD-BLOCKING` | Medición/revisión lo convierte en verificado. |
+| DEC-034 | ACCEPTED | Pedro posee pose y movimiento; RR sólo rollback | Pedro no cumple MP-02. |
 
 ## 3. Decisiones aceptadas
 
@@ -59,7 +69,7 @@
 
 ### DEC-002 — Pedro primario y Road Runner como rollback
 
-- **Estado/fecha:** `ACCEPTED`, 2026-07-15
+- **Estado/fecha:** `SUPERSEDED` por DEC-034, 2026-07-15
 - **Contexto:** el runtime actual usa RR; el equipo quiere Pedro y ya existe scaffold.
 - **Decisión:** migrar/calibrar Pedro como único proveedor de pose de producción. Conservar RR sólo en snapshot/tag/rama de commissioning hasta que Pedro pase gates.
 - **Alternativas:** conservar RR; ejecutar ambos; borrar RR inmediatamente.
@@ -151,7 +161,7 @@
 
 - **Estado/fecha:** `VALIDATING`, 2026-07-15
 - **Contexto:** ángulo fijo requiere ajustar velocidad por distancia.
-- **Decisión:** comparar lineal, cuadrático máximo grado 2 y piecewise-linear. Elegir el más simple que cumpla ≥9/10 en calibración y ≥8/10 retenido/intermedio.
+- **Decisión:** comparar lineal, cuadrático máximo grado 2 y piecewise-linear. Elegir el más simple que, en cada una de dos sesiones, cumpla ≥9/10 tiros en cada distancia de calibración y ≥8/10 en cada distancia retenida/intermedia; no combinar sesiones para ocultar una falla.
 - **Alternativas:** presets manuales únicamente; balística compleja; red neuronal.
 - **Razón:** explicabilidad y menor extrapolación con dataset FTC pequeño.
 - **Consecuencia:** no se conocerá la forma final hasta T8; versionar dataset/modelo.
@@ -167,7 +177,7 @@
 
 ### DEC-014 — Override limitado, clamp absoluto permanente
 
-- **Estado/fecha:** `ACCEPTED`, 2026-07-15
+- **Estado/fecha:** `SUPERSEDED` por DEC-030, 2026-07-15
 - **Contexto:** se desea override sin permitir overspeed peligroso.
 - **Decisión:** trim normal se limita a ±500 y se reinicia en init. `RPM_TRIM_LIMIT_ENABLED=true` por default. Un chord sostenido puede desactivarlo, pero `MIN/MAX_VALIDATED_RPM` siempre clampan el target.
 - **Alternativas:** sin override; override total; persistir trim.
@@ -199,7 +209,7 @@
 - **Decisión:** `gamepad2 START+BACK` sostenido 1 s arma el centro durante init y alterna degraded durante run. El estado elimina la ambigüedad; feedback es distinto.
 - **Alternativas:** chequeo instantáneo; botones separados; tap simple.
 - **Razón:** entrada deliberada y fácil de recordar.
-- **Consecuencia:** E-stop/override no deben colisionar; human-factors test obligatorio.
+- **Consecuencia:** el E-stop usa gamepad 1 y no debe colisionar; human-factors test obligatorio.
 
 ### DEC-018 — Composition root y ownership únicos
 
@@ -212,7 +222,7 @@
 
 ### DEC-019 — Artefacto final: uno más uno y cero autos
 
-- **Estado/fecha:** `ACCEPTED`, 2026-07-15
+- **Estado/fecha:** `SUPERSEDED` por DEC-026, 2026-07-15
 - **Contexto:** el usuario quiere deploy/menu limpios y no requiere autónomos en este objetivo.
 - **Decisión:** exactamente un Competition TeleOp y un System Check seguro; cero Autonomous, tests o tuners registrados en build normal.
 - **Alternativas:** conservar disabled; múltiples diagnostics; autos viejos.
@@ -221,7 +231,7 @@
 
 ### DEC-020 — Archivo en Git, eliminación en main
 
-- **Estado/fecha:** `ACCEPTED`, 2026-07-15
+- **Estado/fecha:** `SUPERSEDED` por DEC-032, 2026-07-15
 - **Contexto:** mover código a `/archive` puede seguir compilándolo y no limpia realmente.
 - **Decisión:** tras MP-08 crear tag anotado verificable y borrar legacy de `main`. Road Runner queda recuperable desde snapshot.
 - **Alternativas:** carpetas archive; borrar sin tag; conservar todo disabled.
@@ -264,6 +274,77 @@
 - **Razón:** aprender sin importar supuestos peligrosos o infringir licencia.
 - **Consecuencia:** registrar la influencia concreta en una nueva decisión/PR.
 
+### DEC-025 — Baseline documental vigente
+
+- **Estado/fecha:** `ACCEPTED`, 2026-07-15
+- **Contexto:** la rama documental quedó detrás de cambios integrados en `origin/main`.
+- **Decisión:** toda afirmación de estado actual se contrasta con `origin/main@b5a134260456565df9d0295722ebecad900f21b4`. `main@f91af18` permanece sólo como evidencia histórica etiquetada.
+- **Consecuencia:** inspeccionar el ref con `git show` no implica mezclar/rebasar la rama documental.
+
+### DEC-026 — Visibilidad distinta en commissioning y release
+
+- **Estado/fecha:** `ACCEPTED`, 2026-07-15
+- **Contexto:** el robot aún no está afinado y ocultar tuners impediría completar commissioning.
+- **Decisión:** mantener visibles `MainTeleOp`, System Check, Shooter Tuning, todos los tuners Pedro y los registradores dinámicos Road Runner durante commissioning. Un tuner visible pero sin contrato de safety queda bloqueado para uso. Tras MP-08/09, el release muestra sólo Competition TeleOp y System Check; los tuners permanecen en rama/tag recuperable.
+- **Consecuencia:** FND-010 distingue superficie deliberada de tuning y legacy no-tuning.
+
+### DEC-027 — E-stop primario y fallback
+
+- **Estado/fecha:** `VALIDATING`, 2026-07-15
+- **Contexto:** FTC SDK moderno permite ligar `back`, pero el comportamiento depende del Driver Station, Advanced Gamepad Features y gamepad real.
+- **Decisión:** `gamepad1 BACK` activa inmediatamente un latch global que cancela scheduler y llama `RobotSafety.stopAll()`. Si la prueba del equipo exacto falla, usar `gamepad1 START+Y` sostenido 0.5 s; no habilitar movimiento hasta validar uno.
+- **Fuente:** release notes oficiales del FTC Robot Controller, versión 7.1 y posteriores: <https://github.com/FIRST-Tech-Challenge/FTCRobotController>.
+- **Consecuencia:** el control debe ser uniforme en producción, System Check y tuners autorizados.
+
+### DEC-028 — Estado físico reportado de cámaras y hood
+
+- **Estado/fecha:** `ACCEPTED`, 2026-07-15
+- **Contexto:** el equipo confirma que hood y webcam ya fueron retiradas y que Limelight está instalada.
+- **Decisión:** el diseño futuro no usa hood ni webcam. Limelight permanece `TBD-BLOCKING` hasta confirmar mapping, firmware, pipeline, red, montaje y extrínseca; estar instalada no autoriza consumo de datos.
+- **Consecuencia:** el código legacy se conserva hasta la fase de cleanup, pero no se presenta como hardware disponible.
+
+### DEC-029 — Cero manual verificable de torreta
+
+- **Estado/fecha:** `ACCEPTED`, 2026-07-15
+- **Contexto:** no se añadirá sensor de home en este alcance; un reset de encoder no prueba centro físico.
+- **Decisión:** usar marca/fixture manual, hold `gamepad2 START+BACK` de 1 s durante init y flag `zeroValid`. Cada init, reset, brownout o encoder implausible invalida el cero y bloquea movimiento/feed hasta repetir el procedimiento. Soft limits incluyen zona de frenado y contención exterior.
+- **Consecuencia:** el procedimiento no detecta por sí mismo una marca falsa; requiere inspección humana y cable slack.
+
+### DEC-030 — Controles manuales de shooter sin override
+
+- **Estado/fecha:** `ACCEPTED`, 2026-07-15
+- **Contexto:** MainTeleOp debe conservar disparo manual antes de auto-distance y no existen límites físicos verificados para un override.
+- **Decisión:** `gamepad2 A` arma/inicia RPM manual; `B` detiene; `DPAD_UP/DOWN` ajusta ±100 RPM por flanco; `X` restaura trim. El trim normal queda ±500 y el clamp físico absoluto siempre aplica. No hay override desde gamepad. Tras validar MP-06, `Y` puede alternar auto/manual con feedback visible.
+- **Consecuencia:** cualquier override futuro requiere una nueva decisión y caracterización.
+
+### DEC-031 — Feeder por pulsos y readiness estacionaria
+
+- **Estado/fecha:** `ACCEPTED`, 2026-07-15
+- **Contexto:** hold directo puede energizar indefinidamente y los criterios anteriores sólo validaban tiros estacionarios sin comprobar movimiento.
+- **Decisión:** `gamepad1 RB` solicita disparos repetidos. Cada pulso tiene duración/cooldown físicos `TBD-BLOCKING`, revalida readiness y se corta por release, fault, E-stop o pérdida de cualquier interlock. Readiness incluye velocidades lineal y angular por debajo de umbrales medidos.
+- **Consecuencia:** no existe API de power directo desde bindings/adapters de competencia.
+
+### DEC-032 — Rollback y release en tres etapas
+
+- **Estado/fecha:** `ACCEPTED`, 2026-07-15
+- **Contexto:** limpiar después de dos sesiones cambia el SHA aceptado y un smoke test no prueba equivalencia.
+- **Decisión:** crear `baseline/pre-mp01-YYYYMMDD` antes del primer paquete de código, `archive/pre-cleanup-YYYYMMDD` antes de borrar y `release/competition-YYYYMMDD` sólo después de MP-10. MP-10 repite T0–T10 y dos sesiones sobre el SHA limpio.
+- **Consecuencia:** MP-09 produce candidato, no release.
+
+### DEC-033 — Unknowns físicos bloquean output
+
+- **Estado/fecha:** `ACCEPTED`, 2026-07-15
+- **Contexto:** el repo no contiene export RC ni medidas confiables de varias constantes.
+- **Decisión:** mapping, dirección, signo, límite o constante física ausente se marca `TBD-BLOCKING` y mantiene inhibido el actuador/automatismo afectado. La guía 08 define medición, evidencia y aprobación.
+- **Consecuencia:** Dashboard/defaults provisionales nunca cuentan como valores seguros.
+
+### DEC-034 — Pedro como dueño único de pose y movimiento
+
+- **Estado/fecha:** `ACCEPTED`, 2026-07-15
+- **Contexto:** abstraer sólo `PoseProvider` dejaría `DriveSubsystem/MecanumDrive` sobre Road Runner.
+- **Decisión:** MP-02 migra localización, conducción manual, seguimiento de paths, actualización de pose y stop a un único adapter respaldado por Pedro. Road Runner queda operativo sólo como rollback de commissioning hasta aceptar el gate.
+- **Consecuencia:** no se libera un dual-stack runtime; el rollback revierte el paquete completo.
+
 ## 4. Decisiones pendientes de implementación, no de producto
 
 Estas preguntas se resuelven con evidencia dentro del contrato ya aprobado:
@@ -276,9 +357,9 @@ Estas preguntas se resuelven con evidencia dentro del contrato ya aprobado:
 | Ventana permitida `ODOMETRY_ONLY` | Deriva medida | MP-04/08 |
 | Lineal/cuadrático/piecewise | Dataset retenido | MP-06/T8 |
 | RPM física min/max y slew | Aprobación mecánica + caracterización | MP-01/06 |
-| Chord exacto de override | Análisis de conflictos + drills | MP-06/07 |
-| Controles finales intake/jam/E-stop | Mapa integral + test humano | MP-07 |
-| Umbral final de shots/pose/aim | Dos sesiones y estrategia | MP-08 |
+| Duración/power/cooldown de feeder | Caracterización restringida y corriente | MP-01/06/T9 |
+| Controles finales intake/jam | Mapa integral + test humano | MP-07 |
+| Umbrales lineal/angular de readiness | Logs de drive y tiros estacionarios | MP-06/T9 |
 
 No hace falta una nueva preferencia abstracta para estas cifras; hace falta medir.
 
