@@ -1,11 +1,17 @@
 # Plan maestro de robustecimiento del robot
 
-> Estado: aprobado como programa de investigación y ejecución por fases; todavía no autoriza código, build, despliegue ni movimiento del robot
-> Baseline documental vigente: `origin/main` en `b5a134260456565df9d0295722ebecad900f21b4`
-> Última actualización: 2026-07-15
+> Estado: MP-00/01A autorizado e implementándose en `masterplan`; todavía no autoriza despliegue ni movimiento del robot
+> Baseline de implementación: `origin/main@a887fe4f7ca9023eec6034a0db6b8d918c640ecc`; preserva evidencia histórica de `b5a1342`
+> Última actualización: 2026-07-17
 > Alcance: arquitectura, torreta, Limelight 3A, odometría, shooter, controles, pruebas y limpieza
 > Responsables sugeridos: líder de software, responsable mecánico/eléctrico, operador 1, operador 2 y responsable de pruebas
 > Fuente de verdad: antes de ejecutar una fase se debe volver a inspeccionar la rama y el hardware; este documento describe el baseline indicado, no garantiza el estado físico del robot.
+
+Reinspección MP-00/01A: `a887fe4` integra el endurecimiento documental del PR #7 sobre
+`b5a1342`. La implementación actual corrige lifecycle de `VisionPortal`, init-loop, armado
+sostenido y el shooter nulo de `TeleopTorreta`; los findings permanecen `FIX_READY` hasta
+completar sus gates físicos. Por decisión del equipo, `KICKER_OUT_SPEED=0.85` se incluye en
+este paquete; su inclusión no constituye validación física del valor.
 
 ## 1. Resultado buscado
 
@@ -90,7 +96,7 @@ La limpieza sólo comienza después de demostrar el reemplazo, pero no hereda au
 
 **Objetivo.** Convertir la fotografía actual del repo en una lista trazable de riesgos, dueños de hardware y comportamientos activos.
 
-**Entradas.** `origin/main@b5a134260456565df9d0295722ebecad900f21b4`, `AGENTS.md`, `docs/critical-findings.md` y, cuando el equipo la entregue, la exportación de configuración del Robot Controller. La configuración no existe hoy en el repo.
+**Entradas.** `origin/main@a887fe4f7ca9023eec6034a0db6b8d918c640ecc`, con `b5a1342` preservado como evidencia histórica, `AGENTS.md`, `docs/critical-findings.md` y, cuando el equipo la entregue, la exportación de configuración del Robot Controller. La configuración no existe hoy en el repo.
 
 **Trabajo.**
 
@@ -393,6 +399,8 @@ Cada PR o sesión de commissioning debe adjuntar:
 - [08 — Guía de verificación de hardware](plan-maestro/08-guia-verificacion-hardware.md)
 - [Hallazgos](plan-maestro/hallazgos.md)
 - [Decisiones](plan-maestro/decisiones.md)
+- [Contrato operativo de hardware](plan-maestro/contrato-hardware.md)
+- [Handoff de la tarea](plan-maestro/handoff-task.md)
 - [Hallazgos críticos históricos](critical-findings.md), preservado sin editar
 
 ## 10. Definición de terminado del programa

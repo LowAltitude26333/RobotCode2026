@@ -13,6 +13,11 @@ import java.util.List;
 public abstract class SafeCommandOpMode extends CommandOpMode {
     private final List<Runnable> resourceCleanupHooks = new ArrayList<>();
     private final List<Command> scheduledTopLevelCommands = new ArrayList<>();
+    private boolean emergencyStopLatched;
+
+    /** Called repeatedly after initialize() and before Start, without running the scheduler. */
+    protected void duringInitLoop() {
+    }
 
     protected final void addResourceCleanup(Runnable cleanupHook) {
         resourceCleanupHooks.add(cleanupHook);
@@ -36,21 +41,41 @@ public abstract class SafeCommandOpMode extends CommandOpMode {
     }
 
     protected final void latchEmergencyStop() {
+        emergencyStopLatched = true;
         cancelScheduledCommands();
         CommandScheduler.getInstance().disable();
         RobotSafety.stopAll();
+    }
+
+    private boolean handleEmergencyStopRequest() {
+        if (!emergencyStopLatched && gamepad1.back) {
+            latchEmergencyStop();
+            requestOpModeStop();
+        }
+        return emergencyStopLatched;
     }
 
     @Override
     public final void runOpMode() throws InterruptedException {
         RobotSafety.beginOpMode();
         CommandScheduler.getInstance().enable();
+        emergencyStopLatched = false;
 
         try {
             initialize();
-            waitForStart();
+
+            while (!isStarted() && !isStopRequested()) {
+                if (handleEmergencyStopRequest()) {
+                    break;
+                }
+                duringInitLoop();
+                idle();
+            }
 
             while (!isStopRequested() && opModeIsActive()) {
+                if (handleEmergencyStopRequest()) {
+                    break;
+                }
                 run();
             }
         } finally {

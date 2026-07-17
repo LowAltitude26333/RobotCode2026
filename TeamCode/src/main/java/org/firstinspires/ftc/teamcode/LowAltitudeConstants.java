@@ -80,7 +80,7 @@ public class LowAltitudeConstants {
     }
 
     // --- KICKER CONSTANTS ---
-    public static final double   KICKER_OUT_SPEED = 0.7;
+    public static final double   KICKER_OUT_SPEED = 0.85;
     public static final double KICKER_REVERSE_SPEED = -0.7;
     public static long KICKER_EXTEND_TIME_MS = 632;
     public static long KICKER_RETRACT_DELAY_MS = 60;
@@ -99,6 +99,7 @@ public class LowAltitudeConstants {
         // no intente corregir movimientos milimétricos que causan vibración.
         public static double TURRET_ERROR_TOLERANCE = 2.5;
         public static long TAG_LOSS_HOLD_MS = 250;
+        public static final long TURRET_ARM_HOLD_MS = 1000;
         public static int BLUE_GOAL_TAG_ID = 20;
         public static int RED_GOAL_TAG_ID = 24;
     }

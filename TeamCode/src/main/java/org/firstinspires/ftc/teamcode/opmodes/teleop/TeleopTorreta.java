@@ -9,8 +9,8 @@ import com.arcrobotics.ftclib.gamepad.GamepadEx;
 import com.arcrobotics.ftclib.gamepad.GamepadKeys;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
-import org.firstinspires.ftc.teamcode.commands.ShooterCommand2;
-import org.firstinspires.ftc.teamcode.subsystems.ShooterMotor;
+import org.firstinspires.ftc.teamcode.LowAltitudeConstants;
+import org.firstinspires.ftc.teamcode.safety.TurretArmingStateMachine;
 import org.firstinspires.ftc.teamcode.subsystems.TurretSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.IntakeSubsystem; // Asegúrate de que apunte a tu clase real
 import org.firstinspires.ftc.teamcode.subsystems.KickerSubsystem; // Asegúrate de que apunte a tu clase real
@@ -26,10 +26,10 @@ public class TeleopTorreta extends SafeCommandOpMode {
 
     // Subsistemas que SÍ tienes conectados
     private TurretSubsystem turretSubsystem;
+    private TurretArmingStateMachine turretArming;
     private IntakeSubsystem intakeSubsystem;
     private KickerSubsystem kickerSubsystem;
 
-    private ShooterMotor shooterMotor;
     // Visión
     private AprilTagProcessor aprilTag;
     private VisionPortal visionPortal;
@@ -43,9 +43,8 @@ public class TeleopTorreta extends SafeCommandOpMode {
 
         // 1. Inicializar SÓLO los subsistemas que vas a usar
         turretSubsystem = new TurretSubsystem(hardwareMap);
-        if (gamepad2.start && gamepad2.back) {
-            turretSubsystem.confirmCenteredAndResetEncoder();
-        }
+        turretArming = new TurretArmingStateMachine(
+                LowAltitudeConstants.TurretConstants.TURRET_ARM_HOLD_MS);
         intakeSubsystem = new IntakeSubsystem(hardwareMap);
         kickerSubsystem = new KickerSubsystem(hardwareMap);
 
@@ -55,12 +54,12 @@ public class TeleopTorreta extends SafeCommandOpMode {
                 .setDrawAxes(true)
                 .setDrawTagOutline(true)
                 .build();
-        addResourceCleanup(visionPortal::close);
-
-        visionPortal = new VisionPortal.Builder()
+        VisionPortal createdVisionPortal = new VisionPortal.Builder()
                 .setCamera(hardwareMap.get(WebcamName.class, "Webcam 1"))
                 .addProcessor(aprilTag)
                 .build();
+        visionPortal = createdVisionPortal;
+        addResourceCleanup(createdVisionPortal::close);
 
         // 3. Asignar comando por defecto a la torreta (Tracking automático)
         turretSubsystem.setDefaultCommand(
@@ -95,14 +94,27 @@ public class TeleopTorreta extends SafeCommandOpMode {
                 .whileHeld(new RunCommand(kickerSubsystem::reverse, kickerSubsystem))
                 .whenReleased(new InstantCommand(kickerSubsystem::stop, kickerSubsystem));
 
-        schedule(new ShooterCommand2(
-                shooterMotor,
-                () -> gamepad2.a
-        ));
-
         telemetry.addLine("--- MODO AISLADO ACTIVO ---");
         telemetry.addLine("Hardware inicializado: Torreta, Intake, Kicker y Cámara.");
         telemetry.addLine("🎮 Usa el GAMEPAD 2.");
+        telemetry.update();
+    }
+
+    @Override
+    protected void duringInitLoop() {
+        long nowNanos = System.nanoTime();
+        boolean confirmationHeld = gamepad2.start && gamepad2.back;
+
+        if (turretArming.update(confirmationHeld, nowNanos)) {
+            turretSubsystem.confirmCenteredAndResetEncoder();
+        }
+
+        telemetry.addLine("=== ARMADO SEGURO DE TORRETA ===");
+        telemetry.addData("Estado", turretArming.getState());
+        telemetry.addData("Progreso START+BACK", "%.0f%%",
+                turretArming.getProgress(nowNanos) * 100.0);
+        telemetry.addLine("Centre físicamente la torreta antes de confirmar.");
+        telemetry.addLine("El software no mueve la torreta durante init.");
         telemetry.update();
     }
 

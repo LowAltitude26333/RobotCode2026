@@ -1,8 +1,8 @@
 # 01 — Auditoría del estado actual
 
-> Estado: auditoría estática actualizada; requiere confirmación física
-> Baseline vigente: `origin/main` en `b5a134260456565df9d0295722ebecad900f21b4`
-> Última actualización: 2026-07-15
+> Estado: auditoría rebaselinada para MP-00/01A; requiere confirmación física
+> Baseline de implementación: `origin/main@a887fe4f7ca9023eec6034a0db6b8d918c640ecc`
+> Última actualización: 2026-07-17
 > Alcance: repo, composición activa, hardware observado, findings históricos y brechas
 > Responsable sugerido: líder de software con revisión mecánica/eléctrica
 > Fuente de verdad: reinspeccionar el SHA seleccionado antes de cambiar código; los nombres en código no prueban la configuración del Robot Controller.
@@ -11,27 +11,28 @@
 
 El baseline vigente ya no coincide ni con la fotografía descrita al inicio de [critical-findings.md](../critical-findings.md) ni con el baseline documental histórico `main@f91af18`. El reporte histórico sigue siendo valioso como evidencia, pero no debe leerse como inventario actual.
 
-El robot activo todavía mezcla una composición command-based con componentes de torreta/visión construidos fuera de `RobotContainer`. El drivetrain de competencia usa Road Runner y un `ThreeDeadWheelLocalizer`; Pedro existe como scaffold de tuning con constantes provisionales. La torreta ya tiene mejor protección que el baseline histórico —armado, soft limits, stop y filtro de goal tag— pero el flujo actual de inicialización presenta dos bloqueadores probables: cleanup de `VisionPortal` registrado antes de construirlo y un chord de centrado evaluado sólo una vez durante `initialize()`.
+El robot activo todavía mezcla una composición command-based con componentes de torreta/visión construidos fuera de `RobotContainer`. El drivetrain de competencia usa Road Runner y un `ThreeDeadWheelLocalizer`; Pedro existe como scaffold de tuning con constantes provisionales. MP-01A implementa cleanup seguro de `VisionPortal`, init-loop repetitivo y armado sostenido de torreta; falta retest físico antes de cerrar esos findings.
 
 El shooter activo es de un motor y su controlador tiene PID/feedforward, compensación por voltaje y stop. Sin embargo, valores imposibles de RPM se convierten a cero y voltaje ≤1 V se sustituye por 12.5 V; con target positivo, esa combinación puede pedir la salida máxima ante encoder o sensor de voltaje defectuoso. El control de disparo también sigue repartido entre perfiles, comandos y adapters; al menos una secuencia conserva una espera de readiness sin timeout.
 
-`origin/main` incorpora además controles X/Y de shooter en `IntakeTeleOp` que quedan latched hasta otra orden/Stop, y `TeleopTorreta` conserva un camino que programa `ShooterCommand2` sin haber inicializado su `ShooterMotor`. Ambos son bloqueadores de MP-01.
+`origin/main` incorpora además controles X/Y de shooter en `IntakeTeleOp` que quedan latched hasta otra orden/Stop. MP-01A retira de `TeleopTorreta` el camino que programaba `ShooterCommand2` sin haber inicializado su `ShooterMotor`; `IntakeTeleOp` y el fail-open del shooter permanecen bloqueadores críticos de MP-01.
 
 ## 2. Identidad y reproducibilidad del baseline
 
 | Elemento | Observación en el baseline | Implicación |
 |---|---|---|
-| Ref fuente | `origin/main` | Se inspecciona sin mezclarla en la rama documental. |
-| Commit | `b5a134260456565df9d0295722ebecad900f21b4` | Toda evidencia vigente debe citar este SHA o declarar uno posterior. |
+| Ref fuente | `origin/main` | Base integrada antes de abrir `masterplan`. |
+| Commit | `a887fe4f7ca9023eec6034a0db6b8d918c640ecc` | Toda evidencia de implementación debe citar este SHA o el commit posterior del paquete. |
 | Rama documental | `agent/document-robot-master-plan-20260715` en `c0d93bd` antes de esta edición | Contiene los docs; estaba 2 commits detrás de `origin/main`, cuyo merge incluye el commit documental y cambios de código posteriores. |
 | Worktree al iniciar la corrección | Limpio | No había cambios del usuario que separar. |
+| Worktree al iniciar MP-01A | `KICKER_OUT_SPEED=0.85` local | Incluido en MP-01A por decisión posterior del equipo; pendiente de validación física. |
 | Baseline restaurado | `backup/main-before-split-20260619` en `e42e7cf` | Referencia histórica completa, no base de implementación actual. |
 | Lenguaje/arquitectura | Java, FTCLib command-based, Road Runner, FTC Dashboard; scaffold de Pedro | Evitar una reescritura general; migrar por interfaces y gates. |
 | Fuente SDK declarada | `TeamCode/build.gradle` aún declara FTC SDK 10.3.0 | En conflicto con el include común descrito abajo. |
 | Fuente SDK común | `build.dependencies.gradle` resuelve SDK 11.0 y otras dependencias | La versión efectiva debe verificarse en Gradle; consolidarla es trabajo futuro y revisado. |
 | Dashboard | Versiones duplicadas observadas en Gradle | No normalizar incidentalmente durante auto-aim. |
 
-Como evidencia histórica de `main@f91af18`, una compilación con el JBR de Android Studio 21 terminó correctamente: aproximadamente 192.3 s en frío y `TeamCode-debug.apk` de 81,278,696 bytes, con 77 archivos Java y cerca de 7,347 líneas. No se reutiliza esa cifra como build de `b5a1342`. Esta corrección documental no ejecuta Gradle; el próximo paquete de código deberá crear su propio baseline reproducible.
+Como evidencia histórica de `main@f91af18`, una compilación con el JBR de Android Studio 21 terminó correctamente: aproximadamente 192.3 s en frío y `TeamCode-debug.apk` de 81,278,696 bytes, con 77 archivos Java y cerca de 7,347 líneas. Esa cifra no se reutiliza como evidencia del paquete actual. En `masterplan`, MP-00/01A completó `assembleDebug` en 16.8 s y el retest final con `KICKER_OUT_SPEED=0.85` en 7 s produjo un APK de 81,301,551 bytes; las pruebas físicas siguen pendientes.
 
 ## 3. Superficie de OpModes actual
 
@@ -294,4 +295,6 @@ MP-00 puede cerrarse cuando:
 - el equipo haya revisado la discrepancia entre el informe histórico y `origin/main@b5a1342`;
 - las medidas físicas faltantes estén asignadas, no inventadas.
 
-Esta auditoría no autoriza movimiento automático. Su siguiente paso es MP-01, no Limelight ni tuning de aim.
+Estado al 2026-07-17: **parcial**. El baseline y los cambios de lifecycle están documentados, pero faltan el export RC, la validación física y contener FND-013/FND-015. Los resultados de build y pruebas se registran en [handoff-task.md](handoff-task.md).
+
+Esta auditoría no autoriza movimiento automático. Su siguiente paso es completar MP-01, no Limelight ni tuning de aim.

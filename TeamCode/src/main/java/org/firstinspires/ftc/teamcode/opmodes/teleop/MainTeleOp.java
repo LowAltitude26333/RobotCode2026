@@ -5,11 +5,13 @@ import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.acmerobotics.roadrunner.Pose2d;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
+import org.firstinspires.ftc.teamcode.LowAltitudeConstants;
 import org.firstinspires.ftc.teamcode.RobotContainer;
 import org.firstinspires.ftc.teamcode.commands.PoseStorage;
 import org.firstinspires.ftc.teamcode.commands.TurretFollowTagCommand;
 import org.firstinspires.ftc.teamcode.oi.SkywalkerProfile;
 import org.firstinspires.ftc.teamcode.opmodes.SafeCommandOpMode;
+import org.firstinspires.ftc.teamcode.safety.TurretArmingStateMachine;
 import org.firstinspires.ftc.teamcode.subsystems.TurretSubsystem;
 import org.firstinspires.ftc.teamcode.vision.DecodeGoalTags;
 import org.firstinspires.ftc.vision.VisionPortal;
@@ -22,9 +24,9 @@ public class MainTeleOp extends SafeCommandOpMode {
 
     // --- SISTEMA DE VISIÓN Y TORRETA INTEGRADOS ---
     private TurretSubsystem turretSubsystem;
+    private TurretArmingStateMachine turretArming;
     private AprilTagProcessor aprilTag;
     private VisionPortal visionPortal;
-    private boolean emergencyStopLatched;
 
     @Override
     public void initialize() {
@@ -39,22 +41,21 @@ public class MainTeleOp extends SafeCommandOpMode {
 
         // 4. Inicializar Hardware de la Torreta y su Procesador AprilTag
         turretSubsystem = new TurretSubsystem(hardwareMap);
-        if (gamepad2.start && gamepad2.back) {
-            turretSubsystem.confirmCenteredAndResetEncoder();
-        }
+        turretArming = new TurretArmingStateMachine(
+                LowAltitudeConstants.TurretConstants.TURRET_ARM_HOLD_MS);
 
         aprilTag = new AprilTagProcessor.Builder()
                 .setTagLibrary(DecodeGoalTags.createLibrary())
                 .setDrawAxes(true)
                 .setDrawTagOutline(true)
                 .build();
-        addResourceCleanup(visionPortal::close);
-
-        visionPortal = new VisionPortal.Builder()
+        VisionPortal createdVisionPortal = new VisionPortal.Builder()
                 .setCamera(hardwareMap.get(WebcamName.class, "Webcam 1"))
                 .addProcessor(aprilTag)
                 .enableLiveView(true)
                 .build();
+        visionPortal = createdVisionPortal;
+        addResourceCleanup(createdVisionPortal::close);
 
         // 5. Crear el Contenedor Central de Hardware
         robotContainer = new RobotContainer(this, activeProfile, startPose);
@@ -69,15 +70,26 @@ public class MainTeleOp extends SafeCommandOpMode {
     }
 
     @Override
-    public void run() {
-        if (!emergencyStopLatched && gamepad1.back) {
-            emergencyStopLatched = true;
-            latchEmergencyStop();
+    protected void duringInitLoop() {
+        long nowNanos = System.nanoTime();
+        boolean confirmationHeld = gamepad2.start && gamepad2.back;
+
+        if (turretArming.update(confirmationHeld, nowNanos)) {
+            turretSubsystem.confirmCenteredAndResetEncoder();
         }
 
-        if (!emergencyStopLatched) {
-            super.run();
-        }
+        telemetry.addLine("=== ARMADO SEGURO DE TORRETA ===");
+        telemetry.addData("Estado", turretArming.getState());
+        telemetry.addData("Progreso START+BACK", "%.0f%%",
+                turretArming.getProgress(nowNanos) * 100.0);
+        telemetry.addLine("Centre físicamente la torreta antes de confirmar.");
+        telemetry.addLine("El software no mueve la torreta durante init.");
+        telemetry.update();
+    }
+
+    @Override
+    public void run() {
+        super.run();
 
         // --- MONITOR DE TELEMETRÍA EN TIEMPO REAL ---
         telemetry.addLine("----------------------------------");
@@ -106,7 +118,6 @@ public class MainTeleOp extends SafeCommandOpMode {
         telemetry.addData("Torreta Ticks", turretSubsystem.getPosition());
         telemetry.addData("Tags Visibles", aprilTag.getDetections().size());
         telemetry.addData("Torreta Armada", turretSubsystem.isArmed());
-        telemetry.addData("PARO EMERGENCIA", emergencyStopLatched ? "ACTIVO" : "Listo");
 
         if (aprilTag.getDetections().isEmpty()) {
             telemetry.addData("Estado Torreta", "SIN TARGET - DETENIDA");

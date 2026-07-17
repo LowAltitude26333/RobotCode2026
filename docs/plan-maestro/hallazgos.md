@@ -1,8 +1,8 @@
 # Registro de hallazgos
 
 > Estado: registro vivo; entradas iniciales provienen de auditoría estática, no de pruebas físicas
-> Baseline histórico inicial: `main@f91af18`; baseline vigente: `origin/main@b5a134260456565df9d0295722ebecad900f21b4`
-> Última actualización: 2026-07-15
+> Baseline histórico inicial: `main@f91af18`; baseline de implementación: `origin/main@a887fe4f7ca9023eec6034a0db6b8d918c640ecc`
+> Última actualización: 2026-07-17
 > Alcance: bugs, riesgos, discrepancias, resultados y retests del plan maestro
 > Responsable sugerido: test lead; cada entrada debe tener owner técnico
 > Fuente de verdad: evidencia vinculada al SHA/configuración/sesión. No cerrar hallazgos sólo porque compile.
@@ -47,8 +47,8 @@ No crear findings para tareas normales ya planeadas salvo que aparezca una discr
 
 | ID | Severidad | Estado | Resumen | Owner | Paquete |
 |---|---|---|---|---|---|
-| FND-001 | CRITICAL | OPEN | Cleanup de `VisionPortal` ligado antes de asignarlo | Software vision | MP-01 |
-| FND-002 | HIGH | OPEN | Chord de armado evaluado sólo una vez en initialize | Software/Ops | MP-01 |
+| FND-001 | CRITICAL | FIX_READY | Cleanup de `VisionPortal` ligado antes de asignarlo | Software vision | MP-01 |
+| FND-002 | HIGH | FIX_READY | Chord de armado evaluado sólo una vez en initialize | Software/Ops | MP-01 |
 | FND-003 | HIGH | BLOCKED_PHYSICAL | Límites ±200 ticks de torreta no validados | Mechanical + turret | MP-01/05 |
 | FND-004 | HIGH | OPEN | Geometría de localización provisional/inconsistente | Localization | MP-02 |
 | FND-005 | HIGH | OPEN | Feeder tiene caminos directos sin interlock único | Mechanisms | MP-01/06 |
@@ -60,9 +60,9 @@ No crear findings para tareas normales ya planeadas salvo que aparezca una discr
 | FND-011 | HIGH | SUPERSEDED | `IntakeTeleOp` histórico puede dejar feeder energizado | Safety/mechanisms | FND-013 |
 | FND-012 | LOW | OPEN | Conceptos/nombres legacy no reflejan hardware final | Architecture | MP-06/09 |
 | FND-013 | CRITICAL | OPEN | `IntakeTeleOp` vigente añade shooter directo/latched | Safety/shooter | MP-01/07 |
-| FND-014 | CRITICAL | OPEN | `TeleopTorreta` entrega shooter nulo a un comando | Safety/shooter | MP-01 |
+| FND-014 | CRITICAL | FIX_READY | `TeleopTorreta` entrega shooter nulo a un comando | Safety/shooter | MP-01 |
 | FND-015 | CRITICAL | OPEN | Shooter falla abierto ante encoder/voltaje inválido | Shooter | MP-01/06 |
-| FND-016 | HIGH | OPEN | `SafeCommandOpMode` no tiene init-loop repetitivo | Architecture/safety | MP-01 |
+| FND-016 | HIGH | FIX_READY | `SafeCommandOpMode` no tiene init-loop repetitivo | Architecture/safety | MP-01 |
 | FND-017 | HIGH | OPEN | Migración Pedro no poseía movimiento completo | Drive/localization | MP-02 |
 | FND-018 | HIGH | OPEN | Feeder carece de pulso máximo y cooldown obligatorios | Mechanisms | MP-06 |
 | FND-019 | HIGH | OPEN | Readiness omite velocidad lineal/angular del chasis | Shooter/drive | MP-06/T9 |
@@ -77,7 +77,7 @@ No crear findings para tareas normales ya planeadas salvo que aparezca una discr
 
 ### FND-001 — Cleanup de `VisionPortal` registrado antes de construirlo
 
-- **Severidad / estado:** `CRITICAL / OPEN`
+- **Severidad / estado:** `CRITICAL / FIX_READY`
 - **Fecha / autor:** 2026-07-15 / auditoría asistida
 - **Baseline:** `main@f91af18`
 - **Configuración/sesión:** revisión estática; no se ejecutó en hardware
@@ -89,11 +89,15 @@ No crear findings para tareas normales ya planeadas salvo que aparezca una discr
 - **Acción propuesta:** prueba de init deshabilitada; construir antes de registrar o usar cleanup que compruebe null y ownership; test de init/stop repetido.
 - **Criterio de cierre:** el caso reproduce/falla en baseline cuando sea seguro, pasa ≥10 ciclos init/stop, cierra portal y no deja recurso abierto.
 - **Owner:** software vision.
-- **Retest:** pendiente, TEST a crear en T3.
+- **Implementación MP-01A:** el portal se construye y asigna antes de registrar el cleanup ligado
+  a la instancia creada. Si el builder falla, el lifecycle ejecuta `RobotSafety.stopAll()` sin
+  desreferenciar un portal nulo.
+- **Retest:** `assembleDebug` PASS en 16.8 s; faltan ciclos con cámara y el caso de dispositivo
+  ausente. No cerrar sin evidencia física/logcat.
 
 ### FND-002 — Armado de torreta depende de un instante de initialize
 
-- **Severidad / estado:** `HIGH / OPEN`
+- **Severidad / estado:** `HIGH / FIX_READY`
 - **Fecha:** 2026-07-15
 - **Baseline:** `main@f91af18`
 - **Configuración/sesión:** revisión estática
@@ -104,6 +108,9 @@ No crear findings para tareas normales ya planeadas salvo que aparezca una discr
 - **Acción:** máquina de estados `TURRET_CENTER -> ARM_HOLD -> ARMED`, cancelable y state-aware.
 - **Criterio de cierre:** hold <1 s no arma; ≥1 s arma sólo en estado correcto; soltar cancela; ninguna potencia antes de arm; 20 repeticiones.
 - **Owner:** software turret + operator 2.
+- **Implementación MP-01A:** máquina monotónica `WAITING/HOLDING/ARMED` en
+  `duringInitLoop()`; 1,000 ms producen una sola transición y muestran progreso.
+- **Retest:** `assembleDebug` PASS en 16.8 s; faltan repeticiones en robot elevado.
 
 ### FND-003 — Soft limits de torreta no validados físicamente
 
@@ -219,7 +226,7 @@ No crear findings para tareas normales ya planeadas salvo que aparezca una discr
 - **Criterio de cierre:** modo eliminado del release y System Check pasa stop/timeout/release.
 - **Owner:** safety/mechanisms.
 
-## 6. Entradas vigentes añadidas para `origin/main@b5a1342`
+## 6. Entradas vigentes añadidas para `origin/main@b5a1342` y revalidadas en `a887fe4`
 
 ### FND-013 — `IntakeTeleOp` controla shooter de forma directa y latched
 
@@ -231,11 +238,14 @@ No crear findings para tareas normales ya planeadas salvo que aparezca una discr
 
 ### FND-014 — `TeleopTorreta` programa un comando con shooter nulo
 
-- **Severidad / estado:** `CRITICAL / OPEN`
+- **Severidad / estado:** `CRITICAL / FIX_READY`
 - **Evidencia:** el baseline dejó de inicializar `ShooterMotor`, pero conserva un binding que construye `ShooterCommand2(shooterMotor, ...)`.
 - **Riesgo:** `NullPointerException` o pérdida de control al disparar el binding.
 - **Contención:** modo no autorizado para movimiento hasta corregir ownership o retirar el binding.
 - **Cierre:** análisis de nullability/call path y prueba controlada demuestran owner válido o ausencia total del camino.
+- **Implementación MP-01A:** se retiraron field, imports y scheduling huérfanos; no se volvió a
+  mapear el shooter en este OpMode.
+- **Retest:** `assembleDebug` PASS en 16.8 s; falta init/stop controlado.
 
 ### FND-015 — Shooter fail-open ante dato de sensor inválido
 
@@ -247,11 +257,14 @@ No crear findings para tareas normales ya planeadas salvo que aparezca una discr
 
 ### FND-016 — Lifecycle sin init-loop repetitivo
 
-- **Severidad / estado:** `HIGH / OPEN`
+- **Severidad / estado:** `HIGH / FIX_READY`
 - **Evidencia:** `SafeCommandOpMode.runOpMode()` ejecuta `initialize()` una vez, llama `waitForStart()` y sólo después entra al loop activo.
 - **Riesgo:** hold de torreta, feedback y E-stop pre-start no pueden evaluarse correctamente.
 - **Acción:** hook de init-loop cancelable antes de START, sin mover mecanismos y sin bloquear Stop.
 - **Cierre:** hold <1 s no arma, ≥1 s arma en estado correcto, Stop durante init termina limpio y veinte repeticiones pasan.
+- **Implementación MP-01A:** `SafeCommandOpMode` ejecuta `duringInitLoop()` antes de START,
+  atiende BACK durante init/run, cancela scheduler, ordena `RobotSafety.stopAll()` y solicita Stop.
+- **Retest:** `assembleDebug` PASS en 16.8 s; falta verificar ≤50 ms con Driver Station real.
 
 ### FND-017 — Migración Pedro incompleta
 
