@@ -14,6 +14,7 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import java.util.List;
 
 @TeleOp(name = "Skywalker TeleOp w/ April", group = "Competition")
+@com.qualcomm.robotcore.eventloop.opmode.Disabled
 public class TeleOpApril extends SafeCommandOpMode {
 
     private RobotContainer robotContainer;

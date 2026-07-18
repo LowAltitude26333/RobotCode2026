@@ -24,6 +24,7 @@ import java.util.List;
  * - Arranca desde la pose final del autónomo (PoseStorage).
  */
 @TeleOp(name = "TeleOpBETA 1 ROJO", group = "Competition")
+@com.qualcomm.robotcore.eventloop.opmode.Disabled
 public class TeleOpPositionBEta extends LinearOpMode {
 
     public static double DRAWING_TARGET_RADIUS = 2;

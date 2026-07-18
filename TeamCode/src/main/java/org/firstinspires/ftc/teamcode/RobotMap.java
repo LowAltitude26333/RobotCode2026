@@ -1,9 +1,12 @@
 package org.firstinspires.ftc.teamcode;
 
-public class RobotMap {
+public final class RobotMap {
+
+    private RobotMap() {
+    }
 
     public static final String FRONT_LEFT_MOTOR = "leftFront";
-    public static final boolean FRONT_LEFT_MOTOR_IS_INVERTED = false;
+    public static final boolean FRONT_LEFT_MOTOR_IS_INVERTED = true;
 
     public static final String FRONT_RIGHT_MOTOR = "rightFront";//0
     public static final boolean FRONT_RIGHT_MOTOR_IS_INVERTED = false;
@@ -12,33 +15,28 @@ public class RobotMap {
     public static final boolean BACK_LEFT_MOTOR_IS_INVERTED = true;
 
     public static final String BACK_RIGHT_MOTOR = "rightBack";//1
-    public static final boolean BACK_RIGHT_MOTOR_IS_INVERTED = false;
+    public static final boolean BACK_RIGHT_MOTOR_IS_INVERTED = true;
 
-    // Provisional names: verify against the Robot Controller configuration before tuning.
-    public static final String ODOMETRY_PARALLEL_0 = "par0";
-    public static final String ODOMETRY_PARALLEL_1 = "par1";
-    public static final String ODOMETRY_PERPENDICULAR = "perp";
+    public static final String IMU = "imu";
+
+    // The dead-wheel encoders are wired to these drivetrain motor encoder inputs.
+    public static final String ODOMETRY_PARALLEL_0 = FRONT_RIGHT_MOTOR;
+    public static final String ODOMETRY_PARALLEL_1 = FRONT_LEFT_MOTOR;
+    public static final String ODOMETRY_PERPENDICULAR = BACK_RIGHT_MOTOR;
 
     //Shooter
-    public static final String SHOOTER_MOTOR_1 = "Shooter" ;
-
-    public static final String SHOOTER_MOTOR_2 = "Shooter2" ;
-
-    public static final boolean SHOOTER_UP_MOTOR_IS_INVERTED = true;
+    public static final String SHOOTER_MOTOR = "Shooter";
+    public static final boolean SHOOTER_MOTOR_IS_INVERTED = true;
 
     public static final String INTAKE_MOTOR = "intakeMotor";
-    public static final boolean INTAKE_MOTOR_IS_INVERTED = true;
+    public static final boolean INTAKE_MOTOR_IS_INVERTED = false;
 
-    public static final String HOOD_SERVO_LEFT = "hoodLeft";
-    public static final boolean HOOD_LEFT_INVERTED = true;
-    public static final String HOOD_SERVO_RIGHT = "hoodRight";
-    public static final boolean HOOD_RIGHT_INVERTED = false;
-
-
-    public static final String KICKER_MOTOR = "kickerM otor";
-    public static final boolean KICKER_IS_INVERTED = false;
+    public static final String KICKER_MOTOR = "kickerMotor";
+    public static final boolean KICKER_MOTOR_IS_INVERTED = false;
+    public static final String KICKER_SERVO = "kickerServo";
+    public static final boolean KICKER_SERVO_IS_INVERTED = false;
 
     //Torreta
-    public static final String TORRETA_MOTOR = "torretaMotor";
-    public static final boolean TORRETA_IS_INVERTED = true;
+    public static final String TURRET_MOTOR = "torretaMotor";
+    public static final boolean TURRET_MOTOR_IS_INVERTED = true;
 }

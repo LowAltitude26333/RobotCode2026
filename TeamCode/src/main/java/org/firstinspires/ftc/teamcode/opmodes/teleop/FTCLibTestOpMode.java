@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.opmodes.teleop;
 import com.arcrobotics.ftclib.hardware.motors.Motor;
 
 @com.qualcomm.robotcore.eventloop.opmode.TeleOp(name = "FTCLib Test", group = "Test")
+@com.qualcomm.robotcore.eventloop.opmode.Disabled
 public class FTCLibTestOpMode extends com.arcrobotics.ftclib.command.CommandOpMode {
 
     private Motor leftMotor;

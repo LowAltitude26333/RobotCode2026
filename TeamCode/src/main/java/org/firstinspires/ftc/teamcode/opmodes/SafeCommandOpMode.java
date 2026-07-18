@@ -41,10 +41,11 @@ public abstract class SafeCommandOpMode extends CommandOpMode {
     }
 
     protected final void latchEmergencyStop() {
+        long requestNanos = System.nanoTime();
         emergencyStopLatched = true;
         cancelScheduledCommands();
         CommandScheduler.getInstance().disable();
-        RobotSafety.stopAll();
+        RobotSafety.stopAllTimed("E_STOP", requestNanos);
     }
 
     private boolean handleEmergencyStopRequest() {
@@ -53,6 +54,27 @@ public abstract class SafeCommandOpMode extends CommandOpMode {
             requestOpModeStop();
         }
         return emergencyStopLatched;
+    }
+
+    protected final void addSafetyTimingTelemetry() {
+        RobotSafety.StopTimingReport report = RobotSafety.getLastStopTimingReport();
+        if (report == null) {
+            telemetry.addData("Safety timing", "SIN MEDICIÓN");
+            return;
+        }
+
+        telemetry.addData("Safety/Evento", report.getEvent());
+        telemetry.addData("Safety/Tiempo cero", "%.3f ms", report.getElapsedMilliseconds());
+        telemetry.addData("Safety/Mismo ciclo", report.isSameControlCycle());
+        telemetry.addData("Safety/Acciones stop", report.getStopActionCount());
+        telemetry.addData("Safety/Fallos stop", report.getFailureCount());
+        telemetry.addData("Safety/Gate 50 ms", report.passed() ? "PASS" : "FAIL");
+    }
+
+    @Override
+    public void run() {
+        super.run();
+        addSafetyTimingTelemetry();
     }
 
     @Override
@@ -69,6 +91,8 @@ public abstract class SafeCommandOpMode extends CommandOpMode {
                     break;
                 }
                 duringInitLoop();
+                addSafetyTimingTelemetry();
+                telemetry.update();
                 idle();
             }
 
@@ -79,9 +103,15 @@ public abstract class SafeCommandOpMode extends CommandOpMode {
                 run();
             }
         } finally {
+            long shutdownRequestNanos = System.nanoTime();
             cancelScheduledCommands();
             CommandScheduler.getInstance().disable();
-            RobotSafety.stopAll();
+            if (emergencyStopLatched) {
+                // Preserve the E_STOP report while still issuing an idempotent final zero.
+                RobotSafety.stopAll();
+            } else {
+                RobotSafety.stopAllTimed("OPMODE_STOP", shutdownRequestNanos);
+            }
 
             for (int i = resourceCleanupHooks.size() - 1; i >= 0; i--) {
                 try {

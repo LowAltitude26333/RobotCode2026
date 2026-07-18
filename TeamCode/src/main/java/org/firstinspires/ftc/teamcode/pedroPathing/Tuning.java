@@ -45,6 +45,7 @@ import java.util.List;
  */
 @Configurable
 @TeleOp(name = "Tuning", group = "Pedro Pathing")
+@com.qualcomm.robotcore.eventloop.opmode.Disabled
 public class Tuning extends SelectableOpMode {
     public static Follower follower;
 

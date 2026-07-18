@@ -20,6 +20,7 @@ public class DriveSubsystem extends SubsystemBase {
         // Inicializa RoadRunner (esto ya configura los motores internamente)
         this.drive = new MecanumDrive(hardwareMap, startPose);
         this.telemetry = telemetry;
+        stop();
         RobotSafety.registerShutdown(this::stop);
     }
 

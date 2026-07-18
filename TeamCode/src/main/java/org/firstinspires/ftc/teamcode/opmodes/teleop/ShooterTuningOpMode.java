@@ -13,7 +13,6 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import org.firstinspires.ftc.teamcode.opmodes.SafeCommandOpMode;
 import org.firstinspires.ftc.teamcode.subsystems.IntakeSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.KickerSubsystem;
-import org.firstinspires.ftc.teamcode.subsystems.ShooterHoodSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.ShooterSubsystem;
 
 @Config
@@ -23,10 +22,8 @@ public class ShooterTuningOpMode extends SafeCommandOpMode {
     // --- VARIABLES EDITABLES EN DASHBOARD ---
     // Ajustado a tu máximo real aprox para evitar saturación del PID
     public static double TARGET_RPM = 3500;
-    public static double TARGET_ANGLE = 0;
 
     private ShooterSubsystem shooter;
-    private ShooterHoodSubsystem hood;
     private KickerSubsystem kicker;
     private IntakeSubsystem intake;
 
@@ -38,22 +35,22 @@ public class ShooterTuningOpMode extends SafeCommandOpMode {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
 
         shooter = new ShooterSubsystem(hardwareMap, telemetry);
-        hood = new ShooterHoodSubsystem(hardwareMap, telemetry);
         kicker = new KickerSubsystem(hardwareMap);
         intake = new IntakeSubsystem(hardwareMap);
 
         gamepad = new GamepadEx(gamepad1);
 
-        // Default Command: Hood obedece al Dashboard
-        hood.setDefaultCommand(new RunCommand(() -> hood.setAngle(TARGET_ANGLE), hood));
-
         // --- CONTROLES ---
 
         // 1. SHOOTER PID (Y -> On | A -> Off)
         new GamepadButton(gamepad, GamepadKeys.Button.Y)
-                .whenPressed(new InstantCommand(() -> {
+                .whileHeld(new RunCommand(() -> {
                     shooterEnabled = true;
                     shooter.setTargetRPM(TARGET_RPM);
+                }, shooter))
+                .whenReleased(new InstantCommand(() -> {
+                    shooterEnabled = false;
+                    shooter.stop();
                 }, shooter));
 
         new GamepadButton(gamepad, GamepadKeys.Button.A)
@@ -62,20 +59,13 @@ public class ShooterTuningOpMode extends SafeCommandOpMode {
                     shooter.stop();
                 }, shooter));
 
-        // 2. SHOOTER MANUAL / MAX POWER (D-Pad Right)
-        // CORRECCIÓN: Usamos setTargetRPM con el máximo real en lugar de driveShooter(1.0)
-        // para no pelear con el periodic() del subsistema.
-        new GamepadButton(gamepad, GamepadKeys.Button.DPAD_RIGHT)
-                .whenPressed(new InstantCommand(() -> {
-                    shooterEnabled = true;
-                    shooter.setTargetRPM(3500);
-                }, shooter));
-
         // 3. INTAKE
         new GamepadButton(gamepad, GamepadKeys.Button.RIGHT_BUMPER)
-                .whenPressed(new InstantCommand(intake::intakeOn, intake));
+                .whileHeld(new RunCommand(intake::intakeOn, intake))
+                .whenReleased(new InstantCommand(intake::intakeOff, intake));
         new GamepadButton(gamepad, GamepadKeys.Button.LEFT_BUMPER)
-                .whenPressed(new InstantCommand(intake::intakeReturn, intake));
+                .whileHeld(new RunCommand(intake::intakeReturn, intake))
+                .whenReleased(new InstantCommand(intake::intakeOff, intake));
         new GamepadButton(gamepad, GamepadKeys.Button.DPAD_DOWN)
                 .whenPressed(new InstantCommand(intake::intakeOff, intake));
 
@@ -86,7 +76,8 @@ public class ShooterTuningOpMode extends SafeCommandOpMode {
         new GamepadButton(gamepad, GamepadKeys.Button.B)
                 .whenPressed(new InstantCommand(kicker::stop, kicker));
         new GamepadButton(gamepad, GamepadKeys.Button.DPAD_UP)
-                .whenPressed(new InstantCommand(kicker::reverse, kicker));
+                .whileHeld(new RunCommand(kicker::reverse, kicker))
+                .whenReleased(new InstantCommand(kicker::stop, kicker));
 
         telemetry.addLine("--- LISTO PARA TUNING ---");
         telemetry.update();
@@ -108,6 +99,9 @@ public class ShooterTuningOpMode extends SafeCommandOpMode {
         telemetry.addData("Target RPM", TARGET_RPM);
         telemetry.addData("Actual RPM", shooter.getActualShooterRPM());
         telemetry.addData("Shooter Enabled", shooterEnabled);
+        telemetry.addData("Kicker servo solicitado", kicker.isServoEnabledAtInit());
+        telemetry.addData("Kicker servo disponible", kicker.isServoAvailable());
+        telemetry.addData("Kicker servo activo", kicker.isServoActive());
         telemetry.update();
     }
 }

@@ -13,7 +13,7 @@ public class ShooterMotor extends SubsystemBase {
     public ShooterMotor(HardwareMap hardwareMap) {
 
 
-        motorLeader = new MotorEx(hardwareMap, RobotMap.SHOOTER_MOTOR_1);
+        motorLeader = new MotorEx(hardwareMap, RobotMap.SHOOTER_MOTOR);
         RobotSafety.registerShutdown(this::stop);
 
 

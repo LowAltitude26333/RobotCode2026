@@ -27,6 +27,7 @@ import java.util.List;
  * Updated for Road Runner 1.0+ (0.1.23) using Actions
  */
 @TeleOp(name = "boton", group = "Competition")
+@com.qualcomm.robotcore.eventloop.opmode.Disabled
 public class TeleOpAlignWithPoint extends LinearOpMode {
 
     public static double DRAWING_TARGET_RADIUS = 2;

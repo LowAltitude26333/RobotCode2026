@@ -22,6 +22,7 @@ public class LowAltitudeConstants {
     // Ajusta esto según tu motor exacto (Ej. GoBilda 5203 1:1)
         public static double MOTOR_TICKS_PER_REV = 28.0;
         public static double MOTOR_MAX_RPM = 6000.0;
+        public static final double SHOOTER_MAX_SAFE_RPM = 6000.0;
         public static double SHOOTER_TOLERANCE_RPM = 90.0; // Rango aceptable para disparar
 
         // --- SHOOTER CONTROL (FEEDFORWARD) ---
@@ -80,8 +81,14 @@ public class LowAltitudeConstants {
     }
 
     // --- KICKER CONSTANTS ---
+    // Dashboard toggle. Change only while the OpMode is stopped; it is captured at INIT.
+    // false is fail-closed while mechanics removes/reinstalls the optional CRServo.
+    public static boolean KICKER_SERVO_ENABLED = false;
     public static final double   KICKER_OUT_SPEED = 0.85;
     public static final double KICKER_REVERSE_SPEED = -0.7;
+    public static final double KICKER_SERVO_FORWARD_POWER = 0.5;
+    public static final double KICKER_SERVO_REVERSE_POWER = -0.5;
+    public static final double KICKER_SERVO_STOP_POWER = 0.0;
     public static long KICKER_EXTEND_TIME_MS = 632;
     public static long KICKER_RETRACT_DELAY_MS = 60;
 

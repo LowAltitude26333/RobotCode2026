@@ -8,7 +8,6 @@ import com.arcrobotics.ftclib.gamepad.GamepadEx;
 import com.arcrobotics.ftclib.gamepad.GamepadKeys;
 import com.qualcomm.robotcore.hardware.Gamepad;
 
-import org.firstinspires.ftc.teamcode.LowAltitudeConstants;
 import org.firstinspires.ftc.teamcode.RobotContainer;
 import org.firstinspires.ftc.teamcode.commands.PoseStorage;
 import org.firstinspires.ftc.teamcode.commands.auto.TurnToAngleCommand;
@@ -73,7 +72,13 @@ public class SkywalkerProfile implements ControlProfile {
         // 1. DISPARO (Gatillo) - El driver decide cuándo disparar
         // RB (Hold) -> Activar Kicker
         new GamepadButton(driverOp, GamepadKeys.Button.RIGHT_BUMPER)
-                .whileHeld(new RunCommand(robot.kickerSubsystem::kick, robot.kickerSubsystem))
+                .whileHeld(new RunCommand(() -> {
+                    if (robot.shooterSubsystem.isReady()) {
+                        robot.kickerSubsystem.kick();
+                    } else {
+                        robot.kickerSubsystem.stop();
+                    }
+                }, robot.kickerSubsystem))
                 .whenReleased(new InstantCommand(robot.kickerSubsystem::stop, robot.kickerSubsystem));
 
         // 2. RESET GIROSCOPIO (Start)
@@ -121,37 +126,8 @@ public class SkywalkerProfile implements ControlProfile {
          * =================================================================
          */
 
-        // --- PRESETS DE DISPARO (Hood + RPM Simultáneos) ---
-
-// A -> WALL SHOT (Cerca)
-        new GamepadButton(toolOp, GamepadKeys.Button.A)
-                .whenPressed(new ParallelCommandGroup(
-                        // Hood: Posición física
-                        new InstantCommand(() -> robot.hoodSubsystem.setPosition(LowAltitudeConstants.HoodPosition.WALL_SHOT), robot.hoodSubsystem),
-                        // Shooter: Solo enviamos la señal de "Target RPM". El periodic() hace el resto.
-                        new InstantCommand(() -> robot.shooterSubsystem.setTargetRPM(LowAltitudeConstants.TargetRPM.WALL_SHOT_RPM.targetRPM), robot.shooterSubsystem)
-                ));
-
-// X -> SHORT SHOT (Stack)
-        new GamepadButton(toolOp, GamepadKeys.Button.X)
-                .whenPressed(new ParallelCommandGroup(
-                        new InstantCommand(() -> robot.hoodSubsystem.setPosition(LowAltitudeConstants.HoodPosition.SHORT_SHOT), robot.hoodSubsystem),
-                        new InstantCommand(() -> robot.shooterSubsystem.setTargetRPM(LowAltitudeConstants.TargetRPM.SHORT_SHOT_RPM.targetRPM), robot.shooterSubsystem)
-                ));
-
-// B -> MID FIELD
-        new GamepadButton(toolOp, GamepadKeys.Button.B)
-                .whenPressed(new ParallelCommandGroup(
-                        new InstantCommand(() -> robot.hoodSubsystem.setPosition(LowAltitudeConstants.HoodPosition.MID_FIELD), robot.hoodSubsystem),
-                        new InstantCommand(() -> robot.shooterSubsystem.setTargetRPM(LowAltitudeConstants.TargetRPM.MID_FIELD_RPM.targetRPM), robot.shooterSubsystem)
-                ));
-
-// Y -> LONG SHOT
-        new GamepadButton(toolOp, GamepadKeys.Button.Y)
-                .whenPressed(new ParallelCommandGroup(
-                        new InstantCommand(() -> robot.hoodSubsystem.setPosition(LowAltitudeConstants.HoodPosition.LONG_SHOT), robot.hoodSubsystem),
-                        new InstantCommand(() -> robot.shooterSubsystem.setTargetRPM(LowAltitudeConstants.TargetRPM.LONG_SHOT_RPM.targetRPM), robot.shooterSubsystem)
-                ));
+        // Shooter presets remain intentionally inhibited until the MP-01 physical fault gate passes.
+        // Controlled shooter testing is hold-to-run in SystemCheckOpMode/ShooterTuningOpMode.
 
 
         // --- INTAKE ---
@@ -174,19 +150,10 @@ public class SkywalkerProfile implements ControlProfile {
 
         // --- UTILIDADES MANUALES (Backup) ---
 
-        // D-Pad Up -> Kicker Manual (Por si el driver falla o se ocupa)
-        new GamepadButton(toolOp, GamepadKeys.Button.DPAD_UP)
-                .whileHeld(new RunCommand(robot.kickerSubsystem::kick, robot.kickerSubsystem))
-                .whenReleased(new InstantCommand(robot.kickerSubsystem::stop, robot.kickerSubsystem));
-
         // D-Pad Left -> Kicker Retract (Desatascar)
         new GamepadButton(toolOp, GamepadKeys.Button.DPAD_LEFT)
                 .whileHeld(new RunCommand(robot.kickerSubsystem::reverse, robot.kickerSubsystem))
                 .whenReleased(new InstantCommand(robot.kickerSubsystem::stop, robot.kickerSubsystem));
 
-        //F-Pad Right -> Hood 0
-        new GamepadButton(toolOp, GamepadKeys.Button.DPAD_RIGHT)
-                .whenPressed(new InstantCommand(() -> robot.hoodSubsystem.setPosition(LowAltitudeConstants.HoodPosition.
-                        HOME_POS), robot.hoodSubsystem));
     }
 }

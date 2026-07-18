@@ -1,17 +1,26 @@
 package org.firstinspires.ftc.teamcode.commands;
 
-import com.arcrobotics.ftclib.command.InstantCommand;
-import com.arcrobotics.ftclib.command.ParallelCommandGroup;
-import com.arcrobotics.ftclib.command.SequentialCommandGroup;
-import com.arcrobotics.ftclib.command.WaitCommand;
-import com.arcrobotics.ftclib.command.WaitUntilCommand;
+import com.arcrobotics.ftclib.command.CommandBase;
 
 import org.firstinspires.ftc.teamcode.LowAltitudeConstants; // Importar Constantes
 import org.firstinspires.ftc.teamcode.subsystems.KickerSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.ShooterHoodSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.ShooterSubsystem;
 
-public class ShootSequenceCommand extends SequentialCommandGroup {
+/** Legacy single-shot command retained with a bounded readiness wait. */
+public class ShootSequenceCommand extends CommandBase {
+
+    private enum State {
+        WAITING_FOR_READY,
+        KICKING,
+        FINISHED
+    }
+
+    private final ShooterSubsystem shooter;
+    private final KickerSubsystem kicker;
+    private final double targetRpm;
+    private State state;
+    private long deadlineNanos;
 
     public ShootSequenceCommand(ShooterSubsystem shooter,
                                 ShooterHoodSubsystem hood,
@@ -19,26 +28,51 @@ public class ShootSequenceCommand extends SequentialCommandGroup {
                                 double targetRpm,
                                 LowAltitudeConstants.HoodPosition angle) {
 
-        addCommands(
-                // 1. Preparación (Hood y RPM al mismo tiempo)
-                new ParallelCommandGroup(
-                        new InstantCommand(() -> hood.setPosition(angle), hood),
-                        new InstantCommand(() -> shooter.setTargetRPM(targetRpm))
-                ),
+        this.shooter = shooter;
+        this.kicker = kicker;
+        this.targetRpm = targetRpm;
+        addRequirements(shooter, kicker);
+    }
 
-                // 2. Esperar a que el motor llegue a la velocidad (Ready to fire)
-                new WaitUntilCommand(shooter::isReady),
+    @Override
+    public void initialize() {
+        kicker.stop();
+        shooter.setTargetRPM(targetRpm);
+        state = State.WAITING_FOR_READY;
+        deadlineNanos = System.nanoTime()
+                + Math.max(1, LowAltitudeConstants.SHOOTER_READY_TIMEOUT_MS) * 1_000_000L;
+    }
 
-                // 3. DISPARO MECÁNICO (Raw Power)
-                // Encender motor del kicker
-                new InstantCommand(kicker::kick, kicker),
+    @Override
+    public void execute() {
+        long nowNanos = System.nanoTime();
+        if (state == State.WAITING_FOR_READY) {
+            if (shooter.isReady()) {
+                kicker.kick();
+                state = State.KICKING;
+                deadlineNanos = nowNanos
+                        + Math.max(0, LowAltitudeConstants.KICKER_EXTEND_TIME_MS) * 1_000_000L;
+            } else if (nowNanos >= deadlineNanos || shooter.isFaultLatched()) {
+                kicker.stop();
+                shooter.stop();
+                state = State.FINISHED;
+            }
+        } else if (state == State.KICKING && nowNanos >= deadlineNanos) {
+            kicker.stop();
+            state = State.FINISHED;
+        }
+    }
 
-                // Esperar lo suficiente para que el mecanismo empuje el anillo
-                // Al ser Raw Power, esto es prueba y error. Empieza con 150ms.
-                new WaitCommand(150),
+    @Override
+    public boolean isFinished() {
+        return state == State.FINISHED;
+    }
 
-                // Apagar motor (el freno configurado en el subsistema lo detendrá)
-                new InstantCommand(kicker::stop, kicker)
-        );
+    @Override
+    public void end(boolean interrupted) {
+        kicker.stop();
+        if (interrupted) {
+            shooter.stop();
+        }
     }
 }

@@ -16,6 +16,7 @@ public class IntakeSubsystem extends SubsystemBase {
         intakeMotor = new MotorEx(hardwareMap, RobotMap.INTAKE_MOTOR);
 
         intakeMotor.setInverted(RobotMap.INTAKE_MOTOR_IS_INVERTED);
+        intakeOff();
         RobotSafety.registerShutdown(this::intakeOff);
     }
 
@@ -31,17 +32,13 @@ public class IntakeSubsystem extends SubsystemBase {
     }
     public Action soltar() {
         return (telemetryPacket) -> {
-
-            intakeMotor.set(-0.7);
-
+            intakeReturn();
             return false;
         };
     }
     public Action off() {
         return (telemetryPacket) -> {
-
-            intakeMotor.set(0.0);
-
+            intakeOff();
             return false;
         };
     }

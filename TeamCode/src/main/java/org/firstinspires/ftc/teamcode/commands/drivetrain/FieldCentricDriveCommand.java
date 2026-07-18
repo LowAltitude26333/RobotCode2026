@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.commands.drivetrain;
 
 import com.arcrobotics.ftclib.command.CommandBase;
 
+import org.firstinspires.ftc.teamcode.RobotSafety;
 import org.firstinspires.ftc.teamcode.commands.PoseStorage;
 import org.firstinspires.ftc.teamcode.subsystems.DriveSubsystem;
 import java.util.function.DoubleSupplier;
@@ -12,6 +13,7 @@ public class FieldCentricDriveCommand extends CommandBase {
     private final DoubleSupplier strafeSup;
     private final DoubleSupplier forwardSup;
     private final DoubleSupplier turnSup;
+    private boolean motionCommanded;
 
     public FieldCentricDriveCommand(DriveSubsystem drive,
                                     DoubleSupplier strafeSup,
@@ -46,8 +48,9 @@ public class FieldCentricDriveCommand extends CommandBase {
          * Fórmulas de rotación 2D estándar.
          */
 
-        // Alinear inputs con el sistema de coordenadas de RoadRunner (X=Forward, Y=Left)
-        double x = -forward;
+        // FTCLib GamepadEx already reports left-stick Y as positive when pushed forward.
+        // Road Runner also uses X+ as forward, so no additional sign inversion belongs here.
+        double x = forward;
         double y = strafe; // Invertimos strafe porque RR usa Y+ a la izquierda
 
         // Rotamos por el negativo del heading para hacer "Field Centric"
@@ -58,9 +61,22 @@ public class FieldCentricDriveCommand extends CommandBase {
         double rotY = x * Math.sin(theta) + y * Math.cos(theta);
 
         // 3. Enviar al subsistema
-        // El subsistema espera (strafe, forward, turn)
-        // rotY es nuestro nuevo Strafe (Left+), rotX es nuestro nuevo Forward
-        // Invertimos rotY al enviarlo porque tu drive() probablemente espera Strafe Right+
-        drive.drive(-rotY, rotX, turn);
+        // The subsystem contract is strafe-right positive, matching GamepadEx left X.
+        boolean zeroRequested = Math.abs(strafe) < 1e-6
+                && Math.abs(forward) < 1e-6
+                && Math.abs(turn) < 1e-6;
+        if (motionCommanded && zeroRequested) {
+            RobotSafety.timeZeroCommand("DRIVE_RELEASE", drive::stop);
+        } else {
+            drive.drive(rotY, rotX, turn);
+        }
+        motionCommanded = !zeroRequested;
+    }
+
+    @Override
+    public void end(boolean interrupted) {
+        RobotSafety.timeZeroCommand(
+                interrupted ? "DRIVE_INTERRUPTED" : "DRIVE_ENDED", drive::stop);
+        motionCommanded = false;
     }
 }

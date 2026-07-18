@@ -11,6 +11,7 @@ import org.firstinspires.ftc.teamcode.oi.SkywalkerProfile;
 import org.firstinspires.ftc.teamcode.opmodes.SafeCommandOpMode;
 
 @TeleOp(name = "Skywalker TeleOp 2", group = "Competition")
+@com.qualcomm.robotcore.eventloop.opmode.Disabled
 public class MainTeleOp2 extends SafeCommandOpMode {
 
     private RobotContainer robotContainer;

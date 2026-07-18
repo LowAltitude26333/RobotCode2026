@@ -25,6 +25,7 @@ import org.firstinspires.ftc.teamcode.subsystems.ShooterHoodSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.ShooterSubsystem;
 
 @Autonomous(name = "nada 1")
+@com.qualcomm.robotcore.eventloop.opmode.Disabled
 public class AutonomoOfficialRed extends CommandOpMode {
 
     // Subsistemas

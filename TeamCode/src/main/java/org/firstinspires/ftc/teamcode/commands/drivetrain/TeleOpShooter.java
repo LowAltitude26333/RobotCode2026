@@ -14,6 +14,7 @@ import org.firstinspires.ftc.teamcode.commands.ShooterCommand2;
 import org.firstinspires.ftc.teamcode.opmodes.SafeCommandOpMode;
 
 @com.qualcomm.robotcore.eventloop.opmode.TeleOp(name = "ShooterTeleOpAdaptado")
+@com.qualcomm.robotcore.eventloop.opmode.Disabled
 public class TeleOpShooter extends SafeCommandOpMode {
 
     private ShooterMotor shooter;

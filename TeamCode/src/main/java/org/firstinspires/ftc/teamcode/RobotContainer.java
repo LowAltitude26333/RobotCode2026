@@ -6,23 +6,17 @@ import com.arcrobotics.ftclib.command.CommandScheduler;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import org.firstinspires.ftc.robotcore.external.Telemetry; // <--- Importar esto
 
-import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
-import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.Position;
-import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 import org.firstinspires.ftc.teamcode.commands.drivetrain.FieldCentricDriveCommand;
-import org.firstinspires.ftc.teamcode.commands.drivetrain.MecanumDriveCommand;
 import org.firstinspires.ftc.teamcode.oi.ControlProfile;
 import org.firstinspires.ftc.teamcode.subsystems.DriveSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.IntakeSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.KickerSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.ShooterHoodSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.ShooterSubsystem;
-import org.firstinspires.ftc.vision.VisionPortal;
-import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
-import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 
+import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
+
+import java.util.Collections;
 import java.util.List;
 
 public class RobotContainer {
@@ -32,13 +26,12 @@ public class RobotContainer {
     public final DriveSubsystem driveSubsystem;
     public final IntakeSubsystem intakeSubsystem;
     public final ShooterSubsystem shooterSubsystem;
+    /** No-op compatibility shim; the physical hood has been removed. */
+    @Deprecated
     public final ShooterHoodSubsystem hoodSubsystem;
     public final KickerSubsystem kickerSubsystem;
 
     private final ControlProfile controlProfile;
-
-    private AprilTagProcessor aprilTag;
-    private VisionPortal visionPortal;
 
     /**
      * Constructor Actualizado
@@ -63,8 +56,8 @@ public class RobotContainer {
         // ShooterSubsystem ahora pide telemetry para ver RPMs
         shooterSubsystem = new ShooterSubsystem(hardwareMap, telemetry); // <--- CAMBIO
 
-        // HoodSubsystem ahora pide telemetry para ver ángulos
-        hoodSubsystem = new ShooterHoodSubsystem(hardwareMap, telemetry); // <--- CAMBIO
+        // Compatibility only: ShooterHoodSubsystem maps no hardware after MP-01.
+        hoodSubsystem = new ShooterHoodSubsystem(hardwareMap, telemetry);
 
         kickerSubsystem = new KickerSubsystem(hardwareMap);
 
@@ -86,29 +79,16 @@ public class RobotContainer {
         // 3. Configurar Botones
         controlProfile.configureButtonBindings(this);
 
-        //init april tag
-        //initAprilTag(hardwareMap);
     }
 
     public void run() {
         CommandScheduler.getInstance().run();
     }
 
-    private void initAprilTag(HardwareMap hardwareMap) {
-        Position cameraPosition = new Position(DistanceUnit.INCH, 0, 0, 0, 0);
-        YawPitchRollAngles cameraOrientation = new YawPitchRollAngles(AngleUnit.DEGREES, 0, -90, 0, 0);
-
-        aprilTag = new AprilTagProcessor.Builder()
-                .setCameraPose(cameraPosition, cameraOrientation)
-                .build();
-
-        VisionPortal.Builder builder = new VisionPortal.Builder();
-        builder.setCamera(hardwareMap.get(WebcamName.class, "Webcam"));
-        builder.addProcessor(aprilTag);
-
-        visionPortal = builder.build();
-    }
+    /** Legacy camera callers receive no detections because both webcams were removed. */
+    @Deprecated
     public List<AprilTagDetection> getDetections() {
-        return aprilTag.getDetections();
+        return Collections.emptyList();
     }
+
 }
