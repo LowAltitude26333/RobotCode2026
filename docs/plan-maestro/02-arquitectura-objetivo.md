@@ -250,7 +250,7 @@ final class ReadinessState {
 | `LimelightSubsystem` | `Limelight3A` | Pipeline/poll rate/start después de config | stop/close; observación inválida | Llamar motor o setear pose sin gate. |
 | `TurretSubsystem` | `torretaMotor` | Brake, power 0, desarmada | power 0, desarmar en fault/stop | Reset automático suponiendo centro; ignorar limits. |
 | `ShooterSubsystem` | `Shooter` | target 0, controller conocido, health desconocido hasta sensor válido | target 0 y power 0 | Convertir encoder/voltaje inválido en demanda máxima o reactivar tras stop. |
-| `FeederSubsystem` | `kickerM otor` inicialmente | power 0, estado `IDLE` | power 0, cancelar pulso/cooldown | Binding directo o on-time sin máximo. |
+| `FeederSubsystem` | `kickerMotor` + `kickerServo` | ambos outputs en 0, estado `IDLE` | ambos outputs en 0, cancelar pulso/cooldown | Binding directo o on-time sin máximo. |
 | `IntakeSubsystem` | `intakeMotor` | power 0 | power 0 | Estado latched sin indicador/stop. |
 | `RobotSafety` | Registro de callbacks, no hardware map duplicado | Activo antes de comandos | `stopAll`, scheduler cancel/disable | Depender de telemetry o cámara para parar. |
 

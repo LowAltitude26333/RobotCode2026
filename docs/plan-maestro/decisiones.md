@@ -2,7 +2,7 @@
 
 > Estado: registro vivo de decisiones de producto/arquitectura
 > Baseline histórico inicial: `main` en `f91af18`; baseline vigente: `origin/main@b5a134260456565df9d0295722ebecad900f21b4`
-> Última actualización: 2026-07-15
+> Última actualización: 2026-07-18
 > Alcance: elecciones aprobadas, alternativas, consecuencias y condiciones de revisión
 > Responsable sugerido: líder técnico y responsables nombrados en cada decisión
 > Fuente de verdad: la decisión más reciente con estado `ACCEPTED`; cambios importantes requieren nueva entrada, no reescribir silenciosamente la historia.
@@ -55,6 +55,9 @@
 | DEC-032 | ACCEPTED | Tags en tres etapas y revalidación posterior a cleanup | Política de release cambia. |
 | DEC-033 | ACCEPTED | Todo dato físico no verificado es `TBD-BLOCKING` | Medición/revisión lo convierte en verificado. |
 | DEC-034 | ACCEPTED | Pedro posee pose y movimiento; RR sólo rollback | Pedro no cumple MP-02. |
+| DEC-035 | ACCEPTED | Tuners sin lifecycle quedan deshabilitados durante MP-01 | MP-02 integra lifecycle verificable. |
+| DEC-036 | ACCEPTED | Contrato de hardware confirmado para MP-01 | Cambia configuración física o RC. |
+| DEC-037 | ACCEPTED | Kicker motor-only activo; dual condicional a corrección y retest | Mecánica reinstala/cambia el CRServo. |
 
 ## 3. Decisiones aceptadas
 
@@ -344,6 +347,31 @@
 - **Contexto:** abstraer sólo `PoseProvider` dejaría `DriveSubsystem/MecanumDrive` sobre Road Runner.
 - **Decisión:** MP-02 migra localización, conducción manual, seguimiento de paths, actualización de pose y stop a un único adapter respaldado por Pedro. Road Runner queda operativo sólo como rollback de commissioning hasta aceptar el gate.
 - **Consecuencia:** no se libera un dual-stack runtime; el rollback revierte el paquete completo.
+
+### DEC-035 — Tuners sin lifecycle quedan deshabilitados durante MP-01
+
+- **Estado/fecha:** `ACCEPTED`, 2026-07-17
+- **Contexto:** los tuners Pedro/Road Runner pueden mover el drivetrain fuera de `SafeCommandOpMode`; algunos usan acciones bloqueantes y no ofrecen el E-stop latched de MP-01.
+- **Decisión:** conservar su código pero deshabilitar su registro durante MP-01. MP-02 sólo los vuelve a exponer después de integrar stop, interrupción y E-stop verificables.
+- **Consecuencia:** System Check y Shooter Tuning son los únicos modos de commissioning con actuadores visibles durante MP-01, además del TeleOp principal.
+- **Rollback:** reactivar únicamente en una rama de MP-02 después de pasar revisión estática y prueba restringida.
+
+### DEC-036 — Contrato de hardware confirmado para MP-01
+
+- **Estado/fecha:** `ACCEPTED`, 2026-07-17
+- **Contexto:** DEC-011/DEC-015 preservaban hardware/nombres legacy mientras faltaba confirmación. El equipo confirmó el mapa lógico y los dispositivos retirados.
+- **Decisión:** `kickerMotor` y `kickerServo` reemplazan el string legacy; el CRServo usa +0.5/-0.5/0 y comparte ownership con el motor. `Shooter2`, hood y webcams se retiran del hardware activo. Los encoders par0/par1/perp se leen por `rightFront`/`leftFront`/`rightBack` respectivamente. Left front, left back y right back se invierten; right front no.
+- **Consecuencia:** RobotMap se convierte en fuente única de nombres/direcciones; el export RC y las pruebas físicas siguen siendo gates obligatorios.
+- **Supersede:** reemplaza las partes de DEC-011/DEC-015 que exigían conservar `kickerM otor` y mantener hardware retirado hasta confirmación.
+
+### DEC-037 — Kicker motor-only activo y configuración dual condicional
+
+- **Estado/fecha:** `ACCEPTED`, 2026-07-18
+- **Contexto:** el motor y el CRServo recibieron comandos simultáneos, pero el CRServo mostró aproximadamente 0.5 s de demora al arrancar y 0.5–1.0 s al detenerse. Mecánica retiró físicamente el servo y el candidato motor-only pasó INIT, avance, reversa, release, Stop y E-stop sin piezas.
+- **Decisión:** MP-01 opera con `KICKER_SERVO_ENABLED=false` y el servo físicamente desconectado. La arquitectura dual se conserva como opción futura, pero no queda autorizada automáticamente al reinstalar el servo.
+- **Condición para dual:** mecánica corrige o acepta formalmente la dinámica, conecta/configura el dispositivo, software activa la bandera con el OpMode detenido, se genera un APK nuevo y se repiten INIT, avance, reversa, release, Stop y E-stop con evidencia ligada a ese APK. Hasta completar esa secuencia, dual permanece bloqueado.
+- **Consecuencia:** FND-026 queda `CONTAINED`, no `CLOSED`; motor-only puede continuar MP-01 y cualquier intento dual reabre el gate físico.
+- **Rollback:** bandera `false`, servo desconectado y kicker motor-only.
 
 ## 4. Decisiones pendientes de implementación, no de producto
 

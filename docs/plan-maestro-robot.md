@@ -1,17 +1,17 @@
 # Plan maestro de robustecimiento del robot
 
-> Estado: MP-00/01A autorizado e implementándose en `masterplan`; todavía no autoriza despliegue ni movimiento del robot
+> Estado: MP-01 en commissioning sobre `masterplan`; gates instrumentados avanzados, T4 de torreta pausado para medir duración de hold/delta de ticks
 > Baseline de implementación: `origin/main@a887fe4f7ca9023eec6034a0db6b8d918c640ecc`; preserva evidencia histórica de `b5a1342`
-> Última actualización: 2026-07-17
+> Última actualización: 2026-07-18
 > Alcance: arquitectura, torreta, Limelight 3A, odometría, shooter, controles, pruebas y limpieza
 > Responsables sugeridos: líder de software, responsable mecánico/eléctrico, operador 1, operador 2 y responsable de pruebas
 > Fuente de verdad: antes de ejecutar una fase se debe volver a inspeccionar la rama y el hardware; este documento describe el baseline indicado, no garantiza el estado físico del robot.
 
-Reinspección MP-00/01A: `a887fe4` integra el endurecimiento documental del PR #7 sobre
-`b5a1342`. La implementación actual corrige lifecycle de `VisionPortal`, init-loop, armado
-sostenido y el shooter nulo de `TeleopTorreta`; los findings permanecen `FIX_READY` hasta
-completar sus gates físicos. Por decisión del equipo, `KICKER_OUT_SPEED=0.85` se incluye en
-este paquete; su inclusión no constituye validación física del valor.
+Reinspección MP-01: sobre `a887fe4`/`24f9911`, el equipo confirmó el mapa lógico, tres encoders
+de odometría conectados a puertos del drivetrain, un kicker compuesto por motor + CRServo y
+shooter de un motor con máximo declarado de 6000 RPM. El software contiene los caminos directos,
+retira hood/webcams/Shooter2 del hardware activo e implementa shooter fail-closed. Los findings
+permanecen `FIX_READY` o `BLOCKED_PHYSICAL` hasta completar sus gates.
 
 ## 1. Resultado buscado
 
@@ -43,7 +43,7 @@ Este plan es un programa de trabajo, no una especificación ya validada. Toda co
 7. El operador 2 podrá iniciar/detener RPM manual, aplicar trim en pasos de 100, restaurarlo y, después de MP-06, cambiar entre RPM automática y manual. No habrá override de límites desde gamepad; siempre existirá un clamp absoluto de RPM validado físicamente.
 8. `gamepad1 RB` expresa una solicitud sostenida, no potencia directa. El feeder sólo producirá pulsos acotados, separados por cooldown y revalidados antes de cada pieza. Soltar el control, perder readiness, interrumpir el comando, detener el OpMode o activar E-stop debe ordenar potencia cero.
 9. La alianza se seleccionará directamente durante init: `X = BLUE`, `B = RED`. Se mostrará claramente y se bloqueará al iniciar; no se alternará accidentalmente durante el match.
-10. Durante commissioning seguirán visibles `MainTeleOp`, System Check, Shooter Tuning, todos los tuners de Pedro y los registradores dinámicos de Road Runner; visibilidad no equivale a autorización de movimiento. El release de competencia tendrá exactamente un TeleOp y un System Check, mientras los tuners quedarán recuperables en la rama/tag de commissioning.
+10. Durante MP-01 quedan visibles `MainTeleOp`, System Check y Shooter Tuning. Los tuners de Pedro y los registradores dinámicos de Road Runner permanecen en código pero deshabilitados hasta que MP-02 les proporcione lifecycle/E-stop verificable. El release de competencia tendrá exactamente un TeleOp y un System Check.
 11. Ningún cambio de fase se considera terminado sólo porque compile. Cada gate exige evidencia reproducible y validación física proporcional al riesgo.
 12. La referencia primaria de E-stop será `gamepad1 BACK`, inmediata y latched. Debe probarse con el Driver Station y gamepad exactos; si falla esa validación, el fallback será `gamepad1 START+Y` sostenido 0.5 s.
 
@@ -129,7 +129,7 @@ La limpieza sólo comienza después de demostrar el reemplazo, pero no hereda au
 - Confirmar nombre, dirección, signo de encoder, ticks por arco permitido, centro físico, margen contra hard stops y ruta de cables de la torreta.
 - Confirmar un solo motor de shooter, ticks/rev efectivos, relación externa, inversión, RPM máxima segura y comportamiento de zero power.
 - Hacer que encoder congelado, RPM imposible, voltaje inválido/no disponible u overspeed de shooter produzcan `SENSOR_FAULT`, target cero y power cero; nunca convertir el dato inválido en RPM cero que solicite máxima potencia.
-- Confirmar el nombre exacto `kickerM otor` antes de renombrar únicamente el concepto de software a feeder.
+- Usar los nombres confirmados `kickerMotor` y `kickerServo`; ambos outputs pertenecen a `KickerSubsystem` y cambian a cero/kick/reverse en el mismo ciclo.
 - Completar el contrato físico de drive, tres pods, IMU, intake, shooter, feeder, torreta y Limelight; registrar hood/webcam como retiradas, sin inferir mappings ausentes.
 - Hacer que E-stop y `RobotSafety.stopAll()` estén disponibles desde producción, diagnóstico y cada tuner autorizado. `BACK` es el control primario; si la prueba del Driver Station exacto falla, documentar y activar el fallback `START+Y` por 0.5 s.
 - Auditar todos los adapters `Action` y comandos secuenciales para que interrupción y stop ordenen cero a drive, intake, feeder, shooter y torreta.
@@ -401,6 +401,7 @@ Cada PR o sesión de commissioning debe adjuntar:
 - [Decisiones](plan-maestro/decisiones.md)
 - [Contrato operativo de hardware](plan-maestro/contrato-hardware.md)
 - [Handoff de la tarea](plan-maestro/handoff-task.md)
+- [Plan de handoffs MP-01, MP-02 y MasterPlan](plan-maestro/handoff-plan-MP01-MP02-MasterPlan.md)
 - [Hallazgos críticos históricos](critical-findings.md), preservado sin editar
 
 ## 10. Definición de terminado del programa

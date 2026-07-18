@@ -1,6 +1,6 @@
 # 01 — Auditoría del estado actual
 
-> Estado: auditoría rebaselinada para MP-00/01A; requiere confirmación física
+> Estado: auditoría actualizada con implementación MP-01; export RC y confirmación física pendientes
 > Baseline de implementación: `origin/main@a887fe4f7ca9023eec6034a0db6b8d918c640ecc`
 > Última actualización: 2026-07-17
 > Alcance: repo, composición activa, hardware observado, findings históricos y brechas
@@ -32,35 +32,25 @@ El shooter activo es de un motor y su controlador tiene PID/feedforward, compens
 | Fuente SDK común | `build.dependencies.gradle` resuelve SDK 11.0 y otras dependencias | La versión efectiva debe verificarse en Gradle; consolidarla es trabajo futuro y revisado. |
 | Dashboard | Versiones duplicadas observadas en Gradle | No normalizar incidentalmente durante auto-aim. |
 
-Como evidencia histórica de `main@f91af18`, una compilación con el JBR de Android Studio 21 terminó correctamente: aproximadamente 192.3 s en frío y `TeamCode-debug.apk` de 81,278,696 bytes, con 77 archivos Java y cerca de 7,347 líneas. Esa cifra no se reutiliza como evidencia del paquete actual. En `masterplan`, MP-00/01A completó `assembleDebug` en 16.8 s y el retest final con `KICKER_OUT_SPEED=0.85` en 7 s produjo un APK de 81,301,551 bytes; las pruebas físicas siguen pendientes.
+Como evidencia histórica de `main@f91af18`, una compilación con el JBR de Android Studio 21 terminó correctamente: aproximadamente 192.3 s en frío y `TeamCode-debug.apk` de 81,278,696 bytes, con 77 archivos Java y cerca de 7,347 líneas. Esa cifra no se reutiliza como evidencia del paquete actual. El worktree MP-01 sobre `masterplan@24f9911` completó un `assembleDebug` limpio final en 68.9 s y produjo un APK de 81,276,823 bytes, SHA-256 `624EA17B7E79AA594D8CC5720098375C9BD375F10BD8EA82EB02CCF5E1AA15E4`; las pruebas físicas siguen pendientes.
 
 ## 3. Superficie de OpModes actual
 
-La inspección encontró 14 TeleOps anotados y habilitados en total, incluido el tuning de Pedro. Sus nombres de Driver Station son:
+La contención MP-01 deja cuatro TeleOps anotados y habilitados:
 
 - `Skywalker TeleOp (Manual Principal)`;
-- `Skywalker TeleOp 2`;
-- `Skywalker Turret: SENTINEL (Solo Conectados)`;
-- `TeleOp Intake Control`;
-- `Skywalker TeleOp w/ April`;
-- `TeleOpBETA 1 ROJO`;
-- `boton`;
-- `Motores`;
-- `ShooterTeleOpAdaptado`;
 - `SYSTEM CHECK and TUNING`;
 - `Tuning: Shooter & Systems (Manual)`;
-- `Test Color`;
-- `FTCLib Test`;
-- `Tuning` de Pedro Pathing.
+- `Test Color` (sensor-only).
 
-`TeleOpFieldCentric` está anotado pero también `@Disabled`, por lo que no forma parte de esos 14. Road Runner registra además rutinas dinámicas mediante `@OpModeRegistrar` cuando su bandera `DISABLED` está en `false`. Los ocho archivos con anotación `@Autonomous` compilable están deshabilitados, y la anotación de `AutonomoOfficialRed.java` está dentro de un comentario de bloque; no existe un autónomo de competencia habilitado en este baseline.
+Los demás TeleOps legacy, `TeleopTorreta` y Pedro Tuning están `@Disabled`. Road Runner conserva su `@OpModeRegistrar`, pero `TuningOpModes.DISABLED=true` impide el registro dinámico durante MP-01. Todos los autónomos anotados están deshabilitados.
 
 Esto importa por dos razones:
 
 1. buscar sólo anotaciones no descubre registros dinámicos;
 2. borrar archivos para “acelerar deploy” sin medir puede no atacar el costo real, aunque sí reduce ruido, caminos alternos y riesgo operativo.
 
-Durante commissioning deben seguir visibles `MainTeleOp`, System Check, Shooter Tuning, tuning Pedro y los registradores dinámicos Road Runner porque el robot todavía no está calibrado. Visibilidad no autoriza uso: cada tuner debe documentar ownership, potencia, límites, Stop y E-stop. Sólo después de MP-08 se crea el snapshot de MP-09; el artefacto final reduce el menú y se revalida en MP-10.
+Durante MP-01 sólo permanecen visibles los modos con lifecycle seguro que mueven actuadores. Pedro y Road Runner se reactivan en MP-02 únicamente después de integrar Stop/E-stop verificable. Sólo después de MP-08 se crea el snapshot de MP-09; el artefacto final reduce el menú y se revalida en MP-10.
 
 ## 4. Camino activo de composición
 
@@ -71,16 +61,17 @@ Durante commissioning deben seguir visibles `MainTeleOp`, System Check, Shooter 
 - `DriveSubsystem`;
 - `IntakeSubsystem`;
 - `ShooterSubsystem`;
-- `ShooterHoodSubsystem`;
+- shim de compatibilidad de hood sin hardware;
 - `KickerSubsystem`;
 - bindings de `SkywalkerProfile`.
 
 `MainTeleOp` todavía posee por separado:
 
 - `TurretSubsystem`;
-- procesamiento AprilTag;
-- `VisionPortal` con `Webcam 1`;
-- el comando de seguimiento de torreta.
+- la máquina de armado manual de torreta.
+
+Las webcams y el seguimiento AprilTag se retiraron del camino activo. Hasta MP-03/05 la torreta
+puede armarse para validar el cero, pero no recibe un comando de movimiento.
 
 Esta división permite que el composition root no conozca dos actuadores/sensores esenciales y duplica decisiones de lifecycle. El diseño objetivo mueve torreta y Limelight al mismo dueño que los demás subsistemas.
 
@@ -94,7 +85,7 @@ MainTeleOp
      -> DriveSubsystem
         -> MecanumDrive (Road Runner)
            -> ThreeDeadWheelLocalizer
-              -> par0, par1, perp + IMU/drive según la clase
+              -> rightFront(par0), leftFront(par1), rightBack(perp)
 ```
 
 El localizador de tres ruedas muertas ya reemplazó al two-dead-wheel histórico que reutilizaba encoders de motores del drivetrain. No obstante, los parámetros observados son todavía provisionales:
@@ -142,7 +133,7 @@ Lo anterior es una mejora real respecto al finding histórico, pero sigue siendo
 
 ### 4.4 Shooter, hood y feeder
 
-El `ShooterSubsystem` activo usa sólo `Shooter`; `Shooter2` permanece como declaración heredada, no como segundo motor activo. El controlador incluye:
+El `ShooterSubsystem` activo usa sólo `Shooter`; `Shooter2` fue confirmado retirado y ya no se mapea. El controlador incluye:
 
 - encoder feedback;
 - PID/feedforward;
@@ -156,7 +147,7 @@ La readiness actual se basa principalmente en tolerancia instantánea y no incor
 
 `ShooterHoodSubsystem` todavía controla dos servos en código, pero el equipo confirmó que el hood ya fue retirado físicamente y el robot final tendrá ángulo mecánico fijo. El retiro físico aún necesita evidencia/configuración; el código se limpia únicamente después del replacement validado.
 
-El feeder físico está representado por `KickerSubsystem`; el hardware string observado es exactamente `kickerM otor`, con espacio interno. Renombrar la clase/concepto a feeder es razonable, pero cambiar el string sin revisar la configuración puede romper el robot.
+El feeder físico está representado por `KickerSubsystem`; el equipo confirmó `kickerMotor` y el CRServo `kickerServo`. El subsistema es dueño de ambos y aplica kick/reverse/stop conjuntamente.
 
 ### 4.5 Controles actuales relevantes
 
@@ -184,12 +175,12 @@ En `origin/main`, `IntakeTeleOp` también liga X/Y a `ShooterMotor.right2/left2`
 |---|---|---|
 | Drive | `leftFront`, `rightFront`, `leftBack`, `rightBack` | Observado; confirmar direcciones y que `rightRear` en Pedro no sea una inconsistencia. |
 | Shooter | `Shooter` | Activo, un motor confirmado por el usuario; faltan constantes físicas. |
-| Shooter legado | `Shooter2` | Declarado pero no mapeado por el subsistema activo; candidato a borrar al final. |
+| Shooter legado | `Shooter2` | Retirado físicamente y eliminado del mapa activo. |
 | Intake | `intakeMotor` | Observado; confirmar dirección/corriente/límites. |
-| Hood | `hoodLeft`, `hoodRight` | Código activo; el equipo reporta hardware ya retirado, pendiente de evidencia/configuración. |
-| Feeder/kicker | `kickerM otor` | Preservar exactamente hasta confirmar configuración. |
+| Hood | `hoodLeft`, `hoodRight` | Retirado físicamente; shim legacy no mapea hardware. |
+| Feeder/kicker | `kickerMotor`, `kickerServo` | Confirmados por el equipo; export y prueba pendientes. |
 | Turret | `torretaMotor` | Observado; dirección, signo, ticks y arco pendientes. |
-| Webcam actual | `Webcam 1` | Usada por código de tracking; el equipo reporta webcam físicamente retirada. |
+| Webcam anterior | `Webcam 1`, `Webcam` | Retiradas y fuera de los OpModes activos. |
 | Webcam dormida | `Webcam` | Camino alterno/dormido; hardware reportado retirado. |
 | Odometría | `par0`, `par1`, `perp` | Tres pods confirmados conceptualmente; geometría pendiente. |
 | IMU | `imu` | Observado; orientación física pendiente. |

@@ -41,7 +41,8 @@ No editar los datos crudos para que coincidan con una constante deseada. Una cor
 | Shooter | `Shooter` | Un motor confirmado por el equipo | Modelo, encoder, ticks/rev efectivos, ratio, sentido, RPM/corriente/temperatura máximas. |
 | Shooter legado | `Shooter2` | No debe asumirse presente | Confirmación en export antes de retirar declaración legacy. |
 | Intake | `intakeMotor` | Presente; pendiente | Dirección, power, corriente, jam y stop. |
-| Feeder | `kickerM otor` | Presente; string exacto sin confirmar en RC | Dirección, power, duración de pulso, cooldown, corriente, jam y reversa. |
+| Feeder motor | `kickerMotor` | Confirmado por equipo; falta export RC | Dirección, power, duración de pulso, cooldown, corriente, jam y reversa. |
+| Feeder CRServo | `kickerServo` | Confirmado por equipo; falta export RC | +0.5 kick, -0.5 reverse, 0 stop; simultaneidad y corriente. |
 | Torreta | `torretaMotor` | Presente con cero manual | Dirección, signo, ticks/grado, marca/fixture, arco, frenado, backlash y cable slack. |
 | Hood | `hoodLeft`, `hoodRight` en código | Equipo reporta hardware retirado | Evidencia física y ausencia/presencia en configuración RC. |
 | Webcam | `Webcam 1`/`Webcam` en código | Equipo reporta hardware retirado | Evidencia física y configuración; no diseñar coexistencia. |
