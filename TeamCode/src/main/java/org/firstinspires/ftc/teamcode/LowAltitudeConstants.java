@@ -92,6 +92,14 @@ public class LowAltitudeConstants {
     public static long KICKER_EXTEND_TIME_MS = 632;
     public static long KICKER_RETRACT_DELAY_MS = 60;
 
+    //Modelo RPM-por-distancia (MP-06/DEC-012)
+    public static class ShooterModelConstants {
+        // Alineado con el gate T8.1 (±100 RPM sostenidas 250 ms).
+        public static double RPM_MODEL_TOLERANCE_RPM = 100.0;
+        // Dataset real: TBD-BLOCKING Tuning Paso 5 (handoff-task.md). Hasta
+        // entonces los modelos solo se ejercitan con datos sintéticos en tests.
+    }
+
     //Visión (Limelight, MP-03)
     public static class VisionConstants {
         public static double LIMELIGHT_POLL_RATE_HZ = 50.0;
