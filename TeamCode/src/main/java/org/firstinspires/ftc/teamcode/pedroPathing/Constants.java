@@ -11,6 +11,8 @@ import com.pedropathing.paths.PathConstraints;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
+import org.firstinspires.ftc.teamcode.RobotMap;
+
 
 /*
 =======
@@ -57,27 +59,39 @@ public class Constants {
     //braking start = que tan temprano empieza a frenar más bajo es más tarde, más alto más temprano. Braking Strenght que tan fuerte frena, más alto más fuerte, más bajo más suave.
     public static PathConstraints pathConstraints = new PathConstraints(0.99, 100, 1, 1);
 
+    // ===== TBD-BLOCKING: calibración de pods (Tuning Paso 2, plan-paralelo-20h.md secc. 2) =====
+    // Los tres pods se leen por los puertos de encoder del Hub — NO existe un
+    // Pinpoint físico (plan-paralelo-20h.md secc. 1). Mapeo coherente con Road
+    // Runner (ThreeDeadWheelLocalizer): par0=rightFront, par1=leftFront, perp=rightBack.
+    // Valores placeholder NO calibrados. leftPodY y rightPodY no pueden ser iguales:
+    // la matemática three-wheel divide entre (leftPodY - rightPodY) y con offsets
+    // idénticos produce NaN si alguien corre Tuning.java antes de calibrar.
+    // Tuning Paso 2 escribe aquí los valores medidos y voltea el flag a true.
+    public static final boolean LOCALIZER_OFFSETS_CALIBRATED = false;
+    public static final double TBD_FORWARD_TICKS_TO_INCHES = .001989436789;
+    public static final double TBD_STRAFE_TICKS_TO_INCHES = .001989436789;
+    public static final double TBD_TURN_TICKS_TO_INCHES = .001989436789;
+    public static final double TBD_LEFT_POD_Y_INCHES = 1.0;
+    public static final double TBD_RIGHT_POD_Y_INCHES = -1.0;
+    public static final double TBD_STRAFE_POD_X_INCHES = 0.0;
+    // Pedro modela la dirección como double: Encoder.FORWARD=1, Encoder.REVERSE=-1.
+    public static final double TBD_LEFT_ENCODER_DIRECTION = Encoder.FORWARD;
+    public static final double TBD_RIGHT_ENCODER_DIRECTION = Encoder.FORWARD;
+    public static final double TBD_STRAFE_ENCODER_DIRECTION = Encoder.FORWARD;
+
     public static ThreeWheelConstants localizerConstants = new ThreeWheelConstants()
-            .forwardTicksToInches(.001989436789)
-            .strafeTicksToInches(.001989436789)
-            .turnTicksToInches(.001989436789)
-            .leftPodY(1)
-            .rightPodY(-1)
-            .strafePodX(-2.5)
-            .leftEncoder_HardwareMapName("leftFront")       //poner bien los nombres de las pinpoint
-            .rightEncoder_HardwareMapName("rightRear")
-            .strafeEncoder_HardwareMapName("rightFront")
-            .leftEncoderDirection(Encoder.FORWARD)      //cambiar a REVERSE si está al revés
-            .rightEncoderDirection(Encoder.FORWARD)
-            .strafeEncoderDirection(Encoder.FORWARD)
-            .leftPodY(0)            //offsets tienen que medirse en inches
-            .rightPodY(0)
-            .strafePodX(0);
-            /*
-            .forwardTicksToInches(multiplier)                //multiplicadores de auto. Requiere tuning
-            .strafeTicksToInches(multiplier)                 //checar Tuning -> Localization -> Three Wheel
-            .turnTicksToInches(multiplier)
-             */
+            .forwardTicksToInches(TBD_FORWARD_TICKS_TO_INCHES)
+            .strafeTicksToInches(TBD_STRAFE_TICKS_TO_INCHES)
+            .turnTicksToInches(TBD_TURN_TICKS_TO_INCHES)
+            .leftEncoder_HardwareMapName(RobotMap.ODOMETRY_PARALLEL_1)      // leftFront (par1, pod izquierdo)
+            .rightEncoder_HardwareMapName(RobotMap.ODOMETRY_PARALLEL_0)     // rightFront (par0, pod derecho)
+            .strafeEncoder_HardwareMapName(RobotMap.ODOMETRY_PERPENDICULAR) // rightBack (perp)
+            .leftEncoderDirection(TBD_LEFT_ENCODER_DIRECTION)
+            .rightEncoderDirection(TBD_RIGHT_ENCODER_DIRECTION)
+            .strafeEncoderDirection(TBD_STRAFE_ENCODER_DIRECTION)
+            .leftPodY(TBD_LEFT_POD_Y_INCHES)
+            .rightPodY(TBD_RIGHT_POD_Y_INCHES)
+            .strafePodX(TBD_STRAFE_POD_X_INCHES);
 
 
     public static Follower createFollower(HardwareMap hardwareMap) {
