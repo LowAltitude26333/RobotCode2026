@@ -12,6 +12,8 @@ Estado: **MP-01 `BLOCKED`; safety y mecanismos ampliamente validados, T4 de torr
 
 Este archivo se actualiza con cada modificación material del plan maestro. Debe indicar qué cambió, cuál es la próxima acción de Codex y qué evidencia debe aportar el equipo desde el robot real.
 
+**Reparto de trabajo para la ventana previa a competencia:** ver [`plan-paralelo-20h.md`](plan-paralelo-20h.md), que divide el trabajo restante en pista Software y pista Tuning con su tabla de bloqueos cruzados. Este archivo (`handoff-task.md`) sigue siendo la bitácora de evidencia física — cada resultado de la pista Tuning se registra aquí igual que hasta ahora.
+
 ## Modificaciones realizadas
 
 - Se rebaselinó la documentación al merge endurecido `a887fe4` sin borrar la evidencia histórica de `b5a1342`/`f91af18`.
@@ -178,6 +180,17 @@ MP-01 no se cierra mientras los findings `FIX_READY` no pasen su regresión, T4/
 - Cierre de sesión 2026-07-18: después de la estabilidad en -50 ticks, el operador pulsó `STOP` y confirmó explícitamente `DETENIDO`. Última evidencia observable previa al Stop: power=0, move inactive, -50 estable durante 20 s y sin ruido/vibración/error. `-50` es sólo la lectura relativa final de esa inicialización y no debe tratarse como centro físico ni reutilizarse tras reinicio; el centro sigue siendo la marca de cinta. La próxima sesión comienza con robot deshabilitado, inspección visual y recentrado manual a la cinta antes de confirmar un cero nuevo.
 - Verificación pre-commit de cierre: el primer rebuild encontró un placeholder `ReparsePoint` de OneDrive dentro del directorio ignorado `TeamCode/build` y falló en `mergeDebugResources`; se validó la ruta, se eliminó únicamente ese output generado y `assembleDebug --no-daemon` pasó desde limpio en 53 s. APK limpio resultante: 81,285,031 bytes, SHA-256 `B8E72645AA8FA36678F9EDEC26216259679208F4BDCDCFE6DB3ABA2857E5E1B6`, modificado el 2026-07-18 15:49:50. Este APK limpio no fue instalado ni probado físicamente; toda evidencia T4 de esta sesión sigue ligada al APK instalado `D5AC...7536`.
 - Segunda repetición en el mismo sentido después de nuevo centrado/armado: ningún movimiento físico visible, ticks finales +29, resultado `STOPPED_TICK_BUDGET`, power=0 y sin ruido, vibración ni error. Esto no apoya que el primer resultado fuera sólo toma de holgura. Nueva hipótesis: los ticks corresponden al eje del motor antes de una reducción mecánica suficiente para volver imperceptible el desplazamiento de salida. No ejecutar un tercer pulso ni ampliar el presupuesto sin identificar modelo/ticks por revolución del motor y relación/transmisión hasta la torreta.
+
+## Entrega de la Pista Software — 2026-07-18
+
+Las 6 tareas de `plan-paralelo-20h.md` sección 3 quedaron implementadas y commiteadas en `masterplan` (C1-C6). Solo software: ningún APK fue instalado y el comportamiento validado físicamente no cambió.
+
+- `LimelightSubsystem` + `LimelightObservation` + OpMode `Limelight Diagnostic` (cero actuadores) — desbloquea el Paso 4 de Tuning. Dispositivo opcional vía `tryGet` (DEC-028): corre degradado sin la Limelight configurada.
+- `pedroPathing/Constants.java` reparado: sin código muerto, encoders leyendo los pods reales vía `RobotMap` (el string `rightRear` y el strafe cruzado a `rightFront` eran bugs), offsets como constantes `TBD_*` + flag `LOCALIZER_OFFSETS_CALIBRATED=false` para el Paso 2.
+- `TeamCode/src/test` creado con JUnit 4.13.2 (única dependencia nueva); `util/Angles` extraído de `DriveSubsystem` con semántica idéntica; 23/23 tests PASS.
+- Paquete `localization/`: `PoseProvider`/`PoseSnapshot`/`DriveAdapter` neutrales (MP-02) con adapter Road Runner; RR sigue siendo el owner (DEC-034 pendiente). Cambio aditivo en `DriveSubsystem` (cachea velocidad ya calculada, `resetEpoch`).
+- Paquete `shooter/`: modelos RPM-por-distancia lineal/cuadrático/piecewise (piecewise adaptado de HyperionBots FTC 18011) + selector DEC-012 con clamp de seguridad dentro del modelo. Espera el dataset del Paso 5.
+- `telemetry/TelemetryBlocks` + `inventario-telemetria-tuners.md` (prep MP-07 y notas de entorno de build: JBR + `GRADLE_USER_HOME` ASCII para tests CLI).
 
 ## Próxima acción de Codex
 

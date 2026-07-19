@@ -5,6 +5,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import org.firstinspires.ftc.teamcode.LowAltitudeConstants;
 import org.firstinspires.ftc.teamcode.opmodes.SafeCommandOpMode;
 import org.firstinspires.ftc.teamcode.subsystems.LimelightSubsystem;
+import org.firstinspires.ftc.teamcode.telemetry.TelemetryBlocks;
 import org.firstinspires.ftc.teamcode.vision.LimelightObservation;
 
 /**
@@ -58,25 +59,16 @@ public class LimelightDiagnosticOpMode extends SafeCommandOpMode {
 
     private void addLimelightTelemetry() {
         LimelightObservation obs = limelightSubsystem.getLatestObservation();
-        telemetry.addData("Alianza", allianceRed ? "RED" : "BLUE");
-        telemetry.addData("Tag esperado", limelightSubsystem.getExpectedTagId());
+        TelemetryBlocks.mode(telemetry, allianceRed, false);
+        TelemetryBlocks.vision(telemetry, obs, limelightSubsystem.getHealth(),
+                limelightSubsystem.getExpectedTagId());
         telemetry.addData("LL/Presente", limelightSubsystem.isPresent());
-        telemetry.addData("LL/Health", limelightSubsystem.getHealth());
-        telemetry.addData("LL/Quality", obs.quality);
-        telemetry.addData("LL/Usable", obs.isUsable());
-        telemetry.addData("LL/Tag", obs.tagId);
-        telemetry.addData("LL/tx", "%.2f°", obs.txDegrees);
-        telemetry.addData("LL/ty", "%.2f°", obs.tyDegrees);
-        telemetry.addData("LL/Staleness", "%.1f ms", obs.stalenessMs);
-        telemetry.addData("LL/Latencia total", "%.1f ms", obs.totalLatencyMs);
         telemetry.addData("LL/Edad obs", "%.1f ms",
                 (System.nanoTime() - obs.timestampNanos) / 1_000_000.0);
-        if (obs.hasBotPose) {
-            telemetry.addData("LL/Botpose", "X %.2f m, Y %.2f m, H %.1f°",
-                    obs.botPoseXMeters, obs.botPoseYMeters,
-                    Math.toDegrees(obs.botPoseHeadingRadians));
+        if (limelightSubsystem.isPresent()) {
+            TelemetryBlocks.faults(telemetry);
         } else {
-            telemetry.addData("LL/Botpose", "NO DISPONIBLE");
+            TelemetryBlocks.faults(telemetry, "LIMELIGHT AUSENTE (DEC-028)");
         }
     }
 }

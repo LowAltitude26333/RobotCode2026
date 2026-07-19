@@ -373,6 +373,16 @@
 - **Consecuencia:** FND-026 queda `CONTAINED`, no `CLOSED`; motor-only puede continuar MP-01 y cualquier intento dual reabre el gate físico.
 - **Rollback:** bandera `false`, servo desconectado y kicker motor-only.
 
+### DEC-038 — Reutilización de código de repos FTC sin auditoría de licencias, y patrón piecewise adoptado de HyperionBots
+
+- **Estado/fecha:** `ACCEPTED`, 2026-07-18
+- **Contexto:** el doc 04 exigía verificación de licencia antes de reutilizar código externo; el equipo decidió que entre equipos FTC se copia/adapta directamente. La Pista Software necesitaba el modelo RPM-por-distancia (MP-06) y el guard fail-closed de Limelight.
+- **Decisión:** se autoriza copiar/adaptar código de repos públicos de equipos FTC sin trámite de licencias, dejando en el código un comentario de origen. Patrones adoptados en esta ventana, de `Ashley904/HyperionBotsWorldsRepository` (FTC 18011): (1) interpolación piecewise-linear con clamp en ambos extremos sin extrapolar (`PiecewiseLinearRpmModel`, adaptada de `PrecomputeShooterLookupTable` — sin hood, unidades RPM, duplicados promediados, clamp a `SHOOTER_MAX_SAFE_RPM` dentro del modelo); (2) guard `result == null || !result.isValid()` → rechazo, en `LimelightSubsystem.periodic()`.
+- **Partes rechazadas:** hood lookup (ángulo fijo local), auto-heading de chasis y `tx` directo a motor (contradicen DEC-005), `TrackingThread`/código de RevAmped (Pedro "ivy" + Java 17 incompatibles con el toolchain local).
+- **Razón:** partir de implementación probada en competencia reduce riesgo en ventana de 20h; la adaptación conserva los contratos de seguridad propios.
+- **Consecuencia:** el checklist de licencias del doc 04 secc. 10 queda reducido a "comentario de origen + entrada aquí"; los tests puros (`RpmModelsTest`) son el gate de la adaptación.
+- **Rollback:** sustituir la implementación adaptada por una propia equivalente; las interfaces (`RpmModel`) no cambian.
+
 ## 4. Decisiones pendientes de implementación, no de producto
 
 Estas preguntas se resuelven con evidencia dentro del contrato ya aprobado:
