@@ -18,6 +18,34 @@ public class TurretSubsystem extends SubsystemBase {
     private static final double COMMISSIONING_MAX_POWER = 0.05;
     private static final long COMMISSIONING_INPUT_WATCHDOG_NANOS = 100_000_000L;
 
+    /**
+     * Medición inmutable de un jog de commissioning: cuánto duró el hold real y
+     * cuántos ticks se movió el encoder entre el inicio y el corte. Existe para
+     * explicar la asimetría +12/-62 observada en T4 (FND-027) separando duración
+     * humana del D-pad de respuesta mecánica. Solo instrumentación: no cambia
+     * potencia, timeout, watchdog ni límites.
+     */
+    public static final class JogReport {
+        public final double requestedPower;
+        public final double holdDurationMs;
+        public final int startTicks;
+        public final int endTicks;
+        public final String result;
+
+        JogReport(double requestedPower, double holdDurationMs,
+                  int startTicks, int endTicks, String result) {
+            this.requestedPower = requestedPower;
+            this.holdDurationMs = holdDurationMs;
+            this.startTicks = startTicks;
+            this.endTicks = endTicks;
+            this.result = result;
+        }
+
+        public int deltaTicks() {
+            return endTicks - startTicks;
+        }
+    }
+
     private final DcMotor turretMotor;
     private boolean centeredAndArmed;
     private ZeroState zeroState = ZeroState.INVALID_INIT;
@@ -26,8 +54,11 @@ public class TurretSubsystem extends SubsystemBase {
     private double commissioningRequestedPower;
     private long commissioningMoveDeadlineNanos;
     private long commissioningLastInputNanos;
+    private long commissioningMoveStartNanos;
+    private int commissioningMoveStartTicks;
     private double lastAppliedPower;
     private String lastCommissioningResult = "NOT_RUN";
+    private JogReport lastJogReport;
 
     // --- CONFIGURACIÓN DE LÍMITES (CALIBRADOS) ---
     // IMPORTANTE: Ajusta estos números según lo que anotaste en tus pruebas
@@ -81,6 +112,11 @@ public class TurretSubsystem extends SubsystemBase {
         return lastCommissioningResult;
     }
 
+    /** Última medición de jog completada; null hasta terminar el primer jog. */
+    public JogReport getLastJogReport() {
+        return lastJogReport;
+    }
+
     /** Invalidates the manual zero and immediately commands zero output. */
     public void simulateZeroLossForCommissioning() {
         invalidateZero(ZeroState.INVALID_SIMULATED_RESET, "SIMULATED_ZERO_LOSS");
@@ -91,12 +127,17 @@ public class TurretSubsystem extends SubsystemBase {
     }
 
     private void invalidateZero(ZeroState newState, String result) {
+        boolean jogWasActive = commissioningMoveActive;
         centeredAndArmed = false;
         zeroState = newState;
         commissioningMoveActive = false;
         commissioningBlockedUntilRelease = true;
         lastCommissioningResult = result;
         stop();
+        if (jogWasActive) {
+            // Un Stop/E-stop que corta un jog activo también cierra su medición.
+            recordJogReport(result);
+        }
     }
 
     /**
@@ -123,10 +164,15 @@ public class TurretSubsystem extends SubsystemBase {
 
         double safePower = Math.max(-COMMISSIONING_MAX_POWER,
                 Math.min(COMMISSIONING_MAX_POWER, requestedPower));
+        int currentTicks = turretMotor.getCurrentPosition();
         if (!commissioningMoveActive) {
             commissioningMoveActive = true;
             commissioningRequestedPower = safePower;
             commissioningMoveDeadlineNanos = nowNanos + maxDurationMillis * 1_000_000L;
+            // Instrumentación FND-027: marca de inicio del hold para medir
+            // duración real y delta de ticks. No altera el control.
+            commissioningMoveStartNanos = nowNanos;
+            commissioningMoveStartTicks = currentTicks;
             lastCommissioningResult = "JOG_ACTIVE";
         } else if (Math.signum(safePower) != Math.signum(commissioningRequestedPower)) {
             finishCommissioningMove("STOPPED_DIRECTION_CHANGE", true);
@@ -134,7 +180,7 @@ public class TurretSubsystem extends SubsystemBase {
         }
 
         commissioningLastInputNanos = nowNanos;
-        if (isOutwardAtSoftLimit(turretMotor.getCurrentPosition(), safePower)) {
+        if (isOutwardAtSoftLimit(currentTicks, safePower)) {
             finishCommissioningMove("STOPPED_SOFT_LIMIT", true);
         } else if (nowNanos >= commissioningMoveDeadlineNanos) {
             finishCommissioningMove("STOPPED_TIMEOUT", true);
@@ -151,6 +197,7 @@ public class TurretSubsystem extends SubsystemBase {
         applyPower(0);
         if (wasActive) {
             lastCommissioningResult = "STOPPED_RELEASE";
+            recordJogReport("STOPPED_RELEASE");
         }
     }
 
@@ -219,10 +266,29 @@ public class TurretSubsystem extends SubsystemBase {
     }
 
     private void finishCommissioningMove(String result, boolean blockUntilRelease) {
+        boolean wasActive = commissioningMoveActive;
         commissioningMoveActive = false;
         commissioningBlockedUntilRelease = blockUntilRelease;
         applyPower(0);
         lastCommissioningResult = result;
+        if (wasActive) {
+            recordJogReport(result);
+        }
+    }
+
+    /**
+     * Cierra la medición del jog que estaba activo. Se llama DESPUÉS de ordenar
+     * potencia cero, así que la lectura de ticks es la del momento del corte;
+     * la deriva posterior por inercia se observa en la telemetría en vivo.
+     */
+    private void recordJogReport(String result) {
+        long nowNanos = System.nanoTime();
+        lastJogReport = new JogReport(
+                commissioningRequestedPower,
+                (nowNanos - commissioningMoveStartNanos) / 1_000_000.0,
+                commissioningMoveStartTicks,
+                turretMotor.getCurrentPosition(),
+                result);
     }
 
     private void applyPower(double power) {

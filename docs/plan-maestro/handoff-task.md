@@ -192,12 +192,21 @@ Las 6 tareas de `plan-paralelo-20h.md` sección 3 quedaron implementadas y commi
 - Paquete `shooter/`: modelos RPM-por-distancia lineal/cuadrático/piecewise (piecewise adaptado de HyperionBots FTC 18011) + selector DEC-012 con clamp de seguridad dentro del modelo. Espera el dataset del Paso 5.
 - `telemetry/TelemetryBlocks` + `inventario-telemetria-tuners.md` (prep MP-07 y notas de entorno de build: JBR + `GRADLE_USER_HOME` ASCII para tests CLI).
 
-## Próxima acción de Codex
+- Instrumentación FND-027 implementada (2026-07-19): `TurretSubsystem` mide cada jog de commissioning — duración real del hold (desde el primer ciclo del D-pad hasta el corte), delta de ticks (inicio→fin) y resultado — sin cambiar potencia 0.05, timeout 2 s, watchdog 100 ms ni soft limits ±200. `SystemCheck` muestra el bloque `TORRETA: ULTIMO JOG (FND-027)` con duración, delta, ticks inicio→fin, potencia, resultado y ticks/segundo. Un Stop/E-stop que corte un jog activo también cierra su medición. Los rechazos (`REJECTED_*`) no generan medición.
+- Verificación software del candidato instrumentado FND-027: `:TeamCode:compileDebugJavaWithJavac` PASS, `:TeamCode:testDebugUnitTest` 23/23 PASS, `assembleDebug` PASS, `git diff --check` PASS. APK `TeamCode/build/outputs/apk/debug/TeamCode-debug.apk`: 81,349,920 bytes, SHA-256 `45BB93AFE5D59ACEB7E1542D85114636A90D640A3886B257E1E9A56F5F540AEE`, modificado 2026-07-19 01:12:59. **No instalado ni probado físicamente.** Este candidato incluye además todas las entregas de la Pista Software (C1-C6), agrupadas en un solo APK según la regla del plan.
 
-1. Al iniciar la próxima sesión, verificar físicamente robot deshabilitado/OpMode detenido, área despejada y marca de cinta; no conservar ni reutilizar el cero relativo -50.
-2. Instrumentar en software la duración real del hold y el delta de ticks de cada jog, sin cambiar potencia 0.05, timeout, watchdog ni soft limits ±200; compilar, hashear e instalar un APK nuevo.
-3. Repetir primero el gate sin armar y después un solo hold temporizado por sentido desde cero físico. No ejecutar matrices ni buscar límites hasta explicar la asimetría +12 frente a -62 ticks.
-4. Sólo después de esa comparación, continuar release/Stop/E-stop y límites por etapas, conservando el punto de detención ante cualquier ruido, deriva o desplazamiento no explicado.
+## Próxima acción — Tuning: validar la instrumentación de jog (FND-027)
+
+La instrumentación ya está implementada; lo que sigue es físico. Procedimiento para la persona de Tuning, paso a paso:
+
+1. **Precondiciones** (robot deshabilitado): OpMode detenido, área despejada, torreta alineada exactamente a la marca de cinta con cables libres. No conservar ni reutilizar el cero relativo `-50` de la sesión anterior: el centro es la marca física.
+2. **Instalar el candidato**: APK SHA-256 `45BB...0AEE` (o el incremental que genere Android Studio con OneDrive pausado — registrar el hash real instalado; no trasladar resultados entre hashes).
+3. **Gate sin armar** (igual que siempre): INIT sin chord → `Turret/Zero=INVALID_INIT`, cero movimiento. Tras START, un toque de `gamepad2 DPAD_RIGHT` debe terminar en `REJECTED_ZERO_INVALID`, ticks sin cambio, y el bloque `ULTIMO JOG` debe seguir en `SIN MEDICIÓN` (los rechazos no miden). Si aparece una medición aquí, detener y reportar: es un bug.
+4. **Armar desde la marca**: `gamepad2 START+BACK` sostenido 1 s durante INIT → `ARMED`, `Turret/Ticks=0`, sin movimiento.
+5. **Un solo hold temporizado sentido positivo**: tras START, sostener `gamepad2 DPAD_RIGHT` intentando una duración uniforme (~0.5 s) y soltar. Leer y registrar el bloque `ULTIMO JOG`: `Duración hold` (ms), `Delta ticks`, `Ticks X -> Y`, `Ticks por segundo`, `Resultado` (se espera `STOPPED_RELEASE`). Esperar 20 s sin controles y registrar también el `Turret/Ticks` en vivo — la diferencia contra el `endTicks` del reporte es deriva post-corte por inercia, dato aparte.
+6. **Recentrar y repetir en sentido negativo**: Stop, realinear la torreta a la cinta, reiniciar INIT, armar de nuevo (ticks=0) y hacer un solo hold con `gamepad2 DPAD_LEFT` de duración similar. Registrar lo mismo. Recentrar antes del hold negativo es deliberado: la sesión anterior midió el negativo partiendo de +12, lo que contamina la comparación.
+7. **Comparación que cierra o escala el finding**: con duraciones de hold similares, si los `Ticks por segundo` de ambos sentidos son similares, la asimetría +12/-62 se explica por duración humana del D-pad y T4 puede continuar (release/Stop/E-stop y límites por etapas). Si con duraciones similares los ticks/segundo difieren claramente, es mecánica/control: detenerse, no ejecutar matrices ni buscar límites, y reportar aquí con el formato `SHA | fecha | operador | configuración | repeticiones | resultado | tiempo máximo | evidencia | observaciones`.
+8. En cualquier ruido, vibración, deriva o movimiento no explicado: conservar el punto de detención, Stop, y registrar antes de continuar.
 
 ## Lo que se espera del usuario en pruebas reales
 

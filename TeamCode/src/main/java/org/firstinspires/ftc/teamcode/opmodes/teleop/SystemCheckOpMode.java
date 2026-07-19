@@ -194,6 +194,21 @@ public class SystemCheckOpMode extends SafeCommandOpMode {
         telemetry.addData("Turret/Last result", turret.getLastCommissioningResult());
         telemetry.addLine("Sostener gamepad2 DPAD_LEFT/RIGHT=mover; soltar=stop");
         telemetry.addLine("Gamepad2 DPAD_DOWN=invalidar cero y detener");
+
+        // Instrumentación FND-027: duración real del hold + delta de ticks por jog.
+        TurretSubsystem.JogReport jog = turret.getLastJogReport();
+        telemetry.addLine("--- TORRETA: ULTIMO JOG (FND-027) ---");
+        if (jog == null) {
+            telemetry.addData("Jog", "SIN MEDICIÓN");
+        } else {
+            telemetry.addData("Jog/Duración hold", "%.1f ms", jog.holdDurationMs);
+            telemetry.addData("Jog/Delta ticks", jog.deltaTicks());
+            telemetry.addData("Jog/Ticks", "%d -> %d", jog.startTicks, jog.endTicks);
+            telemetry.addData("Jog/Potencia", "%.3f", jog.requestedPower);
+            telemetry.addData("Jog/Resultado", jog.result);
+            telemetry.addData("Jog/Ticks por segundo", "%.1f",
+                    jog.holdDurationMs > 0 ? jog.deltaTicks() * 1000.0 / jog.holdDurationMs : 0.0);
+        }
         telemetry.addData("Turret/T4 limits", "%.2f power, ticks=[%d,%d], %d ms",
                 TURRET_COMMISSIONING_POWER,
                 TurretSubsystem.LIMIT_LEFT,
