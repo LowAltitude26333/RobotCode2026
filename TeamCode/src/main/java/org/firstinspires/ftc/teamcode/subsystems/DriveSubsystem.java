@@ -9,12 +9,16 @@ import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.MecanumDrive;
 import org.firstinspires.ftc.teamcode.RobotSafety;
+import org.firstinspires.ftc.teamcode.util.Angles;
 
 public class DriveSubsystem extends SubsystemBase {
 
     private final MecanumDrive drive;
     private final Telemetry telemetry;
     private double headingOffsetRadians;
+    private PoseVelocity2d lastVelocity;
+    private int resetEpoch;
+    private boolean poseEverUpdated;
 
     public DriveSubsystem(HardwareMap hardwareMap, Pose2d startPose, Telemetry telemetry) {
         // Inicializa RoadRunner (esto ya configura los motores internamente)
@@ -83,23 +87,43 @@ public class DriveSubsystem extends SubsystemBase {
 
         // 4. Actualizar la variable local también por si acaso
         drive.pose = newPose;
+
+        // La pose saltó a propósito: los consumidores de PoseProvider deben
+        // descartar continuidad al ver cambiar el epoch.
+        resetEpoch++;
+    }
+
+    /** Reposiciona la pose completa (usado por el PoseProvider neutral de MP-02). */
+    public void setPose(Pose2d newPose) {
+        drive.localizer.setPose(newPose);
+        drive.pose = newPose;
+        resetEpoch++;
+    }
+
+    public int getResetEpoch() {
+        return resetEpoch;
+    }
+
+    /** Última velocidad de updatePoseEstimate(); null hasta el primer periodic(). */
+    public PoseVelocity2d getLastVelocity() {
+        return lastVelocity;
+    }
+
+    /** true después del primer ciclo de odometría (gate de UNINITIALIZED). */
+    public boolean isPoseEverUpdated() {
+        return poseEverUpdated;
     }
 
     private static double normalizeRadians(double angle) {
-        while (angle > Math.PI) {
-            angle -= 2 * Math.PI;
-        }
-        while (angle <= -Math.PI) {
-            angle += 2 * Math.PI;
-        }
-        return angle;
+        return Angles.normalizeRadians(angle);
     }
 
     @Override
     public void periodic() {
         // CRÍTICO: Esto mantiene la odometría viva durante TeleOp.
         // Si no llamas a esto, el robot "pierde" su posición en el campo.
-        drive.updatePoseEstimate();
+        lastVelocity = drive.updatePoseEstimate();
+        poseEverUpdated = true;
 
         // Telemetría útil para el driver
         Pose2d p = drive.pose;
