@@ -4,8 +4,15 @@ package org.firstinspires.ftc.teamcode.localization;
  * Pose inmutable y neutral (MP-02): solo doubles, sin tipos de Road Runner ni
  * Pedro, para que MP-04/MP-05 no importen APIs de ningún localizador.
  *
- * Frame: el de campo de Road Runner — pulgadas, +X hacia adelante desde la pose
- * inicial del OpMode, heading CCW-positivo en radianes normalizado a (-PI, PI].
+ * Frame de POSICIÓN: el de campo de Road Runner — pulgadas, +X hacia adelante
+ * desde la pose inicial del OpMode, heading CCW-positivo en radianes
+ * normalizado a (-PI, PI].
+ *
+ * Frame de VELOCIDAD: ¡ROBOT, no campo! updatePoseEstimate() de RR devuelve la
+ * velocidad robot-céntrica (el quickstart la nombra "robotVelRobot"): vx es
+ * adelante del robot, vy es izquierda del robot. Un consumidor que necesite
+ * velocidad de campo debe rotarla por headingRadians.
+ *
  * Cuando Pedro tome ownership (DEC-034) el adapter conserva este contrato.
  *
  * resetEpoch se incrementa en cada setPose/resetHeading: un consumidor que vea
@@ -16,7 +23,9 @@ public final class PoseSnapshot {
     public final double xInches;
     public final double yInches;
     public final double headingRadians;
+    /** Velocidad en frame del ROBOT: +adelante (ver javadoc de la clase). */
     public final double vxInchesPerSec;
+    /** Velocidad en frame del ROBOT: +izquierda (ver javadoc de la clase). */
     public final double vyInchesPerSec;
     public final double omegaRadiansPerSec;
     public final long timestampNanos;

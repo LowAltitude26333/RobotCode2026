@@ -10,6 +10,7 @@ import com.pedropathing.ftc.localization.constants.ThreeWheelConstants;
 import com.pedropathing.paths.PathConstraints;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.util.RobotLog;
 
 import org.firstinspires.ftc.teamcode.RobotMap;
 
@@ -73,6 +74,9 @@ public class Constants {
     public static final double TBD_TURN_TICKS_TO_INCHES = .001989436789;
     public static final double TBD_LEFT_POD_Y_INCHES = 1.0;
     public static final double TBD_RIGHT_POD_Y_INCHES = -1.0;
+    // El scaffold original traía -2.5 como strafePodX (luego pisado a 0 por el
+    // código muerto). Se conserva aquí como referencia de sanidad para el
+    // Paso 2; el valor activo sigue siendo placeholder sin calibrar.
     public static final double TBD_STRAFE_POD_X_INCHES = 0.0;
     // Pedro modela la dirección como double: Encoder.FORWARD=1, Encoder.REVERSE=-1.
     public static final double TBD_LEFT_ENCODER_DIRECTION = Encoder.FORWARD;
@@ -95,6 +99,14 @@ public class Constants {
 
 
     public static Follower createFollower(HardwareMap hardwareMap) {
+        if (!LOCALIZER_OFFSETS_CALIBRATED) {
+            // Fail-loudly: el scaffold viejo crasheaba en init ("rightRear"
+            // inexistente); reparado ya construye, así que esta advertencia en
+            // Driver Station evita usar Pedro con geometría placeholder sin saberlo.
+            RobotLog.addGlobalWarningMessage(
+                    "Pedro: offsets de pods SIN CALIBRAR (Tuning Paso 2 pendiente); "
+                            + "la pose sera geometricamente incorrecta");
+        }
         return new FollowerBuilder(followerConstants, hardwareMap)
                 .pathConstraints(pathConstraints)
                 .mecanumDrivetrain(driveConstants)
