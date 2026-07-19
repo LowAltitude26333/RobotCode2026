@@ -39,4 +39,8 @@ public final class RobotMap {
     //Torreta
     public static final String TURRET_MOTOR = "torretaMotor";
     public static final boolean TURRET_MOTOR_IS_INVERTED = true;
+
+    // TBD-BLOCKING DEC-028: nombre pendiente de confirmar cuando eléctrica
+    // configure la Limelight en el Driver Station (mapping/red/pipeline).
+    public static final String LIMELIGHT = "limelight";
 }

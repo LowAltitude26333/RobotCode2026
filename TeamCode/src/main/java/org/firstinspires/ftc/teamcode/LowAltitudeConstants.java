@@ -92,6 +92,15 @@ public class LowAltitudeConstants {
     public static long KICKER_EXTEND_TIME_MS = 632;
     public static long KICKER_RETRACT_DELAY_MS = 60;
 
+    //Visión (Limelight, MP-03)
+    public static class VisionConstants {
+        public static double LIMELIGHT_POLL_RATE_HZ = 50.0;
+        // Observaciones más viejas que esto se rechazan como STALE (fail-closed).
+        public static double LIMELIGHT_MAX_STALENESS_MS = 200.0;
+        // TBD-BLOCKING DEC-028: confirmar el índice real al configurar la Limelight.
+        public static int LIMELIGHT_PIPELINE_APRILTAG = 0;
+    }
+
     //Torreta
     public static class TurretConstants {
         // 1. Baja el KP: Si estaba en 0.04, intenta con 0.015 o 0.02.
