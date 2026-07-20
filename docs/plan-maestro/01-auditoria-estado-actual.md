@@ -43,7 +43,7 @@ La contención MP-01 deja cuatro TeleOps anotados y habilitados:
 - `Tuning: Shooter & Systems (Manual)`;
 - `Test Color` (sensor-only).
 
-Los demás TeleOps legacy, `TeleopTorreta` y Pedro Tuning están `@Disabled`. Road Runner conserva su `@OpModeRegistrar`, pero `TuningOpModes.DISABLED=true` impide el registro dinámico durante MP-01. Todos los autónomos anotados están deshabilitados.
+Los demás TeleOps legacy, `TeleopTorreta` y Pedro Tuning están `@Disabled`. Road Runner conserva su `@OpModeRegistrar`, pero `TuningOpModes.DISABLED_HAND_PUSH_TUNERS`/`DISABLED_POWERED_TUNERS=true` impide el registro dinámico durante MP-01 (ver docs/plan-maestro/09-runbook-paso2-odometria.md para el acotamiento de Paso 2). Todos los autónomos anotados están deshabilitados.
 
 Esto importa por dos razones:
 

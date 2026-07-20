@@ -397,6 +397,7 @@ Cada PR o sesión de commissioning debe adjuntar:
 - [06 — Limpieza y release](plan-maestro/06-limpieza-y-release.md)
 - [07 — Manual de operación](plan-maestro/07-manual-operacion.md)
 - [08 — Guía de verificación de hardware](plan-maestro/08-guia-verificacion-hardware.md)
+- [09 — Runbook de Paso 2: calibración de odometría](plan-maestro/09-runbook-paso2-odometria.md)
 - [Hallazgos](plan-maestro/hallazgos.md)
 - [Decisiones](plan-maestro/decisiones.md)
 - [Contrato operativo de hardware](plan-maestro/contrato-hardware.md)
