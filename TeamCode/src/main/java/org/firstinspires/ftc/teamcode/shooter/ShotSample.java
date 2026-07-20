@@ -1,8 +1,9 @@
 package org.firstinspires.ftc.teamcode.shooter;
 
 /**
- * Punto medido del dataset de tiro (Tuning Paso 5): distancia al goal y RPM
- * que produjo un tiro exitoso. Inmutable y puro (testeable en src/test).
+ * Punto de ajuste matemático (Tuning Paso 5): distancia al goal y RPM de
+ * calibración. No representa intentos ni certifica el gate físico DEC-012;
+ * {@link ShotTrial} conserva esos resultados por sesión/distancia.
  */
 public final class ShotSample {
 

@@ -3,122 +3,178 @@ package org.firstinspires.ftc.teamcode.shooter;
 import static org.firstinspires.ftc.teamcode.shooter.RpmModelsTest.samples;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 
 public class RpmModelSelectorTest {
 
-    private static final double TOLERANCE_RPM = 100.0;
+    private static final List<ShotSample> LINEAR_CALIBRATION = samples(
+            new double[]{20, 40, 60, 80}, new double[]{2200, 2600, 3000, 3400});
 
     @Test
-    public void exactLinearDataSelectsLinear() {
-        // rpm = 25*d + 1800 en calibración Y holdout.
-        List<ShotSample> calibration = samples(
-                new double[]{20, 35, 50, 65, 80, 95, 110, 125, 140, 155},
-                linear(new double[]{20, 35, 50, 65, 80, 95, 110, 125, 140, 155}));
-        List<ShotSample> holdout = samples(
-                new double[]{27, 42, 58, 73, 88, 103, 118, 133, 148, 152},
-                linear(new double[]{27, 42, 58, 73, 88, 103, 118, 133, 148, 152}));
+    public void physicalGateSelectsSimplestPassingCandidate() {
+        Map<RpmModelKind, List<ShotTrial>> trials = new EnumMap<>(RpmModelKind.class);
+        trials.put(RpmModelKind.LINEAR, completeTrials(9, 8));
 
-        RpmModelSelector.Result result =
-                RpmModelSelector.select(calibration, holdout, TOLERANCE_RPM);
+        RpmModelSelector.Result result = RpmModelSelector.select(LINEAR_CALIBRATION, trials);
+
         assertTrue(result.metCriteria);
+        assertEquals(RpmModelKind.LINEAR, result.kind);
         assertTrue(result.model instanceof LinearRpmModel);
-        assertEquals(1.0, result.calibrationHitRate, 0.0);
-        assertEquals(1.0, result.holdoutHitRate, 0.0);
     }
 
     @Test
-    public void strongCurvatureSelectsQuadratic() {
-        // rpm = 0.35*d^2 + 1500: la curvatura excede ±100 RPM para un ajuste
-        // lineal, y el máximo (d=100 -> 5000 RPM) queda bajo el clamp de 6000.
-        double[] calDistances = {10, 20, 30, 40, 50, 60, 70, 80, 90, 100};
-        double[] holdDistances = {15, 25, 35, 45, 55, 65, 75, 85, 95, 98};
-        List<ShotSample> calibration = samples(calDistances, quadratic(calDistances));
-        List<ShotSample> holdout = samples(holdDistances, quadratic(holdDistances));
+    public void candidateResultsAreNotSharedBetweenModels() {
+        Map<RpmModelKind, List<ShotTrial>> trials = new EnumMap<>(RpmModelKind.class);
+        trials.put(RpmModelKind.LINEAR, completeTrials(8, 8));
+        trials.put(RpmModelKind.QUADRATIC,
+                completeTrials(RpmModelKind.QUADRATIC, 9, 8));
 
-        RpmModelSelector.Result result =
-                RpmModelSelector.select(calibration, holdout, TOLERANCE_RPM);
+        RpmModelSelector.Result result = RpmModelSelector.select(LINEAR_CALIBRATION, trials);
+
         assertTrue(result.metCriteria);
-        assertTrue("esperaba cuadrático, fue " + result.model.describe(),
-                result.model instanceof QuadraticRpmModel);
+        assertEquals(RpmModelKind.QUADRATIC, result.kind);
+        assertTrue(result.model instanceof QuadraticRpmModel);
     }
 
     @Test
-    public void kneeShapedDataSelectsPiecewise() {
-        // Rodilla: plano hasta 80 in y pendiente fuerte después — ni línea ni
-        // parábola de grado 2 la siguen dentro de ±100 RPM.
-        double[] calDistances = {20, 35, 50, 65, 80, 90, 100, 110, 120, 130};
-        double[] holdDistances = {28, 44, 58, 72, 84, 94, 104, 114, 124, 128};
-        List<ShotSample> calibration = samples(calDistances, knee(calDistances));
-        List<ShotSample> holdout = samples(holdDistances, knee(holdDistances));
+    public void oneSessionCannotCertifyModel() {
+        Map<RpmModelKind, List<ShotTrial>> trials = new EnumMap<>(RpmModelKind.class);
+        List<ShotTrial> oneSession = new ArrayList<>();
+        addGroup(oneSession, RpmModelKind.LINEAR,
+                ShotDatasetRole.CALIBRATION, "session-1", "60in", 10);
+        addGroup(oneSession, RpmModelKind.LINEAR,
+                ShotDatasetRole.HOLDOUT, "session-1", "75in", 10);
+        trials.put(RpmModelKind.LINEAR, oneSession);
 
-        RpmModelSelector.Result result =
-                RpmModelSelector.select(calibration, holdout, TOLERANCE_RPM);
-        assertTrue(result.metCriteria);
-        assertTrue("esperaba piecewise, fue " + result.model.describe(),
-                result.model instanceof PiecewiseLinearRpmModel);
-    }
+        RpmModelSelector.Result result = RpmModelSelector.select(LINEAR_CALIBRATION, trials);
 
-    @Test
-    public void noisyHoldoutFailsVisibly() {
-        // Calibración limpia pero holdout incoherente (>20% fuera de tolerancia
-        // para cualquier modelo): debe devolver NO_MODEL_MET_CRITERIA, no ocultarlo.
-        List<ShotSample> calibration = samples(
-                new double[]{20, 40, 60, 80, 100},
-                linear(new double[]{20, 40, 60, 80, 100}));
-        List<ShotSample> holdout = samples(
-                new double[]{25, 45, 65, 85, 105},
-                new double[]{9000, 100, 9000, 100, 9000});
-
-        RpmModelSelector.Result result =
-                RpmModelSelector.select(calibration, holdout, TOLERANCE_RPM);
         assertFalse(result.metCriteria);
+        assertNull(result.kind);
         assertTrue(result.rationale.contains("NO_MODEL_MET_CRITERIA"));
-        assertTrue(result.model instanceof PiecewiseLinearRpmModel);
+        assertEquals(0.0, result.model.rpmForDistance(60), 0.0);
     }
 
     @Test
-    public void invalidInputsRejected() {
-        List<ShotSample> some = samples(new double[]{10, 20}, new double[]{2000, 2200});
+    public void everySessionDistanceGroupMustHaveTenTrials() {
+        Map<RpmModelKind, List<ShotTrial>> trials = new EnumMap<>(RpmModelKind.class);
+        List<ShotTrial> incomplete = completeTrials(9, 8);
+        incomplete.remove(0);
+        trials.put(RpmModelKind.LINEAR, incomplete);
+
+        RpmModelSelector.Result result = RpmModelSelector.select(LINEAR_CALIBRATION, trials);
+
+        assertFalse(result.metCriteria);
+        assertTrue(result.rationale.contains("requiere >=10"));
+    }
+
+    @Test
+    public void calibrationAndHoldoutMustCoverTheSameSessions() {
+        Map<RpmModelKind, List<ShotTrial>> trials = new EnumMap<>(RpmModelKind.class);
+        List<ShotTrial> splitSessions = new ArrayList<>();
+        addGroup(splitSessions, RpmModelKind.LINEAR,
+                ShotDatasetRole.CALIBRATION, "cal-1", "60in", 9);
+        addGroup(splitSessions, RpmModelKind.LINEAR,
+                ShotDatasetRole.CALIBRATION, "cal-2", "60in", 9);
+        addGroup(splitSessions, RpmModelKind.LINEAR,
+                ShotDatasetRole.HOLDOUT, "hold-1", "75in", 8);
+        addGroup(splitSessions, RpmModelKind.LINEAR,
+                ShotDatasetRole.HOLDOUT, "hold-2", "75in", 8);
+        trials.put(RpmModelKind.LINEAR, splitSessions);
+
+        RpmModelSelector.Result result = RpmModelSelector.select(LINEAR_CALIBRATION, trials);
+
+        assertFalse(result.metCriteria);
+        assertTrue(result.rationale.contains("missing from one or more sessions"));
+    }
+
+    @Test
+    public void calibrationNeedsNineOfTenAndHoldoutEightOfTen() {
+        Map<RpmModelKind, List<ShotTrial>> trials = new EnumMap<>(RpmModelKind.class);
+        trials.put(RpmModelKind.LINEAR, completeTrials(8, 8));
+        assertFalse(RpmModelSelector.select(LINEAR_CALIBRATION, trials).metCriteria);
+
+        trials.put(RpmModelKind.LINEAR, completeTrials(9, 7));
+        assertFalse(RpmModelSelector.select(LINEAR_CALIBRATION, trials).metCriteria);
+
+        trials.put(RpmModelKind.LINEAR, completeTrials(9, 8));
+        assertTrue(RpmModelSelector.select(LINEAR_CALIBRATION, trials).metCriteria);
+    }
+
+    @Test
+    public void trialsMustUseCandidateAndMeetRpmReadinessGate() {
+        Map<RpmModelKind, List<ShotTrial>> trials = new EnumMap<>(RpmModelKind.class);
+        List<ShotTrial> wrongTarget = completeTrials(9, 8);
+        ShotTrial original = wrongTarget.get(0);
+        wrongTarget.set(0, new ShotTrial(original.sessionId, original.distanceGroupId,
+                original.modelKind, original.role, original.distanceInches, original.targetRpm + 2.0,
+                original.measuredRpmAtFeed, original.rpmReadyHoldMs, original.outcome));
+        trials.put(RpmModelKind.LINEAR, wrongTarget);
+        assertFalse(RpmModelSelector.select(LINEAR_CALIBRATION, trials).metCriteria);
+
+        List<ShotTrial> offSpeed = completeTrials(9, 8);
+        original = offSpeed.get(0);
+        offSpeed.set(0, new ShotTrial(original.sessionId, original.distanceGroupId,
+                original.modelKind, original.role, original.distanceInches, original.targetRpm,
+                original.targetRpm + 101.0, 250, original.outcome));
+        trials.put(RpmModelKind.LINEAR, offSpeed);
+        assertFalse(RpmModelSelector.select(LINEAR_CALIBRATION, trials).metCriteria);
+
+        List<ShotTrial> notReady = completeTrials(9, 8);
+        original = notReady.get(0);
+        notReady.set(0, new ShotTrial(original.sessionId, original.distanceGroupId,
+                original.modelKind, original.role, original.distanceInches, original.targetRpm,
+                original.targetRpm, 249, original.outcome));
+        trials.put(RpmModelKind.LINEAR, notReady);
+        assertFalse(RpmModelSelector.select(LINEAR_CALIBRATION, trials).metCriteria);
+    }
+
+    @Test
+    public void invalidCalibrationIsRejected() {
         try {
-            RpmModelSelector.select(null, some, TOLERANCE_RPM);
-            fail("calibración null debía fallar");
+            RpmModelSelector.select(null,
+                    new EnumMap<RpmModelKind, List<ShotTrial>>(RpmModelKind.class));
+            fail("null calibration should fail");
         } catch (IllegalArgumentException expected) {
-        }
-        try {
-            RpmModelSelector.select(some, some, 0.0);
-            fail("tolerancia 0 debía fallar");
-        } catch (IllegalArgumentException expected) {
+            // Fit data is a required input even though it cannot certify a model by itself.
         }
     }
 
-    private static double[] linear(double[] distances) {
-        double[] rpms = new double[distances.length];
-        for (int i = 0; i < distances.length; i++) {
-            rpms[i] = 25 * distances[i] + 1800;
-        }
-        return rpms;
+    private static List<ShotTrial> completeTrials(int calibrationHits, int holdoutHits) {
+        return completeTrials(RpmModelKind.LINEAR, calibrationHits, holdoutHits);
     }
 
-    private static double[] quadratic(double[] distances) {
-        double[] rpms = new double[distances.length];
-        for (int i = 0; i < distances.length; i++) {
-            rpms[i] = 0.35 * distances[i] * distances[i] + 1500;
-        }
-        return rpms;
+    private static List<ShotTrial> completeTrials(RpmModelKind modelKind,
+                                                  int calibrationHits, int holdoutHits) {
+        List<ShotTrial> trials = new ArrayList<>();
+        addGroup(trials, modelKind,
+                ShotDatasetRole.CALIBRATION, "session-1", "60in", calibrationHits);
+        addGroup(trials, modelKind,
+                ShotDatasetRole.CALIBRATION, "session-2", "60in", calibrationHits);
+        addGroup(trials, modelKind,
+                ShotDatasetRole.HOLDOUT, "session-1", "75in", holdoutHits);
+        addGroup(trials, modelKind,
+                ShotDatasetRole.HOLDOUT, "session-2", "75in", holdoutHits);
+        return trials;
     }
 
-    private static double[] knee(double[] distances) {
-        double[] rpms = new double[distances.length];
-        for (int i = 0; i < distances.length; i++) {
-            double d = distances[i];
-            rpms[i] = d <= 80 ? 2000 + 2 * d : 2160 + 45 * (d - 80);
+    private static void addGroup(List<ShotTrial> trials, RpmModelKind modelKind,
+                                 ShotDatasetRole role,
+                                 String sessionId, String distanceGroupId, int hits) {
+        for (int i = 0; i < 10; i++) {
+            double distance = role == ShotDatasetRole.CALIBRATION ? 60.0 : 75.0;
+            double targetRpm = 20.0 * distance + 1800.0;
+            trials.add(new ShotTrial(sessionId, distanceGroupId, modelKind, role,
+                    distance, targetRpm, targetRpm - 10.0, 250,
+                    i < hits ? ShotOutcome.SCORED : ShotOutcome.SHORT));
         }
-        return rpms;
     }
 }
