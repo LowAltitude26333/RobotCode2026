@@ -4,6 +4,7 @@ import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.localization.PoseSnapshot;
 import org.firstinspires.ftc.teamcode.subsystems.LimelightSubsystem;
 import org.firstinspires.ftc.teamcode.vision.LimelightObservation;
+import org.firstinspires.ftc.teamcode.vision.LimelightRawSample;
 
 /**
  * Bloques de telemetría estandarizados (prep de MP-07). Helper estático sin
@@ -30,9 +31,12 @@ public final class TelemetryBlocks {
         header(t, "POSE");
         t.addData("Pose/Quality", snapshot.quality);
         t.addData("Pose/Usable", snapshot.isUsable());
+        if (!snapshot.rejectionReason.isEmpty()) {
+            t.addData("Pose/Rechazo", snapshot.rejectionReason);
+        }
         t.addData("Pose", "X %.1f in, Y %.1f in, H %.1f°",
                 snapshot.xInches, snapshot.yInches, Math.toDegrees(snapshot.headingRadians));
-        t.addData("Pose/Vel", "vx %.1f, vy %.1f, w %.2f",
+        t.addData("Pose/Vel robot", "vx %.1f, vy %.1f, w %.2f",
                 snapshot.vxInchesPerSec, snapshot.vyInchesPerSec, snapshot.omegaRadiansPerSec);
         t.addData("Pose/ResetEpoch", snapshot.resetEpoch);
     }
@@ -43,6 +47,9 @@ public final class TelemetryBlocks {
         t.addData("LL/Health", health);
         t.addData("LL/Quality", obs.quality);
         t.addData("LL/Usable", obs.isUsable());
+        if (!obs.rejectionReason.isEmpty()) {
+            t.addData("LL/Rechazo", obs.rejectionReason);
+        }
         t.addData("LL/Tag", "%d (esperado %d)", obs.tagId, expectedTagId);
         t.addData("LL/tx-ty", "%.2f°, %.2f°", obs.txDegrees, obs.tyDegrees);
         t.addData("LL/Staleness", "%.1f ms", obs.stalenessMs);
@@ -53,6 +60,25 @@ public final class TelemetryBlocks {
                     Math.toDegrees(obs.botPoseHeadingRadians));
         } else {
             t.addData("LL/Botpose", "NO DISPONIBLE");
+        }
+    }
+
+    /** Unsanitized values for the zero-actuator diagnostic OpMode only. */
+    public static void visionRaw(Telemetry t, LimelightRawSample raw) {
+        header(t, "VISIÓN RAW (NO ACCIONABLE)");
+        t.addData("LL Raw/Present-Valid", "%s / %s", raw.devicePresent, raw.resultValid);
+        t.addData("LL Raw/Tag", raw.tagId);
+        t.addData("LL Raw/tx-ty", "%s°, %s°",
+                Double.toString(raw.txDegrees), Double.toString(raw.tyDegrees));
+        t.addData("LL Raw/Staleness", "%s ms", Double.toString(raw.stalenessMs));
+        t.addData("LL Raw/Latencia", "%s ms", Double.toString(raw.totalLatencyMs));
+        if (raw.hasBotPose) {
+            t.addData("LL Raw/Botpose", "X %s m, Y %s m, H %s rad",
+                    Double.toString(raw.botPoseXMeters),
+                    Double.toString(raw.botPoseYMeters),
+                    Double.toString(raw.botPoseHeadingRadians));
+        } else {
+            t.addData("LL Raw/Botpose", "NO DISPONIBLE");
         }
     }
 

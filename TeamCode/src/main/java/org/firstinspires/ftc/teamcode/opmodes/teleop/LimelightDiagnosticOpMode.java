@@ -7,6 +7,7 @@ import org.firstinspires.ftc.teamcode.opmodes.SafeCommandOpMode;
 import org.firstinspires.ftc.teamcode.subsystems.LimelightSubsystem;
 import org.firstinspires.ftc.teamcode.telemetry.TelemetryBlocks;
 import org.firstinspires.ftc.teamcode.vision.LimelightObservation;
+import org.firstinspires.ftc.teamcode.vision.LimelightRawSample;
 
 /**
  * Pantalla de commissioning de la Limelight (Tuning Paso 4: montaje, red, anclas).
@@ -59,9 +60,11 @@ public class LimelightDiagnosticOpMode extends SafeCommandOpMode {
 
     private void addLimelightTelemetry() {
         LimelightObservation obs = limelightSubsystem.getLatestObservation();
+        LimelightRawSample raw = limelightSubsystem.getLatestRawSample();
         TelemetryBlocks.mode(telemetry, allianceRed, false);
         TelemetryBlocks.vision(telemetry, obs, limelightSubsystem.getHealth(),
                 limelightSubsystem.getExpectedTagId());
+        TelemetryBlocks.visionRaw(telemetry, raw);
         telemetry.addData("LL/Presente", limelightSubsystem.isPresent());
         telemetry.addData("LL/Edad obs", "%.1f ms",
                 (System.nanoTime() - obs.timestampNanos) / 1_000_000.0);

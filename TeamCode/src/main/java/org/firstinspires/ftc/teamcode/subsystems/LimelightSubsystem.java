@@ -13,6 +13,7 @@ import org.firstinspires.ftc.teamcode.LowAltitudeConstants;
 import org.firstinspires.ftc.teamcode.RobotMap;
 import org.firstinspires.ftc.teamcode.RobotSafety;
 import org.firstinspires.ftc.teamcode.vision.LimelightObservation;
+import org.firstinspires.ftc.teamcode.vision.LimelightRawSample;
 
 import java.util.List;
 
@@ -33,6 +34,7 @@ public class LimelightSubsystem extends SubsystemBase {
     private int expectedTagId;
     private Health health;
     private volatile LimelightObservation latest;
+    private volatile LimelightRawSample latestRaw;
 
     public LimelightSubsystem(HardwareMap hardwareMap, int expectedTagId) {
         this.expectedTagId = expectedTagId;
@@ -40,15 +42,15 @@ public class LimelightSubsystem extends SubsystemBase {
 
         if (limelight == null) {
             health = Health.NOT_PRESENT;
-            latest = LimelightObservation.rejected(
-                    LimelightObservation.Quality.DEVICE_ABSENT, System.nanoTime());
+            latestRaw = LimelightRawSample.unavailable(false, System.nanoTime());
+            latest = classifyRaw(latestRaw);
             RobotLog.addGlobalWarningMessage(
                     RobotMap.LIMELIGHT + " not found; LimelightSubsystem runs degraded (DEC-028)");
         } else {
             limelight.setPollRateHz((int) LowAltitudeConstants.VisionConstants.LIMELIGHT_POLL_RATE_HZ);
             health = Health.CREATED;
-            latest = LimelightObservation.rejected(
-                    LimelightObservation.Quality.INVALID, System.nanoTime());
+            latestRaw = LimelightRawSample.unavailable(true, System.nanoTime());
+            latest = classifyRaw(latestRaw);
         }
         RobotSafety.registerShutdown(this::stop);
     }
@@ -93,6 +95,11 @@ public class LimelightSubsystem extends SubsystemBase {
         return latest;
     }
 
+    /** Raw diagnostic channel; never use it for actuator or pose decisions. */
+    public LimelightRawSample getLatestRawSample() {
+        return latestRaw;
+    }
+
     /** Idempotente y sin lanzar: es hook de RobotSafety y de cleanup del OpMode. */
     public void stop() {
         if (limelight != null) {
@@ -103,10 +110,8 @@ public class LimelightSubsystem extends SubsystemBase {
             }
             health = Health.STOPPED;
         }
-        latest = LimelightObservation.rejected(
-                limelight == null ? LimelightObservation.Quality.DEVICE_ABSENT
-                        : LimelightObservation.Quality.INVALID,
-                System.nanoTime());
+        latestRaw = LimelightRawSample.unavailable(limelight != null, System.nanoTime());
+        latest = classifyRaw(latestRaw);
     }
 
     @Override
@@ -117,27 +122,31 @@ public class LimelightSubsystem extends SubsystemBase {
     private LimelightObservation pollObservation() {
         long now = System.nanoTime();
         if (limelight == null) {
-            return LimelightObservation.rejected(LimelightObservation.Quality.DEVICE_ABSENT, now);
+            latestRaw = LimelightRawSample.unavailable(false, now);
+            return classifyRaw(latestRaw);
         }
         if (health != Health.RUNNING) {
-            return LimelightObservation.rejected(LimelightObservation.Quality.INVALID, now);
+            latestRaw = LimelightRawSample.unavailable(true, now);
+            return classifyRaw(latestRaw);
         }
 
         // Guard fail-closed de resultado nulo/inválido (patrón HyperionBots FTC 18011,
         // LimeLightGoalTrackingTuning): sin resultado utilizable no se publica nada VALID.
         LLResult result = limelight.getLatestResult();
         if (result == null || !result.isValid()) {
-            return LimelightObservation.rejected(LimelightObservation.Quality.INVALID, now);
+            latestRaw = LimelightRawSample.unavailable(true, now);
+            return classifyRaw(latestRaw);
         }
 
         int detectedTagId = -1;
-        LLResultTypes.FiducialResult matched = null;
+        LLResultTypes.FiducialResult selected = null;
         List<LLResultTypes.FiducialResult> fiducials = result.getFiducialResults();
         if (fiducials != null && !fiducials.isEmpty()) {
-            detectedTagId = fiducials.get(0).getFiducialId();
+            selected = fiducials.get(0);
+            detectedTagId = selected.getFiducialId();
             for (LLResultTypes.FiducialResult fiducial : fiducials) {
                 if (fiducial.getFiducialId() == expectedTagId) {
-                    matched = fiducial;
+                    selected = fiducial;
                     detectedTagId = expectedTagId;
                     break;
                 }
@@ -145,14 +154,6 @@ public class LimelightSubsystem extends SubsystemBase {
         }
 
         double stalenessMs = result.getStaleness();
-        LimelightObservation.Quality quality = LimelightObservation.classify(
-                true, true, stalenessMs,
-                LowAltitudeConstants.VisionConstants.LIMELIGHT_MAX_STALENESS_MS,
-                detectedTagId, expectedTagId);
-        if (quality != LimelightObservation.Quality.VALID || matched == null) {
-            return LimelightObservation.rejected(quality, now);
-        }
-
         double totalLatencyMs = result.getCaptureLatency()
                 + result.getTargetingLatency()
                 + result.getParseLatency();
@@ -168,8 +169,16 @@ public class LimelightSubsystem extends SubsystemBase {
             botHeading = botpose.getOrientation().getYaw(AngleUnit.RADIANS);
         }
 
-        return LimelightObservation.valid(now, matched.getFiducialId(),
-                matched.getTargetXDegrees(), matched.getTargetYDegrees(),
+        latestRaw = new LimelightRawSample(true, true, now, detectedTagId,
+                selected == null ? 0.0 : selected.getTargetXDegrees(),
+                selected == null ? 0.0 : selected.getTargetYDegrees(),
                 stalenessMs, totalLatencyMs, hasBotPose, botX, botY, botHeading);
+        return classifyRaw(latestRaw);
+    }
+
+    private LimelightObservation classifyRaw(LimelightRawSample raw) {
+        return LimelightObservation.fromRaw(raw,
+                LowAltitudeConstants.VisionConstants.LIMELIGHT_MAX_STALENESS_MS,
+                expectedTagId);
     }
 }
