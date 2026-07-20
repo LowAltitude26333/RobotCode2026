@@ -9,7 +9,10 @@ import org.firstinspires.ftc.teamcode.LowAltitudeConstants;
  */
 public interface RpmModel {
 
-    /** RPM objetivo para la distancia dada, siempre en [0, SHOOTER_MAX_SAFE_RPM]. */
+    /**
+     * RPM objetivo para la distancia dada, siempre en [0, SHOOTER_MAX_SAFE_RPM].
+     * Una distancia negativa o no finita es inválida y debe devolver cero.
+     */
     double rpmForDistance(double distanceInches);
 
     /** Descripción corta para telemetría/log, p.ej. "linear(m=20.0, b=2000.0)". */
@@ -22,5 +25,10 @@ public interface RpmModel {
             return 0.0;
         }
         return Math.max(0.0, Math.min(LowAltitudeConstants.SHOOTER_MAX_SAFE_RPM, rpm));
+    }
+
+    /** Contrato compartido de entrada para impedir que un rango inválido energice el shooter. */
+    static boolean isValidDistance(double distanceInches) {
+        return Double.isFinite(distanceInches) && distanceInches >= 0.0;
     }
 }

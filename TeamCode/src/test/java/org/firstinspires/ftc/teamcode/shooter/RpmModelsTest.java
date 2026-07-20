@@ -82,6 +82,26 @@ public class RpmModelsTest {
     }
 
     @Test
+    public void allModelsReturnZeroForInvalidDistance() {
+        LinearRpmModel linear = LinearRpmModel.fit(samples(
+                new double[]{10, 20}, new double[]{3000, 3500}));
+        QuadraticRpmModel quadratic = QuadraticRpmModel.fit(samples(
+                new double[]{10, 20, 30}, new double[]{3000, 3500, 4200}));
+        PiecewiseLinearRpmModel piecewise = PiecewiseLinearRpmModel.of(samples(
+                new double[]{10, 20}, new double[]{3000, 3500}));
+
+        RpmModel[] models = {linear, quadratic, piecewise};
+        double[] invalidDistances = {
+                -1.0, Double.NaN, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY
+        };
+        for (RpmModel model : models) {
+            for (double distance : invalidDistances) {
+                assertEquals(0.0, model.rpmForDistance(distance), 0.0);
+            }
+        }
+    }
+
+    @Test
     public void degenerateDatasetsRejectedWithClearErrors() {
         try {
             LinearRpmModel.fit(Collections.<ShotSample>emptyList());
@@ -111,6 +131,27 @@ public class RpmModelsTest {
         try {
             new ShotSample(10, Double.NaN);
             fail("ShotSample NaN debía fallar");
+        } catch (IllegalArgumentException expected) {
+        }
+        try {
+            LinearRpmModel.fit(samples(
+                    new double[]{1, Double.MAX_VALUE},
+                    new double[]{1, Double.MAX_VALUE}));
+            fail("overflow lineal debía fallar");
+        } catch (IllegalArgumentException expected) {
+        }
+        try {
+            QuadraticRpmModel.fit(samples(
+                    new double[]{1, 2, Double.MAX_VALUE},
+                    new double[]{1, 2, Double.MAX_VALUE}));
+            fail("overflow cuadrático debía fallar");
+        } catch (IllegalArgumentException expected) {
+        }
+        try {
+            PiecewiseLinearRpmModel.of(samples(
+                    new double[]{10, 10},
+                    new double[]{Double.MAX_VALUE, Double.MAX_VALUE}));
+            fail("overflow piecewise debía fallar");
         } catch (IllegalArgumentException expected) {
         }
     }

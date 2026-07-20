@@ -28,13 +28,22 @@ public final class LinearRpmModel implements RpmModel {
             sumDR += s.distanceInches * s.rpm;
         }
         double denominator = n * sumDD - sumD * sumD;
+        if (!Double.isFinite(denominator) || Math.abs(denominator) < 1e-12) {
+            throw new IllegalArgumentException("Dataset lineal degenerado o fuera de rango numérico");
+        }
         double slope = (n * sumDR - sumD * sumR) / denominator;
         double intercept = (sumR - slope * sumD) / n;
+        if (!Double.isFinite(slope) || !Double.isFinite(intercept)) {
+            throw new IllegalArgumentException("Ajuste lineal produjo coeficientes no finitos");
+        }
         return new LinearRpmModel(slope, intercept);
     }
 
     @Override
     public double rpmForDistance(double distanceInches) {
+        if (!RpmModel.isValidDistance(distanceInches)) {
+            return 0.0;
+        }
         return RpmModel.clampRpm(slope * distanceInches + intercept);
     }
 

@@ -51,11 +51,20 @@ public final class PiecewiseLinearRpmModel implements RpmModel {
             int count = 0;
             while (i < sorted.size() && sorted.get(i).distanceInches == distance) {
                 sum += sorted.get(i).rpm;
+                if (!Double.isFinite(sum)) {
+                    throw new IllegalArgumentException(
+                            "Promedio piecewise fuera de rango numérico");
+                }
                 count++;
                 i++;
             }
             mergedDistances.add(distance);
-            mergedRpms.add(sum / count);
+            double meanRpm = sum / count;
+            if (!Double.isFinite(meanRpm)) {
+                throw new IllegalArgumentException(
+                        "Promedio piecewise produjo RPM no finita");
+            }
+            mergedRpms.add(meanRpm);
         }
 
         double[] distances = new double[mergedDistances.size()];
@@ -69,6 +78,9 @@ public final class PiecewiseLinearRpmModel implements RpmModel {
 
     @Override
     public double rpmForDistance(double distanceInches) {
+        if (!RpmModel.isValidDistance(distanceInches)) {
+            return 0.0;
+        }
         // Adaptado de HyperionBots (FTC 18011): clamp en extremos, interpolación adentro.
         if (distanceInches <= distances[0]) {
             return RpmModel.clampRpm(rpms[0]);

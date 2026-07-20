@@ -45,7 +45,21 @@ public final class QuadraticRpmModel implements RpmModel {
                 {s3, s2, s1, t1},
                 {s2, s1, s0, t0},
         };
+        for (double[] row : m) {
+            for (double value : row) {
+                if (!Double.isFinite(value)) {
+                    throw new IllegalArgumentException(
+                            "Dataset cuadrático fuera de rango numérico");
+                }
+            }
+        }
         double[] solution = solve3x3(m);
+        for (double coefficient : solution) {
+            if (!Double.isFinite(coefficient)) {
+                throw new IllegalArgumentException(
+                        "Ajuste cuadrático produjo coeficientes no finitos");
+            }
+        }
         return new QuadraticRpmModel(solution[0], solution[1], solution[2]);
     }
 
@@ -84,6 +98,9 @@ public final class QuadraticRpmModel implements RpmModel {
 
     @Override
     public double rpmForDistance(double distanceInches) {
+        if (!RpmModel.isValidDistance(distanceInches)) {
+            return 0.0;
+        }
         return RpmModel.clampRpm(a * distanceInches * distanceInches + b * distanceInches + c);
     }
 
