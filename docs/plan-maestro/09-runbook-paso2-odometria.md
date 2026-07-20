@@ -5,6 +5,7 @@
 > Última actualización: 2026-07-19
 > Alcance: instancia acotada de la guía 08 secc. 5.1/5.2 para Paso 2 de `plan-paralelo-20h.md` secc. 2 (odometría de 3 pods + IMU, sin reabrir mappings ya confirmados).
 > No redefine procedimiento, gates ni umbrales: sólo empaqueta lo ya decidido en `08-guia-verificacion-hardware.md`, `05-programa-pruebas.md` (T3/T4.4/T5) y `plan-paralelo-20h.md` secc. 2 para que la sesión física no lo improvise.
+> Sesión con agente de IA a distancia: sigue además `10-protocolo-agente-sesion.md`, del cual este runbook es el primer caso de uso — la secc. 7 de este documento ("Trampas a evitar") es la instancia acotada a odometría de las reglas generales de ese protocolo.
 
 ## 0. Un hecho que ordena toda la sesión
 

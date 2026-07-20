@@ -29,6 +29,9 @@ No se salta directamente a disparos para “ver si funciona”. Cada nivel requi
 | Mechanism observer | Vigila cables, hard stops, vibración, temperatura/corriente | No está en línea de tiro. |
 | Logger | Guarda SHA, config, telemetry/log/video y counts | Puede ser combinado sólo en pruebas sin movimiento. |
 
+Cuando participa un agente de IA a distancia, su rol y límites se definen en
+`10-protocolo-agente-sesion.md`; no sustituye ninguno de los roles humanos de esta tabla.
+
 Antes de habilitar: anunciar, despejar área, usar protección apropiada, elevar/restringir cuando corresponda y acordar una palabra de abort.
 
 ## 3. Identidad de una ejecución
