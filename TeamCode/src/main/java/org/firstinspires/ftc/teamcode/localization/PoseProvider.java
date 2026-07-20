@@ -18,5 +18,11 @@ public interface PoseProvider {
      */
     void setPose(double xInches, double yInches, double headingRadians);
 
+    /** Variante fail-closed que informa si la entrada finita fue aceptada. */
+    boolean trySetPose(double xInches, double yInches, double headingRadians);
+
     int getResetEpoch();
+
+    /** Último detalle diagnóstico; nunca debe usarse para comandar actuadores. */
+    String getLastDiagnostic();
 }
