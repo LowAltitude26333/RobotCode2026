@@ -56,8 +56,17 @@ public final class TuningOpModes {
     public static final Class<?> DRIVE_CLASS = MecanumDrive.class;
 
     public static final String GROUP = "quickstart";
-    // Re-enable in MP-02 only after the tuner lifecycle has the same E-stop/stop guarantees.
-    public static final boolean DISABLED = true;
+    // MP-02 Paso 2 (docs/plan-maestro/09-runbook-paso2-odometria.md): ForwardPushTest,
+    // LateralPushTest y DeadWheelDirectionDebugger no llaman setPower/setVelocity
+    // (confirmado a nivel de bytecode contra ftc-0.1.23) -- son lectura de encoder
+    // mientras una persona empuja/gira el robot a mano, no comandan motores. Por eso
+    // pueden habilitarse ya, en paralelo con el cierre de MP-01.
+    public static final boolean DISABLED_HAND_PUSH_TUNERS = true;
+    // El resto del menú (ramp loggers, feedforward, LocalizationTest con gamepad,
+    // splines, OTOS) sí mueve motores. Re-enable in MP-02 only after the tuner
+    // lifecycle has the same E-stop/stop guarantees, y sólo después de que MP-01
+    // salga de BLOCKED (guía 08 secc. 4, etapa "restringido y baja potencia").
+    public static final boolean DISABLED_POWERED_TUNERS = true;
 
     private TuningOpModes() {}
 
@@ -130,7 +139,7 @@ public final class TuningOpModes {
 
     @OpModeRegistrar
     public static void register(OpModeManager manager) {
-        if (DISABLED) return;
+        if (DISABLED_HAND_PUSH_TUNERS && DISABLED_POWERED_TUNERS) return;
 
         DriveViewFactory dvf;
         if (DRIVE_CLASS.equals(MecanumDrive.class)) {
@@ -292,35 +301,45 @@ public final class TuningOpModes {
             throw new RuntimeException();
         }
 
-        manager.register(metaForClass(AngularRampLogger.class), new AngularRampLogger(dvf));
-        manager.register(metaForClass(ForwardPushTest.class), new ForwardPushTest(dvf));
-        manager.register(metaForClass(ForwardRampLogger.class), new ForwardRampLogger(dvf));
-        manager.register(metaForClass(LateralPushTest.class), new LateralPushTest(dvf));
-        manager.register(metaForClass(LateralRampLogger.class), new LateralRampLogger(dvf));
-        manager.register(metaForClass(ManualFeedforwardTuner.class), new ManualFeedforwardTuner(dvf));
-        manager.register(metaForClass(MecanumMotorDirectionDebugger.class), new MecanumMotorDirectionDebugger(dvf));
-        manager.register(metaForClass(DeadWheelDirectionDebugger.class), new DeadWheelDirectionDebugger(dvf));
+        if (!DISABLED_HAND_PUSH_TUNERS) {
+            // Sin potencia (MP-02 Paso 2): confirmado que no llaman setPower/setVelocity.
+            manager.register(metaForClass(ForwardPushTest.class), new ForwardPushTest(dvf));
+            manager.register(metaForClass(LateralPushTest.class), new LateralPushTest(dvf));
+            manager.register(metaForClass(DeadWheelDirectionDebugger.class), new DeadWheelDirectionDebugger(dvf));
+        }
 
-        manager.register(metaForClass(ManualFeedbackTuner.class), ManualFeedbackTuner.class);
-        manager.register(metaForClass(SplineTest.class), SplineTest.class);
-        manager.register(metaForClass(LocalizationTest.class), LocalizationTest.class);
+        if (!DISABLED_POWERED_TUNERS) {
+            manager.register(metaForClass(AngularRampLogger.class), new AngularRampLogger(dvf));
+            manager.register(metaForClass(ForwardRampLogger.class), new ForwardRampLogger(dvf));
+            manager.register(metaForClass(LateralRampLogger.class), new LateralRampLogger(dvf));
+            manager.register(metaForClass(ManualFeedforwardTuner.class), new ManualFeedforwardTuner(dvf));
+            manager.register(metaForClass(MecanumMotorDirectionDebugger.class), new MecanumMotorDirectionDebugger(dvf));
 
-        manager.register(metaForClass(OTOSAngularScalarTuner.class), new OTOSAngularScalarTuner(dvf));
-        manager.register(metaForClass(OTOSLinearScalarTuner.class), new OTOSLinearScalarTuner(dvf));
-        manager.register(metaForClass(OTOSHeadingOffsetTuner.class), new OTOSHeadingOffsetTuner(dvf));
-        manager.register(metaForClass(OTOSPositionOffsetTuner.class), new OTOSPositionOffsetTuner(dvf));
+            manager.register(metaForClass(ManualFeedbackTuner.class), ManualFeedbackTuner.class);
+            manager.register(metaForClass(SplineTest.class), SplineTest.class);
+            manager.register(metaForClass(LocalizationTest.class), LocalizationTest.class);
 
-        FtcDashboard.getInstance().withConfigRoot(configRoot -> {
-            for (Class<?> c : Arrays.asList(
-                    AngularRampLogger.class,
-                    ForwardRampLogger.class,
-                    LateralRampLogger.class,
-                    ManualFeedforwardTuner.class,
-                    MecanumMotorDirectionDebugger.class,
-                    ManualFeedbackTuner.class
-            )) {
-                configRoot.putVariable(c.getSimpleName(), ReflectionConfig.createVariableFromClass(c));
-            }
-        });
+            // Plantillas de quickstart sin hardware correspondiente en este robot (sin
+            // OTOS, ver docs/plan-maestro/inventario-telemetria-tuners.md); se conservan
+            // detrás del mismo flag que el resto de tuners con potencia hasta su retiro
+            // planeado en MP-09, no se usan en Paso 2.
+            manager.register(metaForClass(OTOSAngularScalarTuner.class), new OTOSAngularScalarTuner(dvf));
+            manager.register(metaForClass(OTOSLinearScalarTuner.class), new OTOSLinearScalarTuner(dvf));
+            manager.register(metaForClass(OTOSHeadingOffsetTuner.class), new OTOSHeadingOffsetTuner(dvf));
+            manager.register(metaForClass(OTOSPositionOffsetTuner.class), new OTOSPositionOffsetTuner(dvf));
+
+            FtcDashboard.getInstance().withConfigRoot(configRoot -> {
+                for (Class<?> c : Arrays.asList(
+                        AngularRampLogger.class,
+                        ForwardRampLogger.class,
+                        LateralRampLogger.class,
+                        ManualFeedforwardTuner.class,
+                        MecanumMotorDirectionDebugger.class,
+                        ManualFeedbackTuner.class
+                )) {
+                    configRoot.putVariable(c.getSimpleName(), ReflectionConfig.createVariableFromClass(c));
+                }
+            });
+        }
     }
 }
