@@ -164,10 +164,10 @@
 
 - **Estado/fecha:** `VALIDATING`, 2026-07-15
 - **Contexto:** ángulo fijo requiere ajustar velocidad por distancia.
-- **Decisión:** comparar lineal, cuadrático máximo grado 2 y piecewise-linear. Elegir el más simple que, en cada una de dos sesiones, cumpla ≥9/10 tiros en cada distancia de calibración y ≥8/10 en cada distancia retenida/intermedia; no combinar sesiones para ocultar una falla.
+- **Decisión:** comparar lineal, cuadrático máximo grado 2 y piecewise-linear. El ajuste matemático sólo crea candidatos y no certifica ninguno. Elegir el más simple que, en cada una de dos sesiones, cumpla ≥9/10 tiros en cada distancia de calibración y ≥8/10 en cada distancia retenida/intermedia; no combinar sesiones para ocultar una falla. Cada intento debe registrar candidato, sesión, grupo de distancia, rol calibración/holdout, RPM objetivo, RPM medida al feed, hold continuo de readiness y resultado físico. El gate exige que el target sea el del candidato, error medido ≤100 RPM y hold ≥250 ms antes del feed.
 - **Alternativas:** presets manuales únicamente; balística compleja; red neuronal.
 - **Razón:** explicabilidad y menor extrapolación con dataset FTC pequeño.
-- **Consecuencia:** no se conocerá la forma final hasta T8; versionar dataset/modelo.
+- **Consecuencia:** no se conocerá la forma final hasta T8; versionar dataset/modelo. Si falta una celda, una sesión falla o ningún candidato cumple, el selector entrega un modelo seguro de cero RPM y `NO_MODEL_MET_CRITERIA`; nunca habilita piecewise por defecto.
 
 ### DEC-013 — Controles de RPM del operador 2
 
