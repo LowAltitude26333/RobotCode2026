@@ -12,13 +12,16 @@ public final class Angles {
 
     /** Normaliza a (-PI, PI]. */
     public static double normalizeRadians(double angle) {
-        while (angle > Math.PI) {
-            angle -= 2 * Math.PI;
+        if (!Double.isFinite(angle)) {
+            return 0.0;
         }
-        while (angle <= -Math.PI) {
-            angle += 2 * Math.PI;
+        double normalized = angle % (2.0 * Math.PI);
+        if (normalized > Math.PI) {
+            normalized -= 2.0 * Math.PI;
+        } else if (normalized <= -Math.PI) {
+            normalized += 2.0 * Math.PI;
         }
-        return angle;
+        return normalized;
     }
 
     /** Normaliza a (-180, 180]. */

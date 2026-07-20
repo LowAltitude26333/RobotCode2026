@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.util;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
@@ -28,6 +29,15 @@ public class AnglesTest {
         assertEquals(Math.PI, Angles.normalizeRadians(-3 * Math.PI), EPS);
         assertEquals(0.5, Angles.normalizeRadians(10 * Math.PI + 0.5), 1e-9);
         assertEquals(-0.5, Angles.normalizeRadians(-10 * Math.PI - 0.5), 1e-9);
+    }
+
+    @Test
+    public void normalizationIsBoundedAndFailClosedForExtremeInputs() {
+        double huge = Angles.normalizeRadians(Double.MAX_VALUE);
+        assertTrue(huge > -Math.PI && huge <= Math.PI);
+        assertEquals(0.0, Angles.normalizeRadians(Double.NaN), 0.0);
+        assertEquals(0.0, Angles.normalizeRadians(Double.POSITIVE_INFINITY), 0.0);
+        assertEquals(0.0, Angles.normalizeRadians(Double.NEGATIVE_INFINITY), 0.0);
     }
 
     @Test
