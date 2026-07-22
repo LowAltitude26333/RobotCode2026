@@ -1,7 +1,9 @@
 package org.firstinspires.ftc.teamcode.telemetry;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.firstinspires.ftc.teamcode.geometry.TurretYawConversion;
 import org.firstinspires.ftc.teamcode.localization.PoseSnapshot;
+import org.firstinspires.ftc.teamcode.safety.FeederPulseStateMachine;
 import org.firstinspires.ftc.teamcode.subsystems.LimelightSubsystem;
 import org.firstinspires.ftc.teamcode.vision.LimelightObservation;
 import org.firstinspires.ftc.teamcode.vision.LimelightRawSample;
@@ -93,10 +95,16 @@ public final class TelemetryBlocks {
         }
     }
 
+    /**
+     * {@code Turret/Yaw} es solo lectura para diagnóstico humano — conversión pura
+     * vía {@link TurretYawConversion} (geometria-robot-mp04.md sección 4.1). No es
+     * el contrato formal de marcos de MP-04 y no debe usarse para comandar nada.
+     */
     public static void turret(Telemetry t, double ticks, boolean armed, String state) {
         header(t, "TORRETA");
         t.addData("Turret/Armed", armed);
         t.addData("Turret/Ticks", "%.0f", ticks);
+        t.addData("Turret/Yaw", "%.1f°", TurretYawConversion.ticksToYawDegrees(ticks));
         t.addData("Turret/Estado", state);
     }
 
@@ -105,6 +113,28 @@ public final class TelemetryBlocks {
         t.addData("Shooter/Target", "%.0f RPM", targetRpm);
         t.addData("Shooter/Actual", "%.0f RPM", currentRpm);
         t.addData("Shooter/Ready", ready);
+    }
+
+    /**
+     * Bloque de readiness combinada de disparo (MP-06/07): motivo de por qué SÍ o NO
+     * se puede alimentar ahora mismo, no sólo un booleano. {@code chassisStationary}
+     * ya sale de {@link org.firstinspires.ftc.teamcode.safety.ChassisMotionGate}
+     * (FND-019/DEC-031).
+     */
+    public static void readiness(Telemetry t, boolean shooterReady, boolean chassisStationary) {
+        header(t, "READINESS");
+        boolean canFeed = shooterReady && chassisStationary;
+        t.addData("Readiness/Puede alimentar", canFeed);
+        t.addData("Readiness/Shooter ready", shooterReady);
+        t.addData("Readiness/Chasis estacionario", chassisStationary);
+    }
+
+    /** Bloque de feeder (MP-06/07): estado de la máquina de pulso/cooldown de FND-018. */
+    public static void feeder(Telemetry t, FeederPulseStateMachine.State pulseState,
+                              boolean servoActive) {
+        header(t, "FEEDER");
+        t.addData("Feeder/Estado pulso", pulseState);
+        t.addData("Feeder/Servo activo", servoActive);
     }
 
     public static void faults(Telemetry t, String... activeFaults) {

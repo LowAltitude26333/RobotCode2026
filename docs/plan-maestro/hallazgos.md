@@ -64,8 +64,8 @@ No crear findings para tareas normales ya planeadas salvo que aparezca una discr
 | FND-015 | CRITICAL | CLOSED | Shooter falla abierto ante encoder/voltaje inválido | Shooter | MP-01/06 |
 | FND-016 | HIGH | CLOSED | Init-loop, Stop y E-stop pre-START validados en hardware | Architecture/safety | MP-01 |
 | FND-017 | HIGH | CLOSED | Pedro posee pose, movimiento, paths y stop en producción | Drive/localization | MP-02 |
-| FND-018 | HIGH | OPEN | Feeder carece de pulso máximo y cooldown obligatorios | Mechanisms | MP-06 |
-| FND-019 | HIGH | OPEN | Readiness omite velocidad lineal/angular del chasis | Shooter/drive | MP-06/T9 |
+| FND-018 | HIGH | CONTAINED | Feeder carece de pulso máximo y cooldown obligatorios | Mechanisms | MP-06 |
+| FND-019 | HIGH | CONTAINED | Readiness omite velocidad lineal/angular del chasis | Shooter/drive | MP-06/T9 |
 | FND-020 | HIGH | CLOSED | Gates de falso centro/reset aprobados por el lead | Turret/mechanical | MP-01/05 |
 | FND-021 | HIGH | CONTAINED | Contrato MP-01 confirmado; calibración de pods y Limelight quedan en MP-02/03 | Hardware/safety | MP-02/03 |
 | FND-022 | HIGH | OPEN | Limpieza posterior a aceptación no tenía revalidación | Test/release | MP-09/10 |
@@ -220,6 +220,18 @@ No crear findings para tareas normales ya planeadas salvo que aparezca una discr
 - **Acción:** registrar dependency graph efectivo ahora; consolidar la versión ya validada sólo en MP-09, commit separado.
 - **Criterio de cierre:** una fuente de versión, build limpio y smoke test, sin upgrade incidental.
 - **Owner:** build/release.
+- **Grafo efectivo registrado 2026-07-22 (solo lectura, sin cambiar ninguna declaración):**
+  `./gradlew.bat :TeamCode:dependencies --configuration debugCompileClasspath` (mismo
+  `JAVA_HOME`/`GRADLE_USER_HOME` que para correr tests) muestra que **`11.0.0` gana
+  siempre**: cada línea `10.3.0` de `TeamCode/build.gradle` aparece en el árbol resuelto
+  como `org.firstinspires.ftc:<módulo>:10.3.0 -> 11.0.0`, y además existen constraints
+  `{strictly 11.0.0} -> 11.0.0 (c)` para `Inspection`, `RobotCore`, `Blocks`,
+  `RobotServer`, `Vision`, `Hardware`, `FtcCommon`, `OnBotJava` que fuerzan esa versión
+  incluso si algo pidiera menos. En otras palabras: los ocho `implementation
+  '...:10.3.0'` en `TeamCode/build.gradle:31-38` son declaraciones muertas hoy — no
+  representan la versión que realmente compila ni corre. `Dashboard` no se investigó en
+  este pase (no forma parte de este grafo `org.firstinspires.ftc:*`); sigue como
+  duplicado sin confirmar. No se tocó ninguna versión declarada (DEC-022).
 
 ### FND-010 — Superficie excesiva de OpModes
 
@@ -302,18 +314,50 @@ No crear findings para tareas normales ya planeadas salvo que aparezca una discr
 
 ### FND-018 — Feeder sin pulso/cooldown acotados
 
-- **Severidad / estado:** `HIGH / OPEN`
+- **Severidad / estado:** `HIGH / CONTAINED`
 - **Evidencia:** request sostenido e interlock no imponen por sí mismos máximo on-time por pieza.
 - **Riesgo:** motor energizado indefinidamente, múltiples piezas o jam.
 - **Acción:** estados `IDLE`, `WAITING_READINESS`, `PULSING`, `COOLDOWN`, `FAULT`; duración/power/cooldown son `TBD-BLOCKING`.
 - **Cierre:** veinte secuencias no producen pulso extra y cada pérdida de permiso corta dentro de 50 ms.
+- **Contención de software 2026-07-22 (sin robot físico):** `safety/FeederPulseStateMachine.java`
+  implementa `IDLE -> PULSING -> COOLDOWN` (mismo patrón testable, `nowNanos` explícito,
+  que `TurretArmingStateMachine`); `KickerSubsystem.kick()` consulta la máquina y
+  `KickerSubsystem.periodic()` la actualiza cada ciclo, ordenando cero fuera de
+  `PULSING`. Así el corte a `KICKER_MAX_PULSE_MS` no depende de que el caller vuelva a
+  invocar `kick()`; el cooldown impide reenergizar hasta completar
+  `KICKER_COOLDOWN_MS`. `WAITING_READINESS` se dejó fuera a propósito: el readiness
+  (`shooter.isReady()`) sigue siendo responsabilidad del caller (fix ya aceptado de
+  FND-005), para no mezclar ownership de shooter y feeder (ver FND-008, no reabierto
+  aquí). `KICKER_MAX_PULSE_MS=700`/`KICKER_COOLDOWN_MS=300` en `LowAltitudeConstants`
+  quedan explícitamente `TBD-BLOCKING`, valores conservadores sin medir. Cubierto por
+  `FeederPulseStateMachineTest` (corte automático por request y por update periódico,
+  bloqueo en cooldown, cooldown cero y reset en `release()`);
+  `:TeamCode:testDebugUnitTest` y `assembleDebug` PASS. No
+  cierra el finding — falta el retest físico prescrito (20 secuencias, corte ≤50 ms) y
+  los valores TBD-BLOCKING una vez Tuning los mida.
 
 ### FND-019 — Readiness no bloquea robot en movimiento
 
-- **Severidad / estado:** `HIGH / OPEN`
+- **Severidad / estado:** `HIGH / CONTAINED`
 - **Evidencia:** criterios de tiros estacionarios no se reflejan en campos de readiness para velocidad lineal/angular.
 - **Riesgo:** alimentar durante traslación/giro no caracterizados.
 - **Acción/cierre:** medir umbrales, publicarlos en telemetry y probar ambos lados del límite sin feed indebido.
+- **Contención de software 2026-07-22 (sin robot físico):** el dato ya existía —
+  `PedroDriveAdapter` calcula `vx`/`vy`/`omega` robot-céntricos hacia cada `PoseSnapshot`
+  desde MP-02 — pero nada lo leía antes de disparar. Nueva clase pura
+  `safety/ChassisMotionGate.isWithinShotEnvelope(PoseSnapshot)` implementa DEC-031
+  (feeder solo con robot estacionario), fail-closed ante snapshot nulo/no usable.
+  Cableada en `SkywalkerProfile.java` (gatilla junto a `shooter.isReady()` antes de
+  `kickerSubsystem.kick()`) y en el constructor de ángulo fijo de `ShootBurstCommand`.
+  El equipo confirmó que los ocho autos `Artifacts` intentan disparar detenidos al final
+  del path; el scaffolding ya pasa el snapshot de Pedro antes de cada pieza. La salida
+  física del shooter de producción permanece inhibida hasta MP-06, por lo que esto no
+  habilita tiros. `MAX_SHOT_LINEAR_SPEED_INCHES_PER_SEC=1.0`/
+  `MAX_SHOT_ANGULAR_SPEED_RADIANS_PER_SEC≈0.087 rad` (`LowAltitudeConstants`) quedan
+  `TBD-BLOCKING`, conservadores. Cubierto por `ChassisMotionGateTest`;
+  `:TeamCode:testDebugUnitTest` y `assembleDebug` PASS. No cierra el finding —
+  falta publicar el umbral real medido por Tuning y el retest físico de ambos lados del
+  límite.
 
 ### FND-020 — Cero de torreta puede ser falso o perderse
 

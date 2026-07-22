@@ -12,6 +12,7 @@ import com.qualcomm.robotcore.util.RobotLog;
 import org.firstinspires.ftc.teamcode.LowAltitudeConstants;
 import org.firstinspires.ftc.teamcode.RobotMap;
 import org.firstinspires.ftc.teamcode.RobotSafety;
+import org.firstinspires.ftc.teamcode.safety.FeederPulseStateMachine;
 
 public class KickerSubsystem extends SubsystemBase {
 
@@ -19,6 +20,8 @@ public class KickerSubsystem extends SubsystemBase {
     private final CRServo kickerServo;
     private final boolean kickerServoEnabledAtInit;
     private final boolean kickerServoAllowedByOwner;
+    private final FeederPulseStateMachine pulseState = new FeederPulseStateMachine(
+            LowAltitudeConstants.KICKER_MAX_PULSE_MS, LowAltitudeConstants.KICKER_COOLDOWN_MS);
 
     public KickerSubsystem(HardwareMap hardwareMap) {
         this(hardwareMap, true);
@@ -55,14 +58,25 @@ public class KickerSubsystem extends SubsystemBase {
     }
 
     /**
-     * Aplica potencia para golpear.
-     * La duración del golpe dependerá del comando (WaitCommand).
+     * Aplica potencia para golpear, acotada por {@link FeederPulseStateMachine} (FND-018):
+     * se corta sola al llegar a {@code KICKER_MAX_PULSE_MS} aunque el caller siga pidiendo
+     * el pulso (p.ej. un binding hold-to-run), y no vuelve a energizar hasta completar
+     * {@code KICKER_COOLDOWN_MS}.
      */
     public void kick() {
+        boolean pulseAllowed = pulseState.requestPulse(System.nanoTime());
+        if (!pulseAllowed) {
+            stopOutputsOnly();
+            return;
+        }
         kickerMotor.set(LowAltitudeConstants.KICKER_OUT_SPEED);
         if (isServoActive()) {
             kickerServo.setPower(LowAltitudeConstants.KICKER_SERVO_FORWARD_POWER);
         }
+    }
+
+    public FeederPulseStateMachine.State getPulseState() {
+        return pulseState.getState();
     }
 
     /**
@@ -76,9 +90,15 @@ public class KickerSubsystem extends SubsystemBase {
     }
 
     /**
-     * Corta la energía inmediatamente.
+     * Corta la energía inmediatamente y libera el pulso (entra a cooldown si venía de
+     * PULSING, por FND-018).
      */
     public void stop() {
+        pulseState.release(System.nanoTime());
+        stopOutputsOnly();
+    }
+
+    private void stopOutputsOnly() {
         kickerMotor.stopMotor(); // Al ser BRAKE, se detendrá de golpe.
         // Zero an available servo even when disabled, so a previous OpMode cannot leave it moving.
         if (kickerServo != null) {
@@ -101,6 +121,17 @@ public class KickerSubsystem extends SubsystemBase {
     public boolean isServoActive() {
         return kickerServoEnabledAtInit && kickerServoAllowedByOwner && kickerServo != null;
     }
+
+    @Override
+    public void periodic() {
+        // Enforce the hard cutoff even when a caller only invoked kick() once, then keep
+        // COOLDOWN -> IDLE fresh for telemetry while no request is active.
+        pulseState.update(System.nanoTime());
+        if (pulseState.getState() != FeederPulseStateMachine.State.PULSING) {
+            stopOutputsOnly();
+        }
+    }
+
     public Action cargar() {
         return (telemetryPacket) -> {
 

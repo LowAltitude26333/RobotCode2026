@@ -13,6 +13,7 @@ import org.firstinspires.ftc.teamcode.commands.PoseStorage;
 import org.firstinspires.ftc.teamcode.commands.auto.TurnToAngleCommand;
 import org.firstinspires.ftc.teamcode.commands.drivetrain.FieldCentricDriveCommand;
 import org.firstinspires.ftc.teamcode.commands.drivetrain.SetPrecisionModeCommand;
+import org.firstinspires.ftc.teamcode.safety.ChassisMotionGate;
 
 public class SkywalkerProfile implements ControlProfile {
 
@@ -76,7 +77,9 @@ public class SkywalkerProfile implements ControlProfile {
         // RB (Hold) -> Activar Kicker
         new GamepadButton(driverOp, GamepadKeys.Button.RIGHT_BUMPER)
                 .whileHeld(new RunCommand(() -> {
-                    if (robot.shooterSubsystem.isReady()) {
+                    boolean chassisStationary = ChassisMotionGate.isWithinShotEnvelope(
+                            robot.driveSubsystem.getPoseSnapshot());
+                    if (robot.shooterSubsystem.isReady() && chassisStationary) {
                         robot.kickerSubsystem.kick();
                     } else {
                         robot.kickerSubsystem.stop();

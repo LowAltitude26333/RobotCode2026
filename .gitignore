@@ -83,3 +83,9 @@ lint/tmp/
 # Claude Code skills (installed locally via npx skills, not versioned for now)
 .claude/
 skills-lock.json
+
+# Derived QA evidence for Premier workbooks. The canonical XLSX and its SHA sidecar
+# remain versioned; previews/reports are reproducible with tools/premier-workbooks.
+outputs/plan-final-antespremier/*-preview.pdf
+outputs/plan-final-antespremier/*-previews-native/
+outputs/plan-final-antespremier/*-qa-native.json

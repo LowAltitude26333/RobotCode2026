@@ -53,6 +53,13 @@ public class LowAltitudeConstants {
     public static long SHOOTER_READY_TIMEOUT_MS = 2000;
     public static int SHOOTER_READY_MAX_ATTEMPTS = 3;
 
+    // --- CHASSIS MOTION GATE (FND-019 / DEC-031: feeder solo con robot estacionario) ---
+    // TBD-BLOCKING: valores conservadores (casi cero) hasta que Tuning mida el envelope
+    // real de "disparo seguro" con el chasis en movimiento. No usar para nada más que
+    // el gate de disparo.
+    public static double MAX_SHOT_LINEAR_SPEED_INCHES_PER_SEC = 1.0;
+    public static double MAX_SHOT_ANGULAR_SPEED_RADIANS_PER_SEC = Math.toRadians(5.0);
+
     // --- SHOOTER HOOD ---
     // Estos son los ángulos físicos que permitimos por software
     public static final double HOOD_MIN_LIMIT = 5.0;
@@ -91,6 +98,12 @@ public class LowAltitudeConstants {
     public static final double KICKER_SERVO_STOP_POWER = 0.0;
     public static long KICKER_EXTEND_TIME_MS = 632;
     public static long KICKER_RETRACT_DELAY_MS = 60;
+
+    // FND-018: tope duro de energizado por pulso y cooldown obligatorio entre pulsos,
+    // sin importar cuánto tiempo el operador sostenga el binding. TBD-BLOCKING: valores
+    // conservadores hasta que Tuning confirme el tiempo real de golpe/retracción del kicker.
+    public static long KICKER_MAX_PULSE_MS = 700;
+    public static long KICKER_COOLDOWN_MS = 300;
 
     //Modelo RPM-por-distancia (MP-06/DEC-012)
     public static class ShooterModelConstants {

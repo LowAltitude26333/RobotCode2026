@@ -3,9 +3,13 @@ package org.firstinspires.ftc.teamcode.commands.auto;
 import com.arcrobotics.ftclib.command.CommandBase;
 
 import org.firstinspires.ftc.teamcode.LowAltitudeConstants;
+import org.firstinspires.ftc.teamcode.localization.PoseSnapshot;
+import org.firstinspires.ftc.teamcode.safety.ChassisMotionGate;
 import org.firstinspires.ftc.teamcode.subsystems.KickerSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.ShooterHoodSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.ShooterSubsystem;
+
+import java.util.function.Supplier;
 
 public class ShootBurstCommand extends CommandBase {
     private enum State {
@@ -22,12 +26,78 @@ public class ShootBurstCommand extends CommandBase {
     private final LowAltitudeConstants.TargetRPM targetRpm;
     private final LowAltitudeConstants.HoodPosition targetAngle;
     private final Runnable failureCallback;
+    /** Null means no chassis-motion gate (e.g. stationary bench commissioning). */
+    private final Supplier<PoseSnapshot> chassisSnapshotSupplier;
 
     private State state;
     private long stateDeadlineNanos;
     private int completedShots;
     private int readyAttempt;
     private boolean failed;
+
+    /**
+     * Full constructor. {@code chassisSnapshotSupplier} enforces DEC-031/FND-019
+     * (feeder solo con robot estacionario) via {@link ChassisMotionGate}; pass
+     * {@code null} when the caller has no drivetrain to check (bench commissioning).
+     */
+    public ShootBurstCommand(ShooterSubsystem shooter,
+                             ShooterHoodSubsystem hood,
+                             KickerSubsystem kicker,
+                             int shots,
+                             LowAltitudeConstants.TargetRPM targetRpm,
+                             LowAltitudeConstants.HoodPosition targetAngle,
+                             Runnable failureCallback,
+                             Supplier<PoseSnapshot> chassisSnapshotSupplier) {
+        this.shooter = shooter;
+        this.hood = hood;
+        this.kicker = kicker;
+        this.requestedShots = Math.max(0, shots);
+        this.targetRpm = targetRpm;
+        this.targetAngle = targetAngle;
+        this.failureCallback = failureCallback;
+        this.chassisSnapshotSupplier = chassisSnapshotSupplier;
+        if (hood == null) {
+            addRequirements(shooter, kicker);
+        } else {
+            addRequirements(shooter, hood, kicker);
+        }
+    }
+
+    /**
+     * Fixed-angle shooter constructor for active robot code. The physical hood was removed
+     * (DEC-028), so production callers must not create the legacy hood compatibility shim.
+     */
+    public ShootBurstCommand(ShooterSubsystem shooter,
+                             KickerSubsystem kicker,
+                             int shots,
+                             LowAltitudeConstants.TargetRPM targetRpm,
+                             Runnable failureCallback,
+                             Supplier<PoseSnapshot> chassisSnapshotSupplier) {
+        this(shooter, null, kicker, shots, targetRpm, null,
+                failureCallback, chassisSnapshotSupplier);
+    }
+
+    /** Convenience overload for fixed-angle autos that must respect DEC-031. */
+    public ShootBurstCommand(ShooterSubsystem shooter,
+                             KickerSubsystem kicker,
+                             int shots,
+                             LowAltitudeConstants.TargetRPM targetRpm,
+                             Supplier<PoseSnapshot> chassisSnapshotSupplier) {
+        this(shooter, kicker, shots, targetRpm, () -> { }, chassisSnapshotSupplier);
+    }
+
+    public ShootBurstCommand(ShooterSubsystem shooter,
+                             KickerSubsystem kicker,
+                             int shots,
+                             LowAltitudeConstants.TargetRPM targetRpm) {
+        this(shooter, kicker, shots, targetRpm, () -> { }, null);
+    }
+
+    public ShootBurstCommand(ShooterSubsystem shooter,
+                             KickerSubsystem kicker,
+                             int shots) {
+        this(shooter, kicker, shots, LowAltitudeConstants.TargetRPM.SHORT_SHOT_RPM);
+    }
 
     public ShootBurstCommand(ShooterSubsystem shooter,
                              ShooterHoodSubsystem hood,
@@ -36,14 +106,18 @@ public class ShootBurstCommand extends CommandBase {
                              LowAltitudeConstants.TargetRPM targetRpm,
                              LowAltitudeConstants.HoodPosition targetAngle,
                              Runnable failureCallback) {
-        this.shooter = shooter;
-        this.hood = hood;
-        this.kicker = kicker;
-        this.requestedShots = Math.max(0, shots);
-        this.targetRpm = targetRpm;
-        this.targetAngle = targetAngle;
-        this.failureCallback = failureCallback;
-        addRequirements(shooter, hood, kicker);
+        this(shooter, hood, kicker, shots, targetRpm, targetAngle, failureCallback, null);
+    }
+
+    /** Convenience overload for autos that must respect DEC-031 while path-following. */
+    public ShootBurstCommand(ShooterSubsystem shooter,
+                             ShooterHoodSubsystem hood,
+                             KickerSubsystem kicker,
+                             int shots,
+                             LowAltitudeConstants.TargetRPM targetRpm,
+                             LowAltitudeConstants.HoodPosition targetAngle,
+                             Supplier<PoseSnapshot> chassisSnapshotSupplier) {
+        this(shooter, hood, kicker, shots, targetRpm, targetAngle, () -> { }, chassisSnapshotSupplier);
     }
 
     public ShootBurstCommand(ShooterSubsystem shooter,
@@ -52,7 +126,7 @@ public class ShootBurstCommand extends CommandBase {
                              int shots,
                              LowAltitudeConstants.TargetRPM targetRpm,
                              LowAltitudeConstants.HoodPosition targetAngle) {
-        this(shooter, hood, kicker, shots, targetRpm, targetAngle, () -> { });
+        this(shooter, hood, kicker, shots, targetRpm, targetAngle, () -> { }, null);
     }
 
     public ShootBurstCommand(ShooterSubsystem shooter,
@@ -69,7 +143,9 @@ public class ShootBurstCommand extends CommandBase {
         completedShots = 0;
         readyAttempt = 1;
         failed = false;
-        hood.setAngle(targetAngle.angle);
+        if (hood != null && targetAngle != null) {
+            hood.setAngle(targetAngle.angle);
+        }
         shooter.setTargetEnum(targetRpm);
 
         if (requestedShots == 0) {
@@ -77,6 +153,12 @@ public class ShootBurstCommand extends CommandBase {
         } else {
             beginReadyWindow();
         }
+    }
+
+    /** No supplier configured means the caller has no drivetrain to check (bench-only). */
+    private boolean isChassisStationary() {
+        return chassisSnapshotSupplier == null
+                || ChassisMotionGate.isWithinShotEnvelope(chassisSnapshotSupplier.get());
     }
 
     private void beginReadyWindow() {
@@ -91,7 +173,7 @@ public class ShootBurstCommand extends CommandBase {
 
         switch (state) {
             case WAITING_FOR_READY:
-                if (shooter.isReady()) {
+                if (shooter.isReady() && isChassisStationary()) {
                     kicker.kick();
                     state = State.KICKING;
                     stateDeadlineNanos = now
@@ -159,8 +241,6 @@ public class ShootBurstCommand extends CommandBase {
     @Override
     public void end(boolean interrupted) {
         kicker.stop();
-        if (interrupted) {
-            shooter.stop();
-        }
+        shooter.stop();
     }
 }

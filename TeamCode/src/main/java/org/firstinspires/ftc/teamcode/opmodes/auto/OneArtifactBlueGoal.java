@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.opmodes.auto;
 
+import com.arcrobotics.ftclib.command.SequentialCommandGroup;
 import com.pedropathing.geometry.BezierCurve;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
@@ -9,17 +10,22 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import org.firstinspires.ftc.teamcode.LowAltitudeConstants;
 import org.firstinspires.ftc.teamcode.commands.PedroPathCommand;
 import org.firstinspires.ftc.teamcode.commands.PoseStorage;
+import org.firstinspires.ftc.teamcode.commands.auto.ShootBurstCommand;
 import org.firstinspires.ftc.teamcode.localization.PoseSnapshot;
 import org.firstinspires.ftc.teamcode.opmodes.SafeAutonomousOpMode;
+import org.firstinspires.ftc.teamcode.subsystems.KickerSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.PedroDriveSubsystem;
+import org.firstinspires.ftc.teamcode.subsystems.ShooterSubsystem;
 
 /**
  * Alineado desde el template Pedro Pathing "1 Artifact Blue Goal" (DEC-041): mismos
  * waypoints del export original, ahora con SafeAutonomousOpMode/E-stop/RobotSafety
  * y starting pose real en vez del placeholder (72, 8, 90°) que traían los 10 templates.
  *
- * Pendiente de equipo: en qué segmento disparar la pieza (ShootBurstCommand +
- * LowAltitudeConstants.TargetRPM) — no se inventa ese timing aquí.
+ * Dispara al terminar el path, con el robot detenido (decisión de equipo 2026-07-22):
+ * {@link ShootBurstCommand} corre después de {@link PedroPathCommand} en la misma
+ * secuencia y respeta DEC-031/FND-019 vía el gate de {@code drive::getPoseSnapshot}.
+ * El disparo permanece como scaffolding fail-closed hasta MP-06.
  */
 @Autonomous(name = "1 Artifact Blue Goal", group = "Autonomous")
 public class OneArtifactBlueGoal extends SafeAutonomousOpMode {
@@ -35,6 +41,9 @@ public class OneArtifactBlueGoal extends SafeAutonomousOpMode {
                 telemetry);
         PoseStorage.isRedAlliance = false;
 
+        ShooterSubsystem shooter = new ShooterSubsystem(hardwareMap, telemetry);
+        KickerSubsystem kicker = new KickerSubsystem(hardwareMap);
+
         PathChain mainChain = drive.pathBuilder()
                 .addPath(new BezierLine(new Pose(85.500, 8.000), new Pose(105.500, 35.000)))
                 .setLinearHeadingInterpolation(Math.toRadians(90), Math.toRadians(0))
@@ -45,8 +54,12 @@ public class OneArtifactBlueGoal extends SafeAutonomousOpMode {
                 .setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(45))
                 .build();
 
-        schedule(new PedroPathCommand(drive, mainChain));
-        // TODO(equipo): agregar ShootBurstCommand para la pieza en el punto que confirmen.
+        schedule(new SequentialCommandGroup(
+                new PedroPathCommand(drive, mainChain),
+                new ShootBurstCommand(
+                        shooter, kicker, 1,
+                        LowAltitudeConstants.TargetRPM.SHORT_SHOT_RPM,
+                        drive::getPoseSnapshot)));
     }
 
     @Override

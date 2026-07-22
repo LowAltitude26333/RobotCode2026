@@ -404,6 +404,7 @@ Cada PR o sesión de commissioning debe adjuntar:
 - [Handoff de la tarea](plan-maestro/handoff-task.md)
 - [Plan de handoffs MP-01, MP-02 y MasterPlan](plan-maestro/handoff-plan-MP01-MP02-MasterPlan.md)
 - [Plan paralelo de 20h — pista Software y pista Tuning](plan-maestro/plan-paralelo-20h.md)
+- [Plan final antes del Premier](plan-maestro/plan-final-antespremier.md)
 - [Hallazgos críticos históricos](critical-findings.md), preservado sin editar
 
 ## 10. Definición de terminado del programa
