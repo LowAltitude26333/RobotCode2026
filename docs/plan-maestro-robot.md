@@ -2,7 +2,7 @@
 
 > Estado: MP-01 y MP-02 `ACCEPTED`; MP-03 es la siguiente fase activa sobre `masterplan`
 > Baseline de implementación: `origin/main@a887fe4f7ca9023eec6034a0db6b8d918c640ecc`; preserva evidencia histórica de `b5a1342`
-> Última actualización: 2026-07-21
+> Última actualización: 2026-07-22
 > Alcance: arquitectura, torreta, Limelight 3A, odometría, shooter, controles, pruebas y limpieza
 > Responsables sugeridos: líder de software, responsable mecánico/eléctrico, operador 1, operador 2 y responsable de pruebas
 > Fuente de verdad: antes de ejecutar una fase se debe volver a inspeccionar la rama y el hardware; este documento describe el baseline indicado, no garantiza el estado físico del robot.
@@ -26,7 +26,7 @@ Construir una base de software de competencia pequeña, entendible y tolerante a
 - Limelight 3A fija al chasis;
 - un solo TeleOp de competencia para ambas alianzas;
 - un solo OpMode de diagnóstico seguro;
-- cero autónomos en el artefacto final de competencia.
+- un conjunto reducido y versionado de autónomos Pedro Pathing en el artefacto final de competencia, cada uno sujeto al mismo contrato de seguridad que el TeleOp (`SafeAutonomousOpMode`, E-stop, `RobotSafety`, límites vigentes) — ver DEC-041. Los autónomos Road Runner legado no se conservan: Pedro es dueño único de pose/movimiento (DEC-034) y esos autos ya no compilan contra la composición actual.
 
 El auto-aim no dependerá exclusivamente de una cámara. La odometría mantendrá continuamente la pose y el ángulo geométrico al goal; Limelight aportará observaciones frescas y validadas para corregir pose y, cuando sea apropiado, ajustar el bearing final. Si ambas fuentes dejan de ser confiables, el robot entrará en un modo degradado deliberado, limitado y visible, nunca en una degradación silenciosa.
 
@@ -313,8 +313,8 @@ Los números son gates iniciales del proyecto, no especificaciones oficiales del
 
 - Crear tag anotado `archive/pre-cleanup-YYYYMMDD`, registrar SHA, build y artefactos; publicar/verificar el tag remoto.
 - Mantener una rama de commissioning para tuners complejos y el snapshot de Road Runner.
-- Eliminar de `main`, no mover a un paquete Java `/archive`, los TeleOps, autos, tuners, localizadores, VisionPortal viejo, hood y declaraciones obsoletas que ya no forman parte de producción.
-- Dejar exactamente un TeleOp de competencia, un System Check seguro y cero autónomos/tuners registrados.
+- Eliminar de `main`, no mover a un paquete Java `/archive`, los TeleOps, tuners, localizadores, VisionPortal viejo, hood y declaraciones obsoletas que ya no forman parte de producción. Los autónomos Road Runner legado se eliminan de la misma forma (ya lo hizo DEC-041 al abrir esta ventana de trabajo, antes de llegar a MP-09); no queda nada de ese stack para volver a borrar aquí salvo residuos que aparezcan en el inventario.
+- Dejar exactamente un TeleOp de competencia, un System Check seguro, los autónomos Pedro Pathing aceptados por su gate MP-08 (DEC-041) y cero tuners/registrars extra.
 - Quitar MeepMeep/Road Runner sólo después de comprobar que Pedro cubre lo necesario; no modificar `FtcRobotController` como limpieza incidental.
 - Consolidar la versión de SDK ya resuelta por el proyecto en una sola fuente sólo como cambio revisado; no actualizar SDK, Gradle, AGP o Java por conveniencia.
 - Medir builds frío/caliente, APK, instalación real y menú del Driver Station antes/después. Reportar datos aunque no mejoren.

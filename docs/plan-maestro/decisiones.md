@@ -2,7 +2,7 @@
 
 > Estado: registro vivo de decisiones de producto/arquitectura
 > Baseline histórico inicial: `main` en `f91af18`; baseline vigente: `origin/main@b5a134260456565df9d0295722ebecad900f21b4`
-> Última actualización: 2026-07-20
+> Última actualización: 2026-07-22
 > Alcance: elecciones aprobadas, alternativas, consecuencias y condiciones de revisión
 > Responsable sugerido: líder técnico y responsables nombrados en cada decisión
 > Fuente de verdad: la decisión más reciente con estado `ACCEPTED`; cambios importantes requieren nueva entrada, no reescribir silenciosamente la historia.
@@ -59,6 +59,8 @@
 | DEC-036 | ACCEPTED | Contrato de hardware confirmado para MP-01 | Cambia configuración física o RC. |
 | DEC-037 | ACCEPTED | Kicker motor-only final; CRServo retirado y compilado en cero | Nueva decisión formal cambia el diseño. |
 | DEC-039 | ACCEPTED | FND-027 usa gate 10/10 por sentido para el APK 9C2F | Cambia APK, potencia, límites, transmisión o configuración física. |
+| DEC-040 | ACCEPTED | Cierre funcional del shooter para MP-01 bajo APK 09B2...DAC1 | Cambia APK, dirección, signo, watchdog, potencia, transmisión o configuración física. |
+| DEC-041 | ACCEPTED | Autónomos Pedro Pathing en el release final; retiro de autos Road Runner | Algún autónomo Pedro no pasa su gate MP-08. |
 
 ## 3. Decisiones aceptadas
 
@@ -405,6 +407,15 @@
 - **Evidencia:** pulso único sin piezas, target `1000 RPM`, cap `0.75`, `STOPPED_TIMEOUT` a `3027.7 ms`, ticks `0 -> 555`, peak/end `1028.6/942.9 RPM`, batería mínima `12.37 V`, power final `0`, health=`HEALTHY`, fault=`none`, parada completa y cero anomalías.
 - **Límite explícito:** ready hold `125.6 ms` no cumple los `250 ms` de T8. El cierre no certifica estabilidad, carga ni tiros y no habilita feeder; permanecen pendientes para MP-06/T8.
 - **Revisión/rollback:** cualquier cambio de APK, dirección, signo de encoder, watchdog, límite de potencia, transmisión, motor, cableado o configuración física exige revalidar el gate correspondiente.
+
+### DEC-041 — Autónomos Pedro Pathing en el release final; retiro de autos Road Runner
+
+- **Estado/fecha:** `ACCEPTED`, 2026-07-22
+- **Contexto:** `plan-maestro-robot.md` sección 1 (línea 29) y MP-09 fijaban "cero autónomos en el artefacto final de competencia" como decisión no negociable, y `06-limpieza-y-release.md` planeaba borrar todo autónomo en MP-09. Esa postura venía originalmente de DEC-019, que quedó `SUPERSEDED` por DEC-026 — pero DEC-026 sólo resuelve visibilidad de tuners en commissioning/release, no reafirma ni retira explícitamente la parte de "cero autos" de DEC-019, dejando ese punto ambiguo hasta ahora. El equipo ya escribió y entregó 10 rutas autónomas nuevas usando Pedro Pathing (paths exportados desde la herramienta visual de Pedro), y el drivetrain de producción ya migró completamente a Pedro como dueño único de pose/movimiento (DEC-034). Los 8 autónomos Road Runner legado (`AutonomoBetaPosition`, `AutonomoOfficialBlue`, `AutonomoOfficialRed2`, `AutonomoOfficialRed` ya comentado como código muerto, `FullOfficialBlue2`, `FullOfficialRed2`, `FullOficialBlue`, `FullOficialRed`) construyen `DriveSubsystem`/`MecanumDrive` de Road Runner directamente y ya no compilan contra el `RobotContainer` Pedro-only actual; `handoff-task.md` ya los documentaba como "ya no se necesitan, se conservan sólo como historial/rollback".
+- **Decisión:** el release final de competencia sí incluye un conjunto reducido de autónomos, todos basados en Pedro Pathing y sujetos al mismo contrato de seguridad que el TeleOp de competencia (`SafeAutonomousOpMode`, E-stop `gamepad1 BACK`, `RobotSafety`, límites ya vigentes de torreta/shooter/feeder). Los 8 autónomos Road Runner legado se eliminan de `masterplan` — no se mueven a un paquete `/archive` dentro de `source`, mismo criterio que ya usa `06-limpieza-y-release.md` §3.1 ("el historial Git es el archivo"). `TestShootBurstAuto` se conserva: no mueve drivetrain, es una prueba estacionaria de shooter/kicker/intake.
+- **Alternativas consideradas:** mantener "cero autónomos" y tratar los autos Pedro nuevos como track experimental fuera de competencia; pausar hasta confirmar con todo el equipo/lead. Descartadas: el equipo confirmó directamente que los autónomos sí van a competencia.
+- **Consecuencia:** `plan-maestro-robot.md` (línea 29 y la redacción de MP-09) y `06-limpieza-y-release.md` (líneas 16, 109, 208, 274 y la tabla de clasificación §5) se actualizan para distinguir "autónomos Road Runner legado, eliminar" de "autónomos Pedro aceptados, conservar en el release", en vez de "cero autónomos" a secas. `plan-paralelo-20h.md` §3 (Pista Software) suma la integración de estos autos como ítem de trabajo. Ningún autónomo Pedro nuevo se declara listo para competencia sin pasar el mismo gate MP-08 que el resto del programa (dos sesiones integradas, sin finding crítico/alto abierto).
+- **Rollback:** si un autónomo Pedro específico no pasa su gate, ese archivo se deshabilita (`@Disabled`) sin afectar a los demás ni forzar volver a "cero autónomos". No revive automáticamente ningún autónomo Road Runner: su código ya no existe en `masterplan`, sólo en el historial de Git (y en cualquier tag/rama de commissioning que se cree antes de borrar).
 
 ## 4. Decisiones pendientes de implementación, no de producto
 

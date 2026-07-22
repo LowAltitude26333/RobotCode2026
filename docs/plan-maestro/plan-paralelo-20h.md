@@ -1,7 +1,7 @@
 # Plan paralelo de 20h — pista Software y pista Tuning
 
 > Estado: plan de trabajo activo para la ventana previa a competencia (~20h restantes, equipo grande: 3+ personas de software, varias de mecánica/eléctrica/pruebas)
-> Última actualización: 2026-07-20
+> Última actualización: 2026-07-22
 > Este documento no repite contenido de otros documentos del programa. Cuando un paso ya está descrito en otro archivo, aquí solo se referencia y se dice **cuándo** ejecutarlo y **con quién sincronizarse**, no se vuelve a explicar el procedimiento.
 
 ## 0. Cómo usar este documento
@@ -118,6 +118,7 @@ Ninguna de estas tareas requiere tener el robot físico en la mano. Se puede tra
 4. **Crear `LimelightSubsystem`.** No existe hoy — solo un comentario en `MainTeleOp.java:20`. Wrapper único dueño del dispositivo: start, selección de pipeline, poll/timeout, stop/close, conversión a observación inmutable con timestamp. No depende de tener el robot en mano, solo de que el SDK ya resuelva `Limelight3A` (confirmado). **Este archivo bloquea el Paso 4 de Tuning** — priorizarlo si Tuning va a llegar a Limelight en las próximas horas.
 5. **Estructura del modelo RPM-por-distancia.** Código de ajuste (lineal/cuadrático/piecewise, MP-06) que solo necesita que Tuning le cargue el dataset de tiros del Paso 5. Puede escribirse y probarse con datos sintéticos antes de tener datos reales.
 6. **Telemetría unificada / prep de reducción de menú.** Trabajo de MP-07 (bloques de telemetry, inventario de tuners/ownership) que no mueve actuadores y puede avanzar sin el robot.
+7. **(Nueva, 2026-07-22) Alinear e integrar los 10 autónomos Pedro Pathing entregados por el equipo.** DEC-041 revierte la decisión previa de "cero autónomos": el release final sí incluye un conjunto reducido de autos, todos Pedro Pathing. Los templates llegaron en crudo desde la herramienta de paths (misma clase repetida `PedroAutonomous`, starting pose placeholder `(72,8,90°)` igual en los 10, sin extender `SafeAutonomousOpMode`, sin lógica de tiro). Trabajo, ninguno depende del robot: (a) retirar los 8 autónomos Road Runner legado de `opmodes/auto/` (ya no compilan contra el `RobotContainer` Pedro-only); (b) crear `PedroPathCommand` (equivalente a `ActionCommand` pero para `PathChain`/`Follower`) y exponer `followPath`/`isBusy` en `PedroDriveSubsystem`; (c) convertir pose final de Pedro a `PoseStorage.currentPose` (RR `Pose2d`) en `afterSchedulerRun()` para que `MainTeleOp` seguir arrancando desde ahí; (d) renombrar las 10 clases (colisión de nombre real hoy) y corregir su starting pose al primer waypoint real de cada path. Detalle completo en el plan de esa sesión; bloquea sobre todo confirmar con el equipo la lógica de tiro (`autonomousPathUpdate()` viene vacío) y dos discrepancias puntuales (asimetría 45°/55° entre "1 Artifact Red/Blue Full", starting pose distinta de "Leave Goal").
 
 ## 4. Tabla de bloqueos cruzados
 

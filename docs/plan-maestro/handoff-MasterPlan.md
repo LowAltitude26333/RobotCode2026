@@ -1,6 +1,6 @@
 # Handoff MasterPlan — continuación en MP-03
 
-Fecha: 2026-07-21
+Fecha: 2026-07-22 (actualizado; consolidación original 2026-07-21)
 
 Rama: `masterplan`
 
@@ -24,9 +24,10 @@ Estado de trabajo: MP-01 y MP-02 aceptados; MP-03 es la siguiente fase activa.
 - Checkout correcto: `C:\dev\RobotCode2026`.
 - Producción usa Pedro mediante `MainTeleOp -> RobotContainer -> PedroDriveSubsystem -> PedroDriveAdapter -> Follower`.
 - Road Runner se conserva sólo como rollback/baseline; no habilitar sus tuners ni instanciarlo junto con Pedro.
-- Los autónomos históricos siguen ocultos/deshabilitados; las rutas nuevas se crearán cuando el lead entregue su definición.
+- **Actualizado 2026-07-22 (DEC-041):** el lead ya entregó la definición de autónomos anticipada aquí. Los 8 autónomos Road Runner históricos ya no existen en `masterplan` (se eliminaron, no quedaron sólo ocultos) y el release final de competencia sí incluye un conjunto reducido de autónomos Pedro Pathing — ver `decisiones.md` DEC-041 y `plan-paralelo-20h.md` §3 ítem 7 para el detalle completo. Los 10 autos nuevos (`opmodes/auto/Two|OneArtifacts*Goal|Full`, `LeaveFull`, `LeaveGoal`) ya compilan y pasan `testDebugUnitTest`, pero ninguno dispara todavía (lógica de tiro pendiente de que el equipo confirme el timing) y ninguno pasó su gate físico MP-08 — no están listos para competencia, sólo alineados en código.
 - No hay webcam activa. La siguiente cámara es Limelight 3A fija al chasis.
 - Visión, auto-aim y corrección de pose continúan inhibidos.
+- **Actualizado 2026-07-22:** `geometria-robot-mp04.md` cerró su sección 4 (límites de giro de torreta, yaw `[-175.97°, +161.66°]`, ver esa hoja) y confirmó la configuración de Limelight activa (`30°` de las cinco discretas). Sigue siendo insumo crudo para MP-04, no el contrato formal de marcos (ese sigue `NOT_STARTED`).
 
 ## Primera secuencia segura de MP-03
 
@@ -76,3 +77,5 @@ Rollback de producción Pedro: `74e950d`, inmediatamente anterior al commit de m
 4. [Plan maestro](../plan-maestro-robot.md), sección MP-03.
 5. [Contrato de hardware](contrato-hardware.md).
 6. [Protocolo de sesión](10-protocolo-agente-sesion.md).
+7. [Geometría física — insumo crudo para MP-04](geometria-robot-mp04.md).
+8. [Decisiones](decisiones.md), DEC-041 (autónomos Pedro Pathing en scope de competencia).

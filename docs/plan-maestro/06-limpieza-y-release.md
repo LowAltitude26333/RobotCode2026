@@ -2,7 +2,7 @@
 
 > Estado: plan aprobado; cleanup bloqueado hasta MP-08 y release bloqueado hasta MP-10
 > Baseline de referencia: `origin/main@b5a134260456565df9d0295722ebecad900f21b4`
-> Última actualización: 2026-07-15
+> Última actualización: 2026-07-22
 > Alcance: snapshot Git, eliminación de legado, build/deploy y rollback
 > Responsable sugerido: release lead con revisión del líder de software
 > Fuente de verdad: árbol y registros del commit candidato; esta lista no autoriza borrar antes del gate.
@@ -13,7 +13,7 @@ Terminar con una rama `main` enfocada en competencia que sea rápida de entender
 
 - un TeleOp de competencia para Blue y Red;
 - un System Check seguro;
-- cero autónomos;
+- los autónomos Pedro Pathing aceptados por su gate MP-08 (ver DEC-041; los autónomos Road Runner legado ya no forman parte de este repo — se eliminaron al abrir DEC-041, antes de esta fase);
 - cero tuners/test OpModes registrados en el build normal.
 
 Durante commissioning el menú es deliberadamente mayor: `MainTeleOp`, System Check, Shooter Tuning, Pedro Tuning y los registradores dinámicos Road Runner permanecen visibles hasta completar sus calibraciones. Esta sección describe el artefacto final, no autoriza ocultarlos ahora.
@@ -106,7 +106,8 @@ Probar actividad por call path, no por nombre de archivo.
 | TeleOp de competencia nuevo | Conservar | Siempre. |
 | System Check seguro | Conservar | Siempre. |
 | Otros TeleOps no-tuning habilitados/deshabilitados | Eliminar de `main` tras snapshot | MP-09. |
-| Todos los autónomos | Eliminar de `main` tras snapshot | MP-09; no hay autos en scope final. |
+| Autónomos Road Runner legado | Eliminados de `masterplan` (no en scope final; Pedro es dueño único de pose/movimiento) | Ya ejecutado al abrir DEC-041, antes de MP-09. |
+| Autónomos Pedro Pathing | Conservar los aceptados por su gate MP-08; eliminar de `main` los que no pasen | MP-09, sólo los no aceptados. |
 | RR tuning registrars | Eliminar/desactivar físicamente del build final | Tras aceptar Pedro. |
 | Pedro tuners complejos | Mover por historial/rama, no a package archive | Tras calibración. |
 | Road Runner runtime | Eliminar si no hay consumidor activo | Tras aceptar Pedro y snapshot. |
@@ -205,7 +206,7 @@ El candidato debe tener:
 
 - build exitoso desde checkout limpio;
 - un TeleOp + un System Check visibles;
-- cero autos/tuners;
+- sólo los autónomos Pedro aceptados por MP-08 registrados (ver DEC-041), cero tuners;
 - normal, odometry-only y degraded probados;
 - alliance/preset/arm init funcional;
 - E-stop/stop paths probados;
@@ -271,7 +272,7 @@ Road Runner vive en el snapshot, no oculto en producción. Crear una rama desde 
 - [ ] Road Runner recuperable desde snapshot.
 - [ ] Un TeleOp de competencia.
 - [ ] Un System Check seguro.
-- [ ] Cero autos/tuners/registrars extra.
+- [ ] Sólo los autónomos Pedro aceptados por MP-08 (DEC-041); cero autos Road Runner, cero tuners/registrars extra.
 - [ ] Cero owner duplicado.
 - [ ] VisionPortal/hood/Shooter2/legacy retirado donde corresponde.
 - [ ] Dependencias no usadas comprobadas antes de remover.
