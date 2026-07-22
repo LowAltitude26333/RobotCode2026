@@ -109,6 +109,22 @@ public class LowAltitudeConstants {
         public static int LIMELIGHT_PIPELINE_APRILTAG = 0;
     }
 
+    // Poses iniciales de los autónomos Pedro Pathing (DEC-041), en el mismo frame
+    // (in/rad) que ya usa Constants.createFollower/PedroDriveSubsystem en producción.
+    // Tomadas del primer waypoint real de cada path exportado, no del placeholder
+    // (72, 8, 90°) que traían los 10 templates originales. "Leave Goal" queda afuera:
+    // su path arranca en (61, 75.682), muy distinto a los otros 9 — confirmar con el
+    // equipo antes de agregarle una constante aquí.
+    public static class AutoConstants {
+        public static final double RED_START_X_INCHES = 56.000;
+        public static final double RED_START_Y_INCHES = 8.000;
+        public static final double RED_START_HEADING_RADIANS = Math.toRadians(90.0);
+
+        public static final double BLUE_START_X_INCHES = 85.500;
+        public static final double BLUE_START_Y_INCHES = 8.000;
+        public static final double BLUE_START_HEADING_RADIANS = Math.toRadians(90.0);
+    }
+
     //Torreta
     public static class TurretConstants {
         // 1. Baja el KP: Si estaba en 0.04, intenta con 0.015 o 0.02.

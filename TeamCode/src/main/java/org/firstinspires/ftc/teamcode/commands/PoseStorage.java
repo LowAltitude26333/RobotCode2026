@@ -8,4 +8,15 @@ public class PoseStorage {
 
     public static boolean isRedAlliance = true;
     public static boolean isPrecisionMode = false;
+
+    /**
+     * Guarda el resultado de un autónomo Pedro Pathing para que MainTeleOp arranque desde ahí.
+     * Toma doubles crudos (no un tipo de Pedro) porque vienen de
+     * {@link org.firstinspires.ftc.teamcode.localization.PoseSnapshot}, ya agnóstico de localizador.
+     */
+    public static void recordAutonomousResult(double xInches, double yInches,
+                                               double headingRadians, boolean redAlliance) {
+        currentPose = new Pose2d(xInches, yInches, headingRadians);
+        isRedAlliance = redAlliance;
+    }
 }

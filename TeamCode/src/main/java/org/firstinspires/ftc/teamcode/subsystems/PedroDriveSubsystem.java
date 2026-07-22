@@ -2,6 +2,8 @@ package org.firstinspires.ftc.teamcode.subsystems;
 
 import com.arcrobotics.ftclib.command.SubsystemBase;
 import com.pedropathing.follower.Follower;
+import com.pedropathing.paths.PathBuilder;
+import com.pedropathing.paths.PathChain;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
@@ -41,6 +43,21 @@ public final class PedroDriveSubsystem extends SubsystemBase {
 
     public void stop() {
         drive.stop();
+    }
+
+    /** Builder de paths del Follower unico, para que los autonomos armen su PathChain. */
+    public PathBuilder pathBuilder() {
+        return drive.pathBuilder();
+    }
+
+    /** Arranca el seguimiento de un path autonomo. Uso: {@link org.firstinspires.ftc.teamcode.commands.PedroPathCommand}. */
+    public void followPath(PathChain pathChain) {
+        drive.followPath(pathChain);
+    }
+
+    /** true mientras Pedro sigue todavia el path activo. */
+    public boolean isBusy() {
+        return drive.isBusy();
     }
 
     public double getHeading() {

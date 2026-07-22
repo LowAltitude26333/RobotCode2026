@@ -74,6 +74,11 @@ public final class PedroDriveAdapter implements DriveAdapter, PoseProvider {
         follower.setMaxPower(clamp(Math.abs(maxPower)));
     }
 
+    /** Builder de paths del Follower unico, para autonomos que arman su propio PathChain. */
+    public PathBuilder pathBuilder() {
+        return follower.pathBuilder();
+    }
+
     public void followPath(Path path) {
         follower.followPath(path, false);
     }
