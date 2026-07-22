@@ -1,4 +1,33 @@
-# Handoff de tarea — MP-01 software
+# Handoff actual — llenar el Excel de MP-03
+
+> **SIGUIENTE PASO ÚNICO:** llenar
+> [`01-cierre-mp03_v1.xlsx`](../../outputs/plan-final-antespremier/01-cierre-mp03_v1.xlsx)
+> con el OpMode pasivo `Limelight Diagnostic`, guardarlo como
+> `01-cierre-mp03_v1_FILLED.xlsx` y devolverlo para análisis.
+
+## Candidato y límites de esta sesión
+
+- Template canónico: `outputs/plan-final-antespremier/01-cierre-mp03_v1.xlsx`.
+- SHA-256 del template: `C59598745FBFE4245140F8F891A4AA4742B56B5EB3CEB83B4FC0D71A0B1ABC35`.
+- Fuente del APK: `masterplan@533efbab6490184faa961d57aca7f27971246fcf`.
+- APK diagnóstico **no instalado**: `TeamCode/build/outputs/apk/debug/TeamCode-debug.apk`.
+- Tamaño: `81,394,879` bytes.
+- SHA-256 del APK: `4F70D2168A36EB61A229858C9D6511DD6C97AF4F004ACB3832D1C7D91BD3A7DD`.
+- Verificación software: `68/68` pruebas JVM, `assembleDebug` y revisión estática del
+  call path pasivo `LimelightDiagnosticOpMode -> LimelightSubsystem` en PASS.
+
+El OpMode sólo mapea `RobotMap.LIMELIGHT`, sondea cámara y publica telemetría. No
+construye `RobotContainer`, drivetrain, torreta, shooter, feeder ni intake. `BACK`,
+Stop y salida del OpMode cierran el recurso de visión; aun así, mantener Stop/E-stop
+accesible y abortar ante cualquier movimiento o excepción.
+
+No abrir MP-04, no corregir `robotPose` y no habilitar ningún consumidor o actuador
+hasta recibir y revisar `01-cierre-mp03_v1_FILLED.xlsx`. El dataset de tiros está
+preparado sólo para sesiones futuras; MP-03 no autoriza piezas ni disparos.
+
+---
+
+# Historial de handoff — MP-01/MP-02 y apertura de MP-03
 
 Rama: `masterplan`
 

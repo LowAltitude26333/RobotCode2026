@@ -1,6 +1,7 @@
 # Plan maestro de robustecimiento del robot
 
 > Estado: MP-01 y MP-02 `ACCEPTED`; MP-03 es la siguiente fase activa sobre `masterplan`
+> Siguiente paso único: llenar [`01-cierre-mp03_v1.xlsx`](../outputs/plan-final-antespremier/01-cierre-mp03_v1.xlsx) con `Limelight Diagnostic`, guardarlo como `_FILLED.xlsx` y devolverlo antes de abrir MP-04.
 > Baseline de implementación: `origin/main@a887fe4f7ca9023eec6034a0db6b8d918c640ecc`; preserva evidencia histórica de `b5a1342`
 > Última actualización: 2026-07-22
 > Alcance: arquitectura, torreta, Limelight 3A, odometría, shooter, controles, pruebas y limpieza

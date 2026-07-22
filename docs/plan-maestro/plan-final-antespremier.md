@@ -394,14 +394,17 @@ entrega.
 
 ## 13. Orden inmediato
 
-1. Enlazar/versionar este plan.
-2. Generar `01-cierre-mp03_v1.xlsx` con dataset.
-3. Ejecutar QA triple y registrar SHA.
-4. Identificar el APK diagnóstico MP-03.
-5. Ejecutar sesión corta MP-03.
-6. Regresar `01-cierre-mp03_v1_FILLED.xlsx`.
-7. Analizarlo antes de habilitar consumidores.
-8. Implementar MP-04 shadow y preparar el paquete largo.
+1. **Llenar** el template canónico
+   [`01-cierre-mp03_v1.xlsx`](../../outputs/plan-final-antespremier/01-cierre-mp03_v1.xlsx)
+   usando el APK diagnóstico documentado en `handoff-task.md`.
+2. Guardar una copia como `01-cierre-mp03_v1_FILLED.xlsx`, sin borrar columnas ni
+   editar fórmulas.
+3. Regresar el `_FILLED.xlsx` y conservar el original sin cambios.
+4. Analizar y aprobar el archivo lleno antes de habilitar consumidores.
+5. Sólo después implementar MP-04 shadow y preparar el paquete largo.
+
+El plan, el template y su triple QA ya están generados/versionados. Por tanto, ningún
+trabajo de MP-04, fusión o aim es el siguiente paso mientras el Excel siga vacío.
 
 ## 14. Candidato para Premier
 

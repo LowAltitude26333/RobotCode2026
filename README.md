@@ -1,3 +1,24 @@
+# SIGUIENTE PASO — LLENAR EL EXCEL DE MP-03
+
+> **Acción única para la siguiente sesión:** abrir y llenar
+> [`01-cierre-mp03_v1.xlsx`](outputs/plan-final-antespremier/01-cierre-mp03_v1.xlsx)
+> usando exclusivamente el OpMode pasivo **`Limelight Diagnostic`**. Guardar el
+> resultado como `01-cierre-mp03_v1_FILLED.xlsx` y devolverlo sin borrar columnas ni
+> editar fórmulas.
+
+- Instrucciones y gates: [plan final antes del Premier](docs/plan-maestro/plan-final-antespremier.md).
+- Handoff operativo: [handoff-task.md](docs/plan-maestro/handoff-task.md).
+- SHA del template: [`01-cierre-mp03_v1.xlsx.sha256`](outputs/plan-final-antespremier/01-cierre-mp03_v1.xlsx.sha256).
+- APK diagnóstico no instalado: `TeamCode/build/outputs/apk/debug/TeamCode-debug.apk`,
+  construido desde `533efbab6490184faa961d57aca7f27971246fcf`, `81,394,879` bytes,
+  SHA-256 `4F70D2168A36EB61A229858C9D6511DD6C97AF4F004ACB3832D1C7D91BD3A7DD`.
+
+No iniciar MP-04, no habilitar corrección de pose y no accionar torreta, shooter,
+feeder, intake ni drivetrain hasta devolver y revisar el Excel lleno. El build y la
+simulación no sustituyen este gate físico.
+
+---
+
 ## NOTICE
 
 This repository contains the public FTC SDK for the DECODE (2025-2026) competition season.
