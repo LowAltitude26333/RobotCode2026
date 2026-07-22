@@ -544,6 +544,68 @@ El procedimiento siguiente se conserva como evidencia del candidato `A8CC...083F
 
 ## Lo que se espera del usuario en pruebas reales
 
+### Apertura MP-03 — 2026-07-21
+
+- Se verificó directamente contra las fuentes locales del artefacto FTC
+  `Hardware:10.3.0` que `Limelight3A` ya forma parte del SDK; no se agregó
+  dependencia externa.
+- El wrapper previo se endureció sin conectarlo a pose ni actuadores: estado de
+  conexión/pipeline, timestamp real del resultado en Control Hub, familia, área
+  y conteo de fiduciales; rechazo por desconexión, pipeline incorrecto, metadata
+  incompleta o geometría físicamente imposible. `getBotpose()` sólo se publica
+  cuando `getBotposeTagCount() > 0`.
+- `Limelight Diagnostic` sigue siendo el único punto de commissioning y no
+  construye mecanismos ni drivetrain. Se creó
+  [mp03-limelight-commissioning.md](mp03-limelight-commissioning.md) para mapping,
+  versiones, exportables, extrínseca y gate repetido init/stop/desconexión.
+- Estado: `IN_PROGRESS / BLOCKED_PHYSICAL_INPUT`. MP-04/MP-05 y todo movimiento
+  por visión siguen inhibidos.
+- Verificación software del candidato: `:TeamCode:testDebugUnitTest` 41/41,
+  cero failures/errors/skips; `:TeamCode:assembleDebug` y `git diff --check`
+  PASS. APK no instalado ni probado físicamente: 81,419,928 bytes, SHA-256
+  `59BBA3F1372AC46B88910711B21A0A0A3C0E4A39CE606A08AF75A33321318982`,
+  generado 2026-07-21 22:31:20. No promover ni conectar consumidores hasta
+  completar la hoja y el gate físico MP-03.
+- Primera evidencia física MP-03 aportada por el lead: dispositivo detectado
+  inicialmente como `Ethernet Device`, renombrado exactamente a `limelight`,
+  configuración guardada/activada y cable confirmado en el puerto USB-A azul
+  del Control Hub. La pantalla sólo mostró nombre y una dirección IP, que no se
+  registra. Montaje rígido confirmado; IDs planeados azul/rojo `20`/`24`.
+- Segunda evidencia MP-03 mediante la UI web: `Limelight 3A 2026.0`, pipeline
+  `0`/`Pipeline_Name` de tipo `AprilTags`, resolución `640x480 90fps` y detección
+  visible del tag rojo `24`. La muestra reportó `tx=-20.66°`, `ty=-8.36°`,
+  `ta=1.605%`, `tl=12.5 ms`; se registra sólo como diagnóstico puntual, no como
+  calibración ni validación de extrínseca. Hardware Manager no fue necesario.
+- Tercera evidencia MP-03: familia `AprilTag Classic 36h11 (587 tags)`, engine
+  `U-Michigan`, marker size configurado `101.6 mm`, downscale `2`, quality
+  threshold `2` e ID filter vacío. No se modificó ningún valor. El marker size
+  queda pendiente de medir sobre el cuadrado negro físico; la detección del ID
+  por sí sola no valida la escala de pose 3D.
+- Cuarta evidencia MP-03: el lead midió el cuadrado negro del tag de práctica
+  `24` como `160 x 160 mm`. La producción oficial DECODE exige `6.5 in =
+  165.1 mm` para ese cuadrado; el manual TU32 confirma target completo de
+  `8.125 in` e IDs goal azul/rojo `20`/`24`. El `Marker Size=101.6 mm` del
+  pipeline queda identificado como incorrecto para el GOAL. No se cambia aún:
+  primero descargar/versionar el pipeline original; después usar `165.1 mm` y
+  evitar el tag de práctica subescalado para validar distancia/pose 3D.
+- Respaldo original recibido y versionado como
+  `docs/vision/limelight/pipeline-0-original-2026-07-21.vpr`: 1,992 bytes,
+  SHA-256 `F5C48FF047E17D6CC02551122E51957218DA37D7E85C7CF24B50E0CDD0100994`.
+  La inspección confirma `fiducial_size=101.6`, familia 36h11, pipeline fiducial
+  y `fiducial_skip3d=1`; no contiene IP ni secretos. Ya existe rollback antes de
+  corregir marker size.
+- Quinta evidencia MP-03: después del respaldo, el lead corrigió `Marker Size`
+  a `165.1 mm`. La UI continuó detectando el tag `24`; muestra posterior
+  `tx=-20.75°`, `ty=-8.44°`, `ta=1.600%`, `tl=16.4 ms`. Esto confirma detección,
+  no exactitud de distancia/pose 3D, porque el tag de práctica mide `160 mm` y el
+  respaldo conserva `fiducial_skip3d=1`.
+- Pipeline corregido recibido y versionado como
+  `docs/vision/limelight/pipeline-0-decode-165.1mm-2026-07-21.vpr`: 1,992 bytes,
+  SHA-256 `0B954CFA8641B460C13E8DF65A7A4691E7FD409821A09A008BF3ADA141D20693`.
+  La comparación campo por campo con el original encontró una sola diferencia:
+  `fiducial_size=101.6` → `165.1`. `fiducial_skip3d=1` permanece; no se declara
+  pose 3D habilitada ni validada.
+
 Antes de habilitar: robot elevado o mecanismos desacoplados, área despejada, cámara cubierta/ausente según la configuración real y acceso inmediato a Stop. Registrar responsable, fecha, SHA exacto, versiones RC/DS y video o cronometraje cuando aplique.
 
 1. Mapping completado por atestación directa en Driver Station; adjuntar capturas o export si la interfaz los permite posteriormente.

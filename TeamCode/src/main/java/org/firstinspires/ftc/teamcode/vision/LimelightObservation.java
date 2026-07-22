@@ -17,14 +17,22 @@ public final class LimelightObservation {
         WRONG_TAG,
         STALE,
         DEVICE_ABSENT,
+        DEVICE_DISCONNECTED,
+        WRONG_PIPELINE,
+        OUT_OF_BOUNDS,
         INVALID
     }
 
     public final Quality quality;
-    public final long timestampNanos;
+    public final long pollTimestampNanos;
+    public final long controlHubTimestampMillis;
+    public final int pipelineIndex;
+    public final int fiducialCount;
     public final int tagId;
+    public final String tagFamily;
     public final double txDegrees;
     public final double tyDegrees;
+    public final double targetAreaPercent;
     public final double stalenessMs;
     public final double totalLatencyMs;
     public final boolean hasBotPose;
@@ -33,17 +41,24 @@ public final class LimelightObservation {
     public final double botPoseHeadingRadians;
     public final String rejectionReason;
 
-    private LimelightObservation(Quality quality, long timestampNanos, int tagId,
-                                 double txDegrees, double tyDegrees,
+    private LimelightObservation(Quality quality, long pollTimestampNanos,
+                                 long controlHubTimestampMillis, int pipelineIndex,
+                                 int fiducialCount, int tagId, String tagFamily,
+                                 double txDegrees, double tyDegrees, double targetAreaPercent,
                                  double stalenessMs, double totalLatencyMs,
                                  boolean hasBotPose, double botPoseXMeters,
                                  double botPoseYMeters, double botPoseHeadingRadians,
                                  String rejectionReason) {
         this.quality = quality;
-        this.timestampNanos = timestampNanos;
+        this.pollTimestampNanos = pollTimestampNanos;
+        this.controlHubTimestampMillis = controlHubTimestampMillis;
+        this.pipelineIndex = pipelineIndex;
+        this.fiducialCount = fiducialCount;
         this.tagId = tagId;
+        this.tagFamily = tagFamily;
         this.txDegrees = txDegrees;
         this.tyDegrees = tyDegrees;
+        this.targetAreaPercent = targetAreaPercent;
         this.stalenessMs = stalenessMs;
         this.totalLatencyMs = totalLatencyMs;
         this.hasBotPose = hasBotPose;
@@ -56,40 +71,64 @@ public final class LimelightObservation {
     /** Builds the only actionable representation from a raw diagnostic sample. */
     public static LimelightObservation fromRaw(LimelightRawSample raw,
                                                 double maxStalenessMs,
-                                                int expectedTagId) {
+                                                int expectedTagId,
+                                                int expectedPipelineIndex) {
         if (raw == null) {
             return rejected(Quality.INVALID, System.nanoTime(), "RAW_SAMPLE_NULL");
         }
         if (!raw.devicePresent) {
-            return rejected(Quality.DEVICE_ABSENT, raw.timestampNanos, "DEVICE_ABSENT");
+            return rejected(Quality.DEVICE_ABSENT, raw.pollTimestampNanos, "DEVICE_ABSENT");
+        }
+        if (!raw.deviceConnected) {
+            return rejected(Quality.DEVICE_DISCONNECTED, raw.pollTimestampNanos,
+                    "DEVICE_DISCONNECTED");
         }
         if (!raw.resultValid) {
-            return rejected(Quality.INVALID, raw.timestampNanos, "RESULT_INVALID");
+            return rejected(Quality.INVALID, raw.pollTimestampNanos, "RESULT_INVALID");
         }
         if (!Double.isFinite(maxStalenessMs) || maxStalenessMs < 0.0) {
-            return rejected(Quality.INVALID, raw.timestampNanos, "MAX_STALENESS_INVALID");
+            return rejected(Quality.INVALID, raw.pollTimestampNanos, "MAX_STALENESS_INVALID");
         }
         if (!Double.isFinite(raw.stalenessMs) || raw.stalenessMs < 0.0
                 || raw.stalenessMs > maxStalenessMs) {
-            return rejected(Quality.STALE, raw.timestampNanos, "STALENESS_INVALID_OR_EXPIRED");
+            return rejected(Quality.STALE, raw.pollTimestampNanos,
+                    "STALENESS_INVALID_OR_EXPIRED");
+        }
+        if (expectedPipelineIndex < 0 || raw.pipelineIndex != expectedPipelineIndex) {
+            return rejected(Quality.WRONG_PIPELINE, raw.pollTimestampNanos,
+                    "UNEXPECTED_PIPELINE");
         }
         if (raw.tagId < 0) {
-            return rejected(Quality.NO_TARGET, raw.timestampNanos, "NO_FIDUCIAL");
+            return rejected(Quality.NO_TARGET, raw.pollTimestampNanos, "NO_FIDUCIAL");
         }
-        if (raw.tagId != expectedTagId) {
-            return rejected(Quality.WRONG_TAG, raw.timestampNanos, "UNEXPECTED_TAG");
+        if (expectedTagId < 0 || raw.tagId != expectedTagId) {
+            return rejected(Quality.WRONG_TAG, raw.pollTimestampNanos, "UNEXPECTED_TAG");
         }
         if (!allFinite(raw.txDegrees, raw.tyDegrees, raw.totalLatencyMs)
                 || raw.totalLatencyMs < 0.0) {
-            return rejected(Quality.INVALID, raw.timestampNanos, "TARGET_NUMERIC_INVALID");
+            return rejected(Quality.INVALID, raw.pollTimestampNanos, "TARGET_NUMERIC_INVALID");
+        }
+        if (raw.controlHubTimestampMillis <= 0L || raw.fiducialCount <= 0
+                || raw.tagFamily.isEmpty()) {
+            return rejected(Quality.INVALID, raw.pollTimestampNanos,
+                    "TARGET_METADATA_INVALID");
+        }
+        if (!Double.isFinite(raw.targetAreaPercent)
+                || raw.targetAreaPercent <= 0.0 || raw.targetAreaPercent > 100.0
+                || Math.abs(raw.txDegrees) > 180.0 || Math.abs(raw.tyDegrees) > 90.0) {
+            return rejected(Quality.OUT_OF_BOUNDS, raw.pollTimestampNanos,
+                    "TARGET_PHYSICALLY_IMPOSSIBLE");
         }
         if (raw.hasBotPose && !allFinite(raw.botPoseXMeters, raw.botPoseYMeters,
                 raw.botPoseHeadingRadians)) {
-            return rejected(Quality.INVALID, raw.timestampNanos, "BOTPOSE_NUMERIC_INVALID");
+            return rejected(Quality.INVALID, raw.pollTimestampNanos,
+                    "BOTPOSE_NUMERIC_INVALID");
         }
 
-        return new LimelightObservation(Quality.VALID, raw.timestampNanos, raw.tagId,
-                raw.txDegrees, raw.tyDegrees, raw.stalenessMs, raw.totalLatencyMs,
+        return new LimelightObservation(Quality.VALID, raw.pollTimestampNanos,
+                raw.controlHubTimestampMillis, raw.pipelineIndex, raw.fiducialCount,
+                raw.tagId, raw.tagFamily, raw.txDegrees, raw.tyDegrees,
+                raw.targetAreaPercent, raw.stalenessMs, raw.totalLatencyMs,
                 raw.hasBotPose,
                 raw.hasBotPose ? raw.botPoseXMeters : 0.0,
                 raw.hasBotPose ? raw.botPoseYMeters : 0.0,
@@ -102,36 +141,13 @@ public final class LimelightObservation {
         if (quality == null || quality == Quality.VALID) {
             throw new IllegalArgumentException("Rejected observation requires non-VALID quality");
         }
-        return new LimelightObservation(quality, timestampNanos, -1,
-                0.0, 0.0, 0.0, 0.0, false, 0.0, 0.0, 0.0,
+        return new LimelightObservation(quality, timestampNanos, 0L, -1, 0, -1, "",
+                0.0, 0.0, 0.0, 0.0, 0.0, false, 0.0, 0.0, 0.0,
                 rejectionReason == null ? "" : rejectionReason);
     }
 
     public boolean isUsable() {
         return quality == Quality.VALID;
-    }
-
-    /** Pure quality-only helper retained for tests and simple callers. */
-    public static Quality classify(boolean devicePresent, boolean resultValid,
-                                   double stalenessMs, double maxStalenessMs,
-                                   int detectedTagId, int expectedTagId) {
-        if (!devicePresent) {
-            return Quality.DEVICE_ABSENT;
-        }
-        if (!resultValid || !Double.isFinite(maxStalenessMs) || maxStalenessMs < 0.0) {
-            return Quality.INVALID;
-        }
-        if (!Double.isFinite(stalenessMs) || stalenessMs < 0.0
-                || stalenessMs > maxStalenessMs) {
-            return Quality.STALE;
-        }
-        if (detectedTagId < 0) {
-            return Quality.NO_TARGET;
-        }
-        if (detectedTagId != expectedTagId) {
-            return Quality.WRONG_TAG;
-        }
-        return Quality.VALID;
     }
 
     private static boolean allFinite(double... values) {

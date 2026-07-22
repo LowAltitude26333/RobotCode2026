@@ -25,7 +25,7 @@ public class LimelightDiagnosticOpMode extends SafeCommandOpMode {
         limelightSubsystem = new LimelightSubsystem(hardwareMap,
                 LowAltitudeConstants.TurretConstants.BLUE_GOAL_TAG_ID);
         // FND-001: registrar el cleanup DESPUÉS de construir el recurso, nunca antes.
-        addResourceCleanup(limelightSubsystem::stop);
+        addResourceCleanup(limelightSubsystem::close);
         // Polling de cámara, sin actuadores: arrancar desde INIT para que Tuning
         // pueda alinear montaje/anclas antes de START.
         limelightSubsystem.start();
@@ -66,8 +66,10 @@ public class LimelightDiagnosticOpMode extends SafeCommandOpMode {
                 limelightSubsystem.getExpectedTagId());
         TelemetryBlocks.visionRaw(telemetry, raw);
         telemetry.addData("LL/Presente", limelightSubsystem.isPresent());
-        telemetry.addData("LL/Edad obs", "%.1f ms",
-                (System.nanoTime() - obs.timestampNanos) / 1_000_000.0);
+        telemetry.addData("LL/Pipeline solicitado",
+                limelightSubsystem.getRequestedPipelineIndex());
+        telemetry.addData("LL/Edad sondeo", "%.1f ms",
+                (System.nanoTime() - raw.pollTimestampNanos) / 1_000_000.0);
         if (limelightSubsystem.isPresent()) {
             TelemetryBlocks.faults(telemetry);
         } else {

@@ -51,7 +51,12 @@ public final class TelemetryBlocks {
             t.addData("LL/Rechazo", obs.rejectionReason);
         }
         t.addData("LL/Tag", "%d (esperado %d)", obs.tagId, expectedTagId);
+        t.addData("LL/Pipeline", obs.pipelineIndex);
+        t.addData("LL/Fiduciales", obs.fiducialCount);
+        t.addData("LL/Familia", obs.tagFamily.isEmpty() ? "N/D" : obs.tagFamily);
         t.addData("LL/tx-ty", "%.2f°, %.2f°", obs.txDegrees, obs.tyDegrees);
+        t.addData("LL/Área", "%.3f %%", obs.targetAreaPercent);
+        t.addData("LL/Timestamp CH", obs.controlHubTimestampMillis);
         t.addData("LL/Staleness", "%.1f ms", obs.stalenessMs);
         t.addData("LL/Latencia", "%.1f ms", obs.totalLatencyMs);
         if (obs.hasBotPose) {
@@ -66,10 +71,16 @@ public final class TelemetryBlocks {
     /** Unsanitized values for the zero-actuator diagnostic OpMode only. */
     public static void visionRaw(Telemetry t, LimelightRawSample raw) {
         header(t, "VISIÓN RAW (NO ACCIONABLE)");
-        t.addData("LL Raw/Present-Valid", "%s / %s", raw.devicePresent, raw.resultValid);
+        t.addData("LL Raw/Present-Connected-Valid", "%s / %s / %s",
+                raw.devicePresent, raw.deviceConnected, raw.resultValid);
+        t.addData("LL Raw/Timestamp CH", raw.controlHubTimestampMillis);
+        t.addData("LL Raw/Pipeline", raw.pipelineIndex);
+        t.addData("LL Raw/Fiduciales", raw.fiducialCount);
         t.addData("LL Raw/Tag", raw.tagId);
+        t.addData("LL Raw/Familia", raw.tagFamily.isEmpty() ? "N/D" : raw.tagFamily);
         t.addData("LL Raw/tx-ty", "%s°, %s°",
                 Double.toString(raw.txDegrees), Double.toString(raw.tyDegrees));
+        t.addData("LL Raw/Área", "%s %%", Double.toString(raw.targetAreaPercent));
         t.addData("LL Raw/Staleness", "%s ms", Double.toString(raw.stalenessMs));
         t.addData("LL Raw/Latencia", "%s ms", Double.toString(raw.totalLatencyMs));
         if (raw.hasBotPose) {

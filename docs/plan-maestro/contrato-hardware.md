@@ -59,7 +59,7 @@ archivo deberá provenir del Robot Controller.
 | Shooter legado | `Shooter2` | Sin propietario activo | Retirado; no se mapea | RETIRADO CONFIRMADO | RETIRADO CONFIRMADO |
 | Hood | `hoodLeft`, `hoodRight` | Shim legacy sin hardware | Retirado; no se mapea ni inicializa | RETIRADO CONFIRMADO | RETIRADO CONFIRMADO |
 | Webcams | `Webcam 1`, `Webcam` | Sin propietario activo | Retiradas; no se mapean ni inicializan | RETIRADAS CONFIRMADAS | RETIRADAS CONFIRMADAS |
-| Limelight propuesta | `limelight` por validar | Aún sin integración activa | Mapping, orientación, pose y pipeline pendientes | PENDIENTE | REPORTADA INSTALADA; confirmar |
+| Limelight 3A | `limelight` confirmado | Wrapper/diagnóstico sin actuadores; sin consumidor | LimelightOS/UI `2026.0` y pipeline `0` AprilTags confirmados; field map, extrínseca y gate físico pendientes; USB-A azul del Control Hub confirmado; ver [commissioning MP-03](mp03-limelight-commissioning.md) | PARCIAL | INSTALADA Y MAPPING CONFIRMADO 2026-07-21 |
 
 ## Reglas de aceptación
 

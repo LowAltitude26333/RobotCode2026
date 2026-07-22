@@ -20,36 +20,51 @@ import java.util.List;
 /**
  * Único dueño de la Limelight 3A (MP-03). Nadie más debe mapear el dispositivo.
  *
- * Lifecycle basado en el sample oficial SensorLimelight3A: pipelineSwitch ->
- * start -> getLatestResult (null hasta llamar start) -> stop. El dispositivo es
+ * Lifecycle basado en el SDK 10.3.0: pipelineSwitch -> start ->
+ * getLatestResult/isConnected -> stop. Desde 10.3 getLatestResult devuelve un
+ * resultado inválido en vez de null mientras aún no hay datos. El dispositivo es
  * opcional (DEC-028: la Limelight aún no está configurada en el robot), por lo
  * que se usa hardwareMap.tryGet y el subsystem corre degradado sin lanzar.
  * Este subsystem solo publica observaciones inmutables; nunca comanda actuadores.
  */
-public class LimelightSubsystem extends SubsystemBase {
+public class LimelightSubsystem extends SubsystemBase implements AutoCloseable {
 
-    public enum Health { NOT_PRESENT, CREATED, RUNNING, STOPPED }
+    public enum Health {
+        NOT_PRESENT,
+        CREATED,
+        RUNNING,
+        DISCONNECTED,
+        PIPELINE_ERROR,
+        ERROR,
+        STOPPED
+    }
 
     private final Limelight3A limelight;
     private int expectedTagId;
-    private Health health;
+    private int requestedPipelineIndex;
+    private boolean pipelineSwitchAccepted;
+    private boolean configurationValid;
+    private volatile Health health;
     private volatile LimelightObservation latest;
     private volatile LimelightRawSample latestRaw;
 
     public LimelightSubsystem(HardwareMap hardwareMap, int expectedTagId) {
         this.expectedTagId = expectedTagId;
+        this.requestedPipelineIndex =
+                LowAltitudeConstants.VisionConstants.LIMELIGHT_PIPELINE_APRILTAG;
         this.limelight = hardwareMap.tryGet(Limelight3A.class, RobotMap.LIMELIGHT);
 
         if (limelight == null) {
             health = Health.NOT_PRESENT;
-            latestRaw = LimelightRawSample.unavailable(false, System.nanoTime());
+            configurationValid = false;
+            latestRaw = LimelightRawSample.unavailable(false, false, System.nanoTime());
             latest = classifyRaw(latestRaw);
             RobotLog.addGlobalWarningMessage(
                     RobotMap.LIMELIGHT + " not found; LimelightSubsystem runs degraded (DEC-028)");
         } else {
-            limelight.setPollRateHz((int) LowAltitudeConstants.VisionConstants.LIMELIGHT_POLL_RATE_HZ);
-            health = Health.CREATED;
-            latestRaw = LimelightRawSample.unavailable(true, System.nanoTime());
+            configurationValid = configurePollRate();
+            health = configurationValid ? Health.CREATED : Health.ERROR;
+            latestRaw = LimelightRawSample.unavailable(true, false, System.nanoTime());
             latest = classifyRaw(latestRaw);
         }
         RobotSafety.registerShutdown(this::stop);
@@ -67,27 +82,64 @@ public class LimelightSubsystem extends SubsystemBase {
         return expectedTagId;
     }
 
+    public int getRequestedPipelineIndex() {
+        return requestedPipelineIndex;
+    }
+
     /** Cambiar solo con el OpMode detenido o durante INIT (selección de alianza). */
     public void setExpectedTagId(int tagId) {
         this.expectedTagId = tagId;
+        latest = classifyRaw(latestRaw);
     }
 
-    /** Arranca el polling en el pipeline de AprilTags. No-op si el dispositivo está ausente. */
-    public void start() {
-        if (limelight == null) {
-            return;
+    /**
+     * Arranca o reintenta el polling. Devuelve false si falta configuración,
+     * falla el pipeline o el SDK no deja el executor corriendo.
+     */
+    public synchronized boolean start() {
+        if (limelight == null || !configurationValid) {
+            return false;
         }
-        limelight.pipelineSwitch(LowAltitudeConstants.VisionConstants.LIMELIGHT_PIPELINE_APRILTAG);
-        limelight.start();
-        health = Health.RUNNING;
+        try {
+            pipelineSwitchAccepted = limelight.pipelineSwitch(requestedPipelineIndex);
+            limelight.start();
+            if (!limelight.isRunning()) {
+                health = Health.ERROR;
+                return false;
+            }
+            health = pipelineSwitchAccepted
+                    ? (limelight.isConnected() ? Health.RUNNING : Health.DISCONNECTED)
+                    : Health.PIPELINE_ERROR;
+            return pipelineSwitchAccepted;
+        } catch (RuntimeException exception) {
+            health = Health.ERROR;
+            publishUnavailableSafely();
+            return false;
+        }
     }
 
-    /** No-op si el dispositivo está ausente. */
-    public void setPipeline(int index) {
-        if (limelight == null) {
-            return;
+    /** Selecciona el pipeline esperado; nunca habilita consumidores. */
+    public synchronized boolean setPipeline(int index) {
+        requestedPipelineIndex = index;
+        if (limelight == null || !configurationValid || index < 0) {
+            pipelineSwitchAccepted = false;
+            health = limelight == null ? Health.NOT_PRESENT : Health.PIPELINE_ERROR;
+            latest = classifyRaw(latestRaw);
+            return false;
         }
-        limelight.pipelineSwitch(index);
+        try {
+            pipelineSwitchAccepted = limelight.pipelineSwitch(index);
+            if (!pipelineSwitchAccepted) {
+                health = Health.PIPELINE_ERROR;
+            }
+            latest = classifyRaw(latestRaw);
+            return pipelineSwitchAccepted;
+        } catch (RuntimeException exception) {
+            pipelineSwitchAccepted = false;
+            health = Health.ERROR;
+            publishUnavailableSafely();
+            return false;
+        }
     }
 
     /** Nunca devuelve null; arranca rechazada y solo periodic() publica VALID. */
@@ -110,44 +162,58 @@ public class LimelightSubsystem extends SubsystemBase {
             }
             health = Health.STOPPED;
         }
-        latestRaw = LimelightRawSample.unavailable(limelight != null, System.nanoTime());
+        latestRaw = LimelightRawSample.unavailable(limelight != null, false,
+                System.nanoTime());
         latest = classifyRaw(latestRaw);
     }
 
     @Override
     public void periodic() {
-        latest = pollObservation();
+        try {
+            latest = pollObservation();
+        } catch (RuntimeException exception) {
+            health = Health.ERROR;
+            publishUnavailableSafely();
+        }
     }
 
     private LimelightObservation pollObservation() {
         long now = System.nanoTime();
         if (limelight == null) {
-            latestRaw = LimelightRawSample.unavailable(false, now);
+            latestRaw = LimelightRawSample.unavailable(false, false, now);
             return classifyRaw(latestRaw);
         }
-        if (health != Health.RUNNING) {
-            latestRaw = LimelightRawSample.unavailable(true, now);
+        if (!limelight.isRunning()) {
+            latestRaw = LimelightRawSample.unavailable(true, false, now);
             return classifyRaw(latestRaw);
         }
+
+        boolean connected = limelight.isConnected();
+        health = pipelineSwitchAccepted
+                ? (connected ? Health.RUNNING : Health.DISCONNECTED)
+                : Health.PIPELINE_ERROR;
 
         // Guard fail-closed de resultado nulo/inválido (patrón HyperionBots FTC 18011,
         // LimeLightGoalTrackingTuning): sin resultado utilizable no se publica nada VALID.
         LLResult result = limelight.getLatestResult();
         if (result == null || !result.isValid()) {
-            latestRaw = LimelightRawSample.unavailable(true, now);
+            latestRaw = LimelightRawSample.unavailable(true, connected, now);
             return classifyRaw(latestRaw);
         }
 
         int detectedTagId = -1;
+        String detectedTagFamily = "";
         LLResultTypes.FiducialResult selected = null;
         List<LLResultTypes.FiducialResult> fiducials = result.getFiducialResults();
         if (fiducials != null && !fiducials.isEmpty()) {
             selected = fiducials.get(0);
             detectedTagId = selected.getFiducialId();
+            detectedTagFamily = selected.getFamily();
             for (LLResultTypes.FiducialResult fiducial : fiducials) {
                 if (fiducial.getFiducialId() == expectedTagId) {
                     selected = fiducial;
                     detectedTagId = expectedTagId;
+                    detectedTagFamily = fiducial.getFamily();
                     break;
                 }
             }
@@ -159,7 +225,7 @@ public class LimelightSubsystem extends SubsystemBase {
                 + result.getParseLatency();
 
         Pose3D botpose = result.getBotpose();
-        boolean hasBotPose = botpose != null;
+        boolean hasBotPose = botpose != null && result.getBotposeTagCount() > 0;
         double botX = 0.0;
         double botY = 0.0;
         double botHeading = 0.0;
@@ -169,16 +235,60 @@ public class LimelightSubsystem extends SubsystemBase {
             botHeading = botpose.getOrientation().getYaw(AngleUnit.RADIANS);
         }
 
-        latestRaw = new LimelightRawSample(true, true, now, detectedTagId,
+        latestRaw = new LimelightRawSample(true, connected, true, now,
+                result.getControlHubTimeStamp(), result.getPipelineIndex(),
+                fiducials == null ? 0 : fiducials.size(), detectedTagId,
+                detectedTagFamily,
                 selected == null ? 0.0 : selected.getTargetXDegrees(),
                 selected == null ? 0.0 : selected.getTargetYDegrees(),
+                selected == null ? 0.0 : selected.getTargetArea(),
                 stalenessMs, totalLatencyMs, hasBotPose, botX, botY, botHeading);
         return classifyRaw(latestRaw);
     }
 
     private LimelightObservation classifyRaw(LimelightRawSample raw) {
+        if (raw != null && raw.devicePresent && raw.deviceConnected
+                && raw.resultValid && !pipelineSwitchAccepted) {
+            return LimelightObservation.rejected(
+                    LimelightObservation.Quality.WRONG_PIPELINE,
+                    raw.pollTimestampNanos, "PIPELINE_SWITCH_NOT_CONFIRMED");
+        }
         return LimelightObservation.fromRaw(raw,
                 LowAltitudeConstants.VisionConstants.LIMELIGHT_MAX_STALENESS_MS,
-                expectedTagId);
+                expectedTagId, requestedPipelineIndex);
+    }
+
+    private boolean configurePollRate() {
+        double requestedRate = LowAltitudeConstants.VisionConstants.LIMELIGHT_POLL_RATE_HZ;
+        if (!Double.isFinite(requestedRate) || requestedRate < 1.0 || requestedRate > 250.0) {
+            RobotLog.addGlobalWarningMessage(
+                    "Limelight poll rate must be finite and within SDK range 1..250 Hz");
+            return false;
+        }
+        try {
+            limelight.setPollRateHz((int) Math.round(requestedRate));
+            return requestedPipelineIndex >= 0;
+        } catch (RuntimeException exception) {
+            RobotLog.addGlobalWarningMessage("Limelight configuration failed closed");
+            return false;
+        }
+    }
+
+    private void publishUnavailableSafely() {
+        boolean connected = false;
+        try {
+            connected = limelight != null && limelight.isConnected();
+        } catch (RuntimeException ignored) {
+            // Diagnostic state remains disconnected when the SDK itself faults.
+        }
+        latestRaw = LimelightRawSample.unavailable(limelight != null, connected,
+                System.nanoTime());
+        latest = classifyRaw(latestRaw);
+    }
+
+    /** Alias de lifecycle para cleanup de recursos y bloques try-with-resources. */
+    @Override
+    public void close() {
+        stop();
     }
 }

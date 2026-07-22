@@ -13,7 +13,7 @@ Estado de trabajo: MP-01 y MP-02 aceptados; MP-03 es la siguiente fase activa.
 |---|---|---|---|
 | MP-01 | `ACCEPTED` | [Handoff MP-01](handoff-MP01.md) | Reabrir sólo si cambia hardware, límites, ownership o safety path |
 | MP-02 | `ACCEPTED` | [Handoff MP-02](handoff-MP02.md) | Conservar Pedro como owner único |
-| MP-03 | `NOT_STARTED` / activo | Limelight instalada, mapping/configuración aún no verificados en repo | Inventario sin movimiento y wrapper fail-closed |
+| MP-03 | `IN_PROGRESS` | Wrapper endurecido y diagnóstico sin actuadores; inventario/configuración físicos pendientes | Completar [hoja de commissioning](mp03-limelight-commissioning.md) y ejecutar gate sin movimiento |
 | MP-04 | `NOT_STARTED` | Requiere MP-02 + MP-03 | Contrato de frames y fusión |
 | MP-05 | `NOT_STARTED` | Requiere pose/fusión confiable | Auto-aim de torreta dentro de límites |
 | MP-06 | `NOT_STARTED` | Shooter base seguro, pero faltan modelo RPM e interlocks completos | T8/T9 y feeder acotado |
@@ -34,11 +34,13 @@ Estado de trabajo: MP-01 y MP-02 aceptados; MP-03 es la siguiente fase activa.
 2. Confirmar alimentación/red, versión de firmware/app y acceso a su interfaz.
 3. Registrar pipeline, field map y familia/IDs de tags planeados.
 4. Medir extrínseca desde el origen acordado del robot: X forward, Y left, Z up y yaw/pitch/roll, con unidades explícitas.
-5. Verificar contra el SDK declarado que `Limelight3A` ya está disponible; no agregar dependencia externa por conveniencia.
-6. Implementar un único `LimelightSubsystem`/wrapper con start, pipeline, poll, timestamp, latencia, calidad, timeout y stop/close fail-closed.
+5. Verificado: el artefacto `Hardware` del SDK declarado `10.3.0` ya incluye `Limelight3A`; no se agregó dependencia externa.
+6. Candidato software implementado: owner único con start/reintento, pipeline, poll, timestamp del Control Hub, conexión, latencia, calidad y stop fail-closed.
 7. Primer gate: diagnóstico sólo de lectura. Desconectar/tapar cámara no puede mover drivetrain, torreta, feeder ni shooter.
 
 Punto de detención: no conectar ninguna observación visual a pose o torreta hasta que MP-03 pase init/stop repetido, desconexión segura y telemetry de freshness/latencia.
+
+Hoja activa y campos de evidencia: [MP-03 commissioning](mp03-limelight-commissioning.md).
 
 ## Datos que debe aportar el equipo al comenzar
 
