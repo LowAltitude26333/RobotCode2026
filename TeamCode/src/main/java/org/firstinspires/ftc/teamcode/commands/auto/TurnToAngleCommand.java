@@ -2,13 +2,13 @@ package org.firstinspires.ftc.teamcode.commands.auto;
 
 import com.arcrobotics.ftclib.command.CommandBase;
 import com.arcrobotics.ftclib.controller.PIDController;
-import org.firstinspires.ftc.teamcode.subsystems.DriveSubsystem;
+import org.firstinspires.ftc.teamcode.subsystems.PedroDriveSubsystem;
 
 import java.util.function.DoubleSupplier;
 
 public class TurnToAngleCommand extends CommandBase {
 
-    private final DriveSubsystem drive;
+    private final PedroDriveSubsystem drive;
     private final DoubleSupplier strafe, forward;
     private final DoubleSupplier targetAngleSupplier;
     private final PIDController pid;
@@ -22,7 +22,7 @@ public class TurnToAngleCommand extends CommandBase {
     // Tolerancia: Si el error es menor a 1.5 grados, cortamos potencia para no vibrar.
     private static final double ANGLE_TOLERANCE = 3.5;
 
-    public TurnToAngleCommand(DriveSubsystem drive, DoubleSupplier strafe, DoubleSupplier forward, DoubleSupplier targetAngleSupplier) {
+    public TurnToAngleCommand(PedroDriveSubsystem drive, DoubleSupplier strafe, DoubleSupplier forward, DoubleSupplier targetAngleSupplier) {
         this.drive = drive;
         this.strafe = strafe;
         this.forward = forward;
@@ -52,11 +52,8 @@ public class TurnToAngleCommand extends CommandBase {
             turnPower = Math.max(-0.7, Math.min(0.7, turnPower));
         }
 
-        // --- CORRECCIÓN CRÍTICA ---
-        // Tu DriveSubsystem invierte el giro internamente (linea -turnSpeed).
-        // Por lo tanto, aquí debemos INVERTIRLO también para que (-) con (-) dé (+).
-        // Si antes giraba al revés, esto lo arregla.
-        drive.drive(strafe.getAsDouble(), forward.getAsDouble(), -turnPower);
+        // Pedro respeta el contrato neutral: giro positivo es CCW/izquierda.
+        drive.drive(strafe.getAsDouble(), forward.getAsDouble(), turnPower);
     }
 
     @Override

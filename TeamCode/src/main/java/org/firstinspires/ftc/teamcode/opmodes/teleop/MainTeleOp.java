@@ -39,6 +39,9 @@ public class MainTeleOp extends SafeCommandOpMode {
 
         // 5. Crear el Contenedor Central de Hardware
         robotContainer = new RobotContainer(this, activeProfile, startPose);
+        telemetry.addData("Drive Owner", "PEDRO");
+        telemetry.addData("Drive Max Power", "%.2f",
+                robotContainer.driveSubsystem.getMaxPower());
         telemetry.addLine("🚀 SKYWALKER SYSTEMS: JOYSTICKS CORREGIDOS 🚀");
         telemetry.addLine("Visión anterior retirada; torreta sin seguimiento hasta MP-03.");
         telemetry.update();
@@ -82,6 +85,9 @@ public class MainTeleOp extends SafeCommandOpMode {
         }
 
         telemetry.addData("Heading Chasis", "%.1f°", Math.toDegrees(robotContainer.driveSubsystem.getHeading()));
+        telemetry.addData("Heading resets (START)", robotContainer.driveSubsystem.getResetEpoch());
+        telemetry.addData("Drive Owner", "PEDRO");
+        telemetry.addData("Drive Max Power", "%.2f", robotContainer.driveSubsystem.getMaxPower());
 
         // Diagnóstico de Joysticks para revisar si la Driver Hub los detecta
         telemetry.addLine("--- DIAGNÓSTICO JOYSTICKS GAMEPAD 1 ---");

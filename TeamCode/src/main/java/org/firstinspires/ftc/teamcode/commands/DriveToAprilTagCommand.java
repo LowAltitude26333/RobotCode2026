@@ -1,13 +1,13 @@
 package org.firstinspires.ftc.teamcode.commands;
 
 import com.arcrobotics.ftclib.command.CommandBase;
-import org.firstinspires.ftc.teamcode.subsystems.DriveSubsystem;
+import org.firstinspires.ftc.teamcode.subsystems.PedroDriveSubsystem;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 
 import java.util.function.Supplier;
 
 public class DriveToAprilTagCommand extends CommandBase {
-    private final DriveSubsystem driveSubsystem;
+    private final PedroDriveSubsystem driveSubsystem;
     private final Supplier<AprilTagDetection> detectionSupplier;
 
     private final int targetId;
@@ -15,7 +15,7 @@ public class DriveToAprilTagCommand extends CommandBase {
     private final int targetId2;
 
 
-    public DriveToAprilTagCommand(DriveSubsystem driveSubsystem,Supplier<AprilTagDetection> detectionSupplier,
+    public DriveToAprilTagCommand(PedroDriveSubsystem driveSubsystem,Supplier<AprilTagDetection> detectionSupplier,
                                   int targetId, int targetId2) {
         this.driveSubsystem = driveSubsystem;
         this.detectionSupplier = detectionSupplier;

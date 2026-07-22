@@ -8,7 +8,7 @@ import org.firstinspires.ftc.robotcore.external.Telemetry; // <--- Importar esto
 
 import org.firstinspires.ftc.teamcode.commands.drivetrain.FieldCentricDriveCommand;
 import org.firstinspires.ftc.teamcode.oi.ControlProfile;
-import org.firstinspires.ftc.teamcode.subsystems.DriveSubsystem;
+import org.firstinspires.ftc.teamcode.subsystems.PedroDriveSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.IntakeSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.KickerSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.ShooterHoodSubsystem;
@@ -23,7 +23,7 @@ public class RobotContainer {
 
     // Subsistemas Públicos
 
-    public final DriveSubsystem driveSubsystem;
+    public final PedroDriveSubsystem driveSubsystem;
     public final IntakeSubsystem intakeSubsystem;
     public final ShooterSubsystem shooterSubsystem;
     /** No-op compatibility shim; the physical hood has been removed. */
@@ -49,7 +49,13 @@ public class RobotContainer {
         // 1. Inicializar Subsistemas (Pasando telemetría a los que la necesitan)
 
         // DriveSubsystem ahora pide telemetry para debuggear el Turn
-        driveSubsystem = new DriveSubsystem(hardwareMap, startPose, telemetry); // <--- CAMBIO
+        // Cambio atomico MP-02: RobotContainer ya no construye MecanumDrive/Road Runner.
+        driveSubsystem = new PedroDriveSubsystem(
+                hardwareMap,
+                startPose.position.x,
+                startPose.position.y,
+                startPose.heading.toDouble(),
+                telemetry);
 
         intakeSubsystem = new IntakeSubsystem(hardwareMap);
 

@@ -26,8 +26,10 @@ Evaluar el uso de un doble PID
 =======
  */
 public class Constants {
+    public static final double ROBOT_MASS_KG = 8.5;
+
     public static FollowerConstants followerConstants = new FollowerConstants()
-            .mass(5) //Masa en kilogramos (falta poner)
+            .mass(ROBOT_MASS_KG)
             //.headingPIDFCoefficients(new PIDFCoefficients(0.1, 0, 0.01, 0))   //Tuning de Heading checar Tuning -> Heading
             .useSecondaryTranslationalPIDF(true)    //habilitar el uso de PID doble. Se puede poner en falso
             .useSecondaryHeadingPIDF(true)
@@ -43,14 +45,14 @@ public class Constants {
 
     public static MecanumConstants driveConstants = new MecanumConstants()
             .maxPower(1)
-            .rightFrontMotorName("rightFront")   //nombres de los motores. Si no funcionan los moteores probablemente esten mal los mombres.
-            .rightRearMotorName("rightBack")
-            .leftRearMotorName("leftBack")
-            .leftFrontMotorName("leftFront")
-            .leftFrontMotorDirection(DcMotorSimple.Direction.FORWARD)
+            .rightFrontMotorName(RobotMap.FRONT_RIGHT_MOTOR)
+            .rightRearMotorName(RobotMap.BACK_RIGHT_MOTOR)
+            .leftRearMotorName(RobotMap.BACK_LEFT_MOTOR)
+            .leftFrontMotorName(RobotMap.FRONT_LEFT_MOTOR)
+            .leftFrontMotorDirection(DcMotorSimple.Direction.REVERSE)
             .leftRearMotorDirection(DcMotorSimple.Direction.REVERSE)
             .rightFrontMotorDirection(DcMotorSimple.Direction.FORWARD)
-            .rightRearMotorDirection(DcMotorSimple.Direction.FORWARD);
+            .rightRearMotorDirection(DcMotorSimple.Direction.REVERSE);
 
             /*
             .xVelocity(velocity)        //tuning para velocidad de autos
@@ -68,20 +70,21 @@ public class Constants {
     // la matemática three-wheel divide entre (leftPodY - rightPodY) y con offsets
     // idénticos produce NaN si alguien corre Tuning.java antes de calibrar.
     // Tuning Paso 2 escribe aquí los valores medidos y voltea el flag a true.
-    public static final boolean LOCALIZER_OFFSETS_CALIBRATED = false;
-    public static final double TBD_FORWARD_TICKS_TO_INCHES = .001989436789;
+    public static final boolean LOCALIZER_OFFSETS_CALIBRATED = true;
+    public static final double TBD_FORWARD_TICKS_TO_INCHES = 0.00191837052073273;
     public static final double TBD_STRAFE_TICKS_TO_INCHES = .001989436789;
-    public static final double TBD_TURN_TICKS_TO_INCHES = .001989436789;
-    public static final double TBD_LEFT_POD_Y_INCHES = 1.0;
-    public static final double TBD_RIGHT_POD_Y_INCHES = -1.0;
-    // El scaffold original traía -2.5 como strafePodX (luego pisado a 0 por el
-    // código muerto). Se conserva aquí como referencia de sanidad para el
-    // Paso 2; el valor activo sigue siendo placeholder sin calibrar.
-    public static final double TBD_STRAFE_POD_X_INCHES = 0.0;
+    // AngularRampLogger de Road Runner midió automáticamente los offsets efectivos
+    // de estos mismos tres pods. Se traducen a las convenciones de Pedro:
+    // par1=left (+Y), par0=right (-Y), perp=strafe (-X). El scalar de giro usa
+    // la escala del par de encoders paralelos; no la escala empírica de strafe.
+    public static final double TBD_TURN_TICKS_TO_INCHES = TBD_FORWARD_TICKS_TO_INCHES;
+    public static final double TBD_LEFT_POD_Y_INCHES = 6.942896027755779;
+    public static final double TBD_RIGHT_POD_Y_INCHES = -6.089060628403165;
+    public static final double TBD_STRAFE_POD_X_INCHES = -4.636066386085883;
     // Pedro modela la dirección como double: Encoder.FORWARD=1, Encoder.REVERSE=-1.
-    public static final double TBD_LEFT_ENCODER_DIRECTION = Encoder.FORWARD;
-    public static final double TBD_RIGHT_ENCODER_DIRECTION = Encoder.FORWARD;
-    public static final double TBD_STRAFE_ENCODER_DIRECTION = Encoder.FORWARD;
+    public static final double TBD_LEFT_ENCODER_DIRECTION = Encoder.REVERSE;
+    public static final double TBD_RIGHT_ENCODER_DIRECTION = Encoder.REVERSE;
+    public static final double TBD_STRAFE_ENCODER_DIRECTION = Encoder.REVERSE;
 
     public static ThreeWheelConstants localizerConstants = new ThreeWheelConstants()
             .forwardTicksToInches(TBD_FORWARD_TICKS_TO_INCHES)

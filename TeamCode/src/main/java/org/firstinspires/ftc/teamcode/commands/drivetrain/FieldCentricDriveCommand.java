@@ -4,18 +4,25 @@ import com.arcrobotics.ftclib.command.CommandBase;
 
 import org.firstinspires.ftc.teamcode.RobotSafety;
 import org.firstinspires.ftc.teamcode.commands.PoseStorage;
-import org.firstinspires.ftc.teamcode.subsystems.DriveSubsystem;
+import org.firstinspires.ftc.teamcode.subsystems.PedroDriveSubsystem;
 import java.util.function.DoubleSupplier;
 
 public class FieldCentricDriveCommand extends CommandBase {
 
-    private final DriveSubsystem drive;
+    /**
+     * Pedro prioriza giro cuando giro y traslacion llenan juntos el limite global.
+     * Reservar parte del margen permite avanzar/strafe mientras el stick de giro
+     * esta completamente inclinado.
+     */
+    public static final double TURN_MIX_SCALE = 0.70;
+
+    private final PedroDriveSubsystem drive;
     private final DoubleSupplier strafeSup;
     private final DoubleSupplier forwardSup;
     private final DoubleSupplier turnSup;
     private boolean motionCommanded;
 
-    public FieldCentricDriveCommand(DriveSubsystem drive,
+    public FieldCentricDriveCommand(PedroDriveSubsystem drive,
                                     DoubleSupplier strafeSup,
                                     DoubleSupplier forwardSup,
                                     DoubleSupplier turnSup) {
@@ -50,15 +57,9 @@ public class FieldCentricDriveCommand extends CommandBase {
 
         // FTCLib GamepadEx already reports left-stick Y as positive when pushed forward.
         // Road Runner also uses X+ as forward, so no additional sign inversion belongs here.
-        double x = forward;
-        double y = strafe; // Invertimos strafe porque RR usa Y+ a la izquierda
-
-        // Rotamos por el negativo del heading para hacer "Field Centric"
-        double theta = -botHeading;
+        double[] robotInput = fieldToRobot(strafe, forward, botHeading);
 
         // Fórmula: x' = x*cos(t) - y*sin(t) | y' = x*sin(t) + y*cos(t)
-        double rotX = x * Math.cos(theta) - y * Math.sin(theta);
-        double rotY = x * Math.sin(theta) + y * Math.cos(theta);
 
         // 3. Enviar al subsistema
         // The subsystem contract is strafe-right positive, matching GamepadEx left X.
@@ -68,9 +69,26 @@ public class FieldCentricDriveCommand extends CommandBase {
         if (motionCommanded && zeroRequested) {
             RobotSafety.timeZeroCommand("DRIVE_RELEASE", drive::stop);
         } else {
-            drive.drive(rotY, rotX, turn);
+            drive.drive(robotInput[0], robotInput[1], turn);
         }
         motionCommanded = !zeroRequested;
+    }
+
+    /** Returns {strafeRight, forward} in the robot frame. */
+    public static double[] fieldToRobot(double strafeRight, double forward,
+                                        double botHeadingRadians) {
+        // Driver strafe is right-positive, so this representation rotates by +heading.
+        double theta = botHeadingRadians;
+        double robotForward = forward * Math.cos(theta)
+                - strafeRight * Math.sin(theta);
+        double robotStrafeRight = forward * Math.sin(theta)
+                + strafeRight * Math.cos(theta);
+        return new double[] { robotStrafeRight, robotForward };
+    }
+
+    /** Stick derecho +derecha debe ordenar giro horario (turn neutral negativo). */
+    public static double shapeDriverTurn(double driverRightStickX) {
+        return -driverRightStickX * TURN_MIX_SCALE;
     }
 
     @Override

@@ -11,6 +11,7 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 import org.firstinspires.ftc.teamcode.RobotContainer;
 import org.firstinspires.ftc.teamcode.commands.PoseStorage;
 import org.firstinspires.ftc.teamcode.commands.auto.TurnToAngleCommand;
+import org.firstinspires.ftc.teamcode.commands.drivetrain.FieldCentricDriveCommand;
 import org.firstinspires.ftc.teamcode.commands.drivetrain.SetPrecisionModeCommand;
 
 public class SkywalkerProfile implements ControlProfile {
@@ -37,7 +38,9 @@ public class SkywalkerProfile implements ControlProfile {
     @Override
     public double getDriveForward() { return driverOp.getLeftY(); }
     @Override
-    public double getDriveTurn() { return driverOp.getRightX(); }
+    public double getDriveTurn() {
+        return FieldCentricDriveCommand.shapeDriverTurn(driverOp.getRightX());
+    }
 
     @Override
     public void configureButtonBindings(RobotContainer robot) {
@@ -84,8 +87,10 @@ public class SkywalkerProfile implements ControlProfile {
         // 2. RESET GIROSCOPIO (Start)
         // RESET HEADING / RE-CALIBRAR GIROSCOPIO
 // Al presionar, el frente actual del robot se convierte en el "Norte" (0 grados).
-        new GamepadButton(driverOp, GamepadKeys.Button.START) // O el botón que prefieras
-                .whenPressed(new InstantCommand(robot.driveSubsystem::resetHeading));
+        new GamepadButton(driverOp, GamepadKeys.Button.START)
+                .whenPressed(new InstantCommand(
+                        robot.driveSubsystem::resetHeading,
+                        robot.driveSubsystem));
 
 
 
