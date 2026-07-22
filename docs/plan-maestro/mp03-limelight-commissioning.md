@@ -9,6 +9,12 @@ esta fase es `Limelight Diagnostic`: construye solamente el wrapper de cámara y
 no mapea drivetrain, torreta, shooter, kicker ni intake. Ninguna observación se
 consume todavía para pose o movimiento.
 
+El equipo está entregando la geometría física (sistema de coordenadas, extrínseca
+de cámara, eje de torreta, shooter y límites de giro) de forma incremental. Los
+datos crudos se acumulan en [geometria-robot-mp04.md](geometria-robot-mp04.md)
+conforme llegan — esa hoja alimenta el contrato de marcos formal de MP-04
+(`03-auto-aim-limelight-y-cancha.md` secc. 4), que sigue `NOT_STARTED`.
+
 ## Contrato software verificado
 
 - SDK efectivo declarado: FTC SDK `10.3.0`; su artefacto `Hardware` incluye
@@ -47,12 +53,10 @@ otros datos privados de red en el repositorio.
 | Field map y SHA-256 | `TBD` | PENDIENTE |
 | Familia de tags | `AprilTag Classic 36h11 (587 tags)`; engine `U-Michigan` | CONFIRMADO 2026-07-21 |
 | IDs objetivo azul/rojo | Manual DECODE TU32: azul `20`, rojo `24`; rojo detectado por la UI, azul pendiente de detección | PARCIAL |
-| Origen del robot usado para medir | `TBD` | PENDIENTE |
-| Cámara X forward | `TBD` | PENDIENTE |
-| Cámara Y left | `TBD` | PENDIENTE |
-| Cámara Z up | `TBD` | PENDIENTE |
-| Cámara yaw/pitch/roll | `TBD` | PENDIENTE |
-| Unidades de extrínseca | `TBD` | PENDIENTE |
+| Origen del robot usado para medir | Centro de giro proyectado al plano del chasis, `(0,0,0) mm`; +X hacia intake, +Y izquierda, +Z arriba, yaw+ antihorario visto desde arriba. El plano del chasis es el piso de la cancha (confirmado verbalmente), así que este Z ya es comparable con el Z del marco de cancha/SDK sin offset — ver [geometria-robot-mp04.md](geometria-robot-mp04.md) secc. 0 | CONFIRMADO 2026-07-21 |
+| Cámara X/Y/Z/pitch | Cinco configuraciones discretas de inclinación (30°/40°/50°/60°/67.2631°), cada una con su propio centro óptico — tabla completa en [geometria-robot-mp04.md](geometria-robot-mp04.md) secc. 1 | PARCIAL — falta confirmar cuál configuración está físicamente montada ahora mismo |
+| Cámara yaw/roll | `Yaw=0.00°`, `Roll=0.00°` en las cinco configuraciones | CONFIRMADO 2026-07-21 |
+| Unidades de extrínseca | mm y grados, tal como las entregó el equipo; conversión a la unidad interna del código (pulgadas) todavía no decidida | CONFIRMADO EL DATO CRUDO / CONVERSIÓN PENDIENTE |
 | Montaje rígido y sin oclusión | Montaje rígido confirmado; oclusiones aún no verificadas | PARCIAL |
 
 Muestra diagnóstica de la UI web aportada por el lead el 2026-07-21: tag `24`,
