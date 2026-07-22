@@ -15,8 +15,11 @@ public class TurretSubsystem extends SubsystemBase {
         INVALID_STOP
     }
 
-    private static final double COMMISSIONING_MAX_POWER = 0.05;
+    private static final double COMMISSIONING_MAX_POWER = 0.50;
+    private static final double LIMIT_APPROACH_POWER = 0.05;
+    private static final int LIMIT_SLOW_ZONE_TICKS = 100;
     private static final long COMMISSIONING_INPUT_WATCHDOG_NANOS = 100_000_000L;
+    private static final int PRESET_TOLERANCE_TICKS = 5;
 
     /**
      * Medición inmutable de un jog de commissioning: cuánto duró el hold real y
@@ -59,11 +62,14 @@ public class TurretSubsystem extends SubsystemBase {
     private double lastAppliedPower;
     private String lastCommissioningResult = "NOT_RUN";
     private JogReport lastJogReport;
+    private boolean presetMoveActive;
+    private int presetTargetTicks;
+    private long presetDeadlineNanos;
 
-    // --- CONFIGURACIÓN DE LÍMITES (CALIBRADOS) ---
-    // IMPORTANTE: Ajusta estos números según lo que anotaste en tus pruebas
-    public static final int LIMIT_LEFT = -200;
-    public static final int LIMIT_RIGHT = 200;
+    // El límite negativo conserva 10 ticks desde el extremo -993. El lead confirmó
+    // +1070 como límite positivo final con su tolerancia ya aplicada.
+    public static final int LIMIT_LEFT = -983;
+    public static final int LIMIT_RIGHT = 1070;
 
     public TurretSubsystem(HardwareMap hardwareMap) {
         turretMotor = hardwareMap.get(DcMotor.class, RobotMap.TURRET_MOTOR);
@@ -110,6 +116,14 @@ public class TurretSubsystem extends SubsystemBase {
 
     public String getLastCommissioningResult() {
         return lastCommissioningResult;
+    }
+
+    public boolean isPresetMoveActive() {
+        return presetMoveActive;
+    }
+
+    public int getPresetTargetTicks() {
+        return presetTargetTicks;
     }
 
     /** Última medición de jog completada; null hasta terminar el primer jog. */
@@ -165,6 +179,7 @@ public class TurretSubsystem extends SubsystemBase {
         double safePower = Math.max(-COMMISSIONING_MAX_POWER,
                 Math.min(COMMISSIONING_MAX_POWER, requestedPower));
         int currentTicks = turretMotor.getCurrentPosition();
+        safePower = applyLimitApproachPower(currentTicks, safePower);
         if (!commissioningMoveActive) {
             commissioningMoveActive = true;
             commissioningRequestedPower = safePower;
@@ -201,6 +216,31 @@ public class TurretSubsystem extends SubsystemBase {
         }
     }
 
+    /** Moves to a bounded encoder preset after the operator confirms the physical zero. */
+    public boolean requestPresetPosition(int targetTicks, long maxDurationMillis) {
+        if (!centeredAndArmed || zeroState != ZeroState.VALID_MANUAL_CONFIRMATION) {
+            lastCommissioningResult = "REJECTED_ZERO_INVALID";
+            stop();
+            return false;
+        }
+        if (targetTicks < LIMIT_LEFT || targetTicks > LIMIT_RIGHT || maxDurationMillis <= 0) {
+            lastCommissioningResult = "REJECTED_PRESET_INVALID";
+            stop();
+            return false;
+        }
+
+        commissioningMoveActive = false;
+        commissioningBlockedUntilRelease = false;
+        presetTargetTicks = targetTicks;
+        presetDeadlineNanos = System.nanoTime() + maxDurationMillis * 1_000_000L;
+        turretMotor.setTargetPosition(targetTicks);
+        turretMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        presetMoveActive = true;
+        lastCommissioningResult = "PRESET_ACTIVE";
+        applyPower(presetPowerForPosition(turretMotor.getCurrentPosition()));
+        return true;
+    }
+
     /**
      * Establece la potencia del motor verificando los límites del encoder.
      * @param power Potencia solicitada (-1.0 a 1.0)
@@ -212,19 +252,22 @@ public class TurretSubsystem extends SubsystemBase {
         }
 
         int currentPos = (int) getPosition();
+        double safePower = Math.max(-COMMISSIONING_MAX_POWER,
+                Math.min(COMMISSIONING_MAX_POWER, power));
+        safePower = applyLimitApproachPower(currentPos, safePower);
 
         // BLOQUEO DE SEGURIDAD
         // Si intenta ir a la izquierda (potencia negativa) y ya pasó el límite izquierdo
-        if (currentPos <= LIMIT_LEFT && power < 0) {
+        if (currentPos <= LIMIT_LEFT && safePower < 0) {
             applyPower(0);
         }
         // Si intenta ir a la derecha (potencia positiva) y ya pasó el límite derecho
-        else if (currentPos >= LIMIT_RIGHT && power > 0) {
+        else if (currentPos >= LIMIT_RIGHT && safePower > 0) {
             applyPower(0);
         }
         // De lo contrario, movimiento libre
         else {
-            applyPower(power);
+            applyPower(safePower);
         }
     }
 
@@ -234,6 +277,7 @@ public class TurretSubsystem extends SubsystemBase {
 
     public void stop() {
         commissioningMoveActive = false;
+        presetMoveActive = false;
         applyPower(0);
         if (turretMotor.getMode() == DcMotor.RunMode.RUN_TO_POSITION) {
             turretMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -242,6 +286,22 @@ public class TurretSubsystem extends SubsystemBase {
 
     @Override
     public void periodic() {
+        if (presetMoveActive) {
+            int currentTicks = turretMotor.getCurrentPosition();
+            if (!centeredAndArmed || zeroState != ZeroState.VALID_MANUAL_CONFIRMATION) {
+                finishPresetMove("STOPPED_ZERO_INVALID");
+            } else if (currentTicks < LIMIT_LEFT || currentTicks > LIMIT_RIGHT) {
+                finishPresetMove("STOPPED_SOFT_LIMIT");
+            } else if (Math.abs(presetTargetTicks - currentTicks) <= PRESET_TOLERANCE_TICKS
+                    || !turretMotor.isBusy()) {
+                finishPresetMove("PRESET_REACHED");
+            } else if (System.nanoTime() >= presetDeadlineNanos) {
+                finishPresetMove("STOPPED_PRESET_TIMEOUT");
+            } else {
+                applyPower(presetPowerForPosition(currentTicks));
+            }
+            return;
+        }
         if (!commissioningMoveActive) {
             return;
         }
@@ -260,9 +320,35 @@ public class TurretSubsystem extends SubsystemBase {
         }
     }
 
+    private void finishPresetMove(String result) {
+        stop();
+        lastCommissioningResult = result;
+    }
+
     private boolean isOutwardAtSoftLimit(int currentTicks, double requestedPower) {
         return (currentTicks <= LIMIT_LEFT && requestedPower < 0)
                 || (currentTicks >= LIMIT_RIGHT && requestedPower > 0);
+    }
+
+    private double applyLimitApproachPower(int currentTicks, double requestedPower) {
+        if (requestedPower < 0 && currentTicks <= LIMIT_LEFT + LIMIT_SLOW_ZONE_TICKS) {
+            return -Math.min(Math.abs(requestedPower), LIMIT_APPROACH_POWER);
+        }
+        if (requestedPower > 0 && currentTicks >= LIMIT_RIGHT - LIMIT_SLOW_ZONE_TICKS) {
+            return Math.min(Math.abs(requestedPower), LIMIT_APPROACH_POWER);
+        }
+        return requestedPower;
+    }
+
+    private double presetPowerForPosition(int currentTicks) {
+        double direction = Math.signum(presetTargetTicks - currentTicks);
+        if (direction == 0) {
+            return 0;
+        }
+        if (Math.abs(presetTargetTicks - currentTicks) <= LIMIT_SLOW_ZONE_TICKS) {
+            return direction * LIMIT_APPROACH_POWER;
+        }
+        return direction * COMMISSIONING_MAX_POWER;
     }
 
     private void finishCommissioningMove(String result, boolean blockUntilRelease) {

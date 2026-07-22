@@ -14,6 +14,11 @@ import org.firstinspires.ftc.teamcode.RobotSafety;
 
 public class ShooterSubsystem extends SubsystemBase {
 
+    private static final double MAX_COMMISSIONING_OUTPUT_POWER = 0.90;
+
+    // Fail-closed by default. Only a reviewed commissioning owner may enable this instance.
+    private boolean physicalOutputAllowed;
+
     public enum HealthState {
         UNINITIALIZED,
         HEALTHY,
@@ -48,11 +53,13 @@ public class ShooterSubsystem extends SubsystemBase {
 
     private double targetShooterRPM = 0;
     private boolean isBangBangEnabled = true;
+    private double commissioningConstantPower;
 
     // --- Variables de Seguridad ---
     private int loopCycleCount = 0;
     private double actualShooterRPM;
     private double lastAppliedPower;
+    private double outputPowerLimit = 1.0;
     private int lastEncoderPosition;
     private boolean encoderPositionInitialized;
     private long encoderStallStartedNanos;
@@ -83,6 +90,11 @@ public class ShooterSubsystem extends SubsystemBase {
     private void configureMotors() {
         // 1. Invertir Motor si es necesario
         motorLeader.setInverted(RobotMap.SHOOTER_MOTOR_IS_INVERTED);
+        // SDK motor direction also flips reported encoder sign. Keep outward RPM positive
+        // after correcting the physical motor direction for FND-028.
+        motorLeader.encoder.setDirection(RobotMap.SHOOTER_ENCODER_IS_INVERTED
+                ? Motor.Direction.REVERSE
+                : Motor.Direction.FORWARD);
 
         // 2. Comportamiento Zero Power (Float es ideal para evitar dañar la caja de engranes)
         motorLeader.setZeroPowerBehavior(Motor.ZeroPowerBehavior.FLOAT);
@@ -141,6 +153,7 @@ public class ShooterSubsystem extends SubsystemBase {
         if (Math.abs(shooterRPM - targetShooterRPM) > 500) {
             pidController.reset();
         }
+        commissioningConstantPower = 0;
         this.targetShooterRPM = shooterRPM;
         if (shooterRPM == 0) {
             applyPower(0);
@@ -185,6 +198,86 @@ public class ShooterSubsystem extends SubsystemBase {
         return lastAppliedPower;
     }
 
+    /**
+     * Applies a commissioning-only ceiling that can only reduce this instance's output.
+     * Invalid requests fail closed and latch a control fault.
+     */
+    public boolean setCommissioningOutputPowerLimit(double requestedLimit) {
+        if (!Double.isFinite(requestedLimit)
+                || requestedLimit <= 0
+                || requestedLimit > MAX_COMMISSIONING_OUTPUT_POWER
+                || targetShooterRPM != 0
+                || lastAppliedPower != 0) {
+            outputPowerLimit = 0;
+            latchFault(HealthState.CONTROL_FAULT,
+                    "invalid commissioning output limit");
+            return false;
+        }
+
+        outputPowerLimit = Math.min(outputPowerLimit, requestedLimit);
+        applyPower(0);
+        return true;
+    }
+
+    public double getOutputPowerLimit() {
+        return outputPowerLimit;
+    }
+
+    public boolean isPhysicalOutputAllowed() {
+        return physicalOutputAllowed;
+    }
+
+    /** Enables only this already-limited commissioning instance. */
+    public boolean enableCommissioningPhysicalOutput() {
+        if (outputPowerLimit <= 0
+                || outputPowerLimit > MAX_COMMISSIONING_OUTPUT_POWER
+                || targetShooterRPM != 0
+                || lastAppliedPower != 0
+                || isFaultLatched()) {
+            physicalOutputAllowed = false;
+            latchFault(HealthState.CONTROL_FAULT,
+                    "commissioning output enabled without a safe limit");
+            return false;
+        }
+        physicalOutputAllowed = true;
+        applyPower(0);
+        return true;
+    }
+
+    /** Commissioning-only fail-closed report from the short-pulse encoder watchdog. */
+    public void reportCommissioningEncoderNoResponse() {
+        latchFault(HealthState.ENCODER_FAULT,
+                "no encoder ticks during commissioning pulse");
+    }
+
+    /** Raw motor-encoder position for commissioning reports; units are motor ticks. */
+    public int getEncoderPosition() {
+        return motorLeader.motor.getCurrentPosition();
+    }
+
+    /**
+     * Runs this commissioning instance at one constant, pre-limited power. Normal health,
+     * encoder-stall, overspeed, Stop and E-stop protections remain active.
+     */
+    public boolean runCommissioningAtConstantPower(double requestedPower) {
+        if (!physicalOutputAllowed
+                || !Double.isFinite(requestedPower)
+                || requestedPower <= 0
+                || requestedPower > outputPowerLimit
+                || isFaultLatched()) {
+            stop();
+            return false;
+        }
+
+        targetShooterRPM = LowAltitudeConstants.SHOOTER_MAX_SAFE_RPM;
+        commissioningConstantPower = requestedPower;
+        return true;
+    }
+
+    public double getCommissioningConstantPower() {
+        return commissioningConstantPower;
+    }
+
     /** Commissioning-only injection. Always commands zero before arming the simulated fault. */
     public boolean requestFaultInjection(FaultInjectionMode requestedMode) {
         if (requestedMode == null
@@ -199,6 +292,7 @@ public class ShooterSubsystem extends SubsystemBase {
     }
 
     public void stop() {
+        commissioningConstantPower = 0;
         targetShooterRPM = 0;
         encoderStallStartedNanos = 0;
         applyPower(0);
@@ -283,6 +377,15 @@ public class ShooterSubsystem extends SubsystemBase {
 
         healthState = HealthState.HEALTHY;
         faultReason = "none";
+
+        if (commissioningConstantPower > 0) {
+            monitorEncoderResponse(System.nanoTime());
+            if (!isFaultLatched()) {
+                applyPower(commissioningConstantPower);
+            }
+            publishTelemetry(batteryVoltage);
+            return;
+        }
 
         // Si el objetivo es 0, apagamos por completo el motor y salimos
         if (targetShooterRPM == 0) {
@@ -394,8 +497,11 @@ public class ShooterSubsystem extends SubsystemBase {
     }
 
     private void applyPower(double power) {
-        lastAppliedPower = power;
-        motorLeader.set(power);
+        double safePower = physicalOutputAllowed && Double.isFinite(power)
+                ? Math.max(0.0, Math.min(outputPowerLimit, power))
+                : 0.0;
+        lastAppliedPower = safePower;
+        motorLeader.set(safePower);
     }
 
     private void publishTelemetry(double batteryVoltage) {

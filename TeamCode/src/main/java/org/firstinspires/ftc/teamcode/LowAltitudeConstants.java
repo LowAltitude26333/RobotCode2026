@@ -81,9 +81,9 @@ public class LowAltitudeConstants {
     }
 
     // --- KICKER CONSTANTS ---
-    // Dashboard toggle. Change only while the OpMode is stopped; it is captured at INIT.
-    // false is fail-closed while mechanics removes/reinstalls the optional CRServo.
-    public static boolean KICKER_SERVO_ENABLED = false;
+    // Final 2026 configuration confirmed by the lead: kickerMotor only, no CRServo.
+    // Compile-time false prevents Dashboard or another OpMode from re-enabling it.
+    public static final boolean KICKER_SERVO_ENABLED = false;
     public static final double   KICKER_OUT_SPEED = 0.85;
     public static final double KICKER_REVERSE_SPEED = -0.7;
     public static final double KICKER_SERVO_FORWARD_POWER = 0.5;

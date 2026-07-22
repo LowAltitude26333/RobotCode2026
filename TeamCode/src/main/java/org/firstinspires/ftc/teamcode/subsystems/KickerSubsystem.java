@@ -18,11 +18,22 @@ public class KickerSubsystem extends SubsystemBase {
     private final MotorEx kickerMotor;
     private final CRServo kickerServo;
     private final boolean kickerServoEnabledAtInit;
+    private final boolean kickerServoAllowedByOwner;
 
     public KickerSubsystem(HardwareMap hardwareMap) {
+        this(hardwareMap, true);
+    }
+
+    /**
+     * Creates a kicker owner that can permanently forbid servo output for its lifetime.
+     * Passing false keeps the motor available while every servo path remains at zero,
+     * even if the Dashboard flag was enabled before INIT.
+     */
+    public KickerSubsystem(HardwareMap hardwareMap, boolean allowServoForThisOwner) {
         kickerMotor = new MotorEx(hardwareMap, RobotMap.KICKER_MOTOR);
         kickerServo = hardwareMap.tryGet(CRServo.class, RobotMap.KICKER_SERVO);
         kickerServoEnabledAtInit = LowAltitudeConstants.KICKER_SERVO_ENABLED;
+        kickerServoAllowedByOwner = allowServoForThisOwner;
 
         kickerMotor.setRunMode(Motor.RunMode.RawPower);
 
@@ -34,7 +45,7 @@ public class KickerSubsystem extends SubsystemBase {
             kickerServo.setDirection(RobotMap.KICKER_SERVO_IS_INVERTED
                     ? DcMotorSimple.Direction.REVERSE
                     : DcMotorSimple.Direction.FORWARD);
-        } else if (kickerServoEnabledAtInit) {
+        } else if (kickerServoEnabledAtInit && kickerServoAllowedByOwner) {
             RobotLog.addGlobalWarningMessage(
                     RobotMap.KICKER_SERVO
                             + " enabled but unavailable; kickerMotor-only mode is active");
@@ -83,8 +94,12 @@ public class KickerSubsystem extends SubsystemBase {
         return kickerServo != null;
     }
 
+    public boolean isServoAllowedByOwner() {
+        return kickerServoAllowedByOwner;
+    }
+
     public boolean isServoActive() {
-        return kickerServoEnabledAtInit && kickerServo != null;
+        return kickerServoEnabledAtInit && kickerServoAllowedByOwner && kickerServo != null;
     }
     public Action cargar() {
         return (telemetryPacket) -> {
