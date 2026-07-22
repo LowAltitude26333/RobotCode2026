@@ -1,6 +1,8 @@
 package org.firstinspires.ftc.teamcode.tuning;
 
 import com.acmerobotics.roadrunner.Pose2d;
+import com.acmerobotics.roadrunner.PoseVelocity2d;
+import com.acmerobotics.roadrunner.Vector2d;
 import com.acmerobotics.roadrunner.ftc.Actions;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
@@ -11,6 +13,8 @@ import org.firstinspires.ftc.teamcode.TwoDeadWheelLocalizer;
 
 public final class ManualFeedbackTuner extends LinearOpMode {
     public static double DISTANCE = 64;
+    private static final PoseVelocity2d ZERO_POWER =
+            new PoseVelocity2d(new Vector2d(0, 0), 0);
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -26,14 +30,20 @@ public final class ManualFeedbackTuner extends LinearOpMode {
                     throw new RuntimeException("Odometry wheel locations not set! Run AngularRampLogger to tune them.");
                 }
             }
-            waitForStart();
+            drive.setDrivePowers(ZERO_POWER);
+            try {
+                waitForStart();
+                if (isStopRequested()) return;
 
-            while (opModeIsActive()) {
-                Actions.runBlocking(
-                    drive.actionBuilder(new Pose2d(0, 0, 0))
-                            .lineToX(DISTANCE)
-                            .lineToX(0)
-                            .build());
+                while (opModeIsActive()) {
+                    Actions.runBlocking(
+                        drive.actionBuilder(new Pose2d(0, 0, 0))
+                                .lineToX(DISTANCE)
+                                .lineToX(0)
+                                .build());
+                }
+            } finally {
+                drive.setDrivePowers(ZERO_POWER);
             }
         } else if (TuningOpModes.DRIVE_CLASS.equals(TankDrive.class)) {
             TankDrive drive = new TankDrive(hardwareMap, new Pose2d(0, 0, 0));
@@ -47,14 +57,20 @@ public final class ManualFeedbackTuner extends LinearOpMode {
                     throw new RuntimeException("Odometry wheel locations not set! Run AngularRampLogger to tune them.");
                 }
             }
-            waitForStart();
+            drive.setDrivePowers(ZERO_POWER);
+            try {
+                waitForStart();
+                if (isStopRequested()) return;
 
-            while (opModeIsActive()) {
-                Actions.runBlocking(
-                    drive.actionBuilder(new Pose2d(0, 0, 0))
-                            .lineToX(DISTANCE)
-                            .lineToX(0)
-                            .build());
+                while (opModeIsActive()) {
+                    Actions.runBlocking(
+                        drive.actionBuilder(new Pose2d(0, 0, 0))
+                                .lineToX(DISTANCE)
+                                .lineToX(0)
+                                .build());
+                }
+            } finally {
+                drive.setDrivePowers(ZERO_POWER);
             }
         } else {
             throw new RuntimeException();

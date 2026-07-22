@@ -59,21 +59,27 @@ public final class MecanumDrive {
         public RevHubOrientationOnRobot.LogoFacingDirection logoFacingDirection =
                 RevHubOrientationOnRobot.LogoFacingDirection.RIGHT;
         public RevHubOrientationOnRobot.UsbFacingDirection usbFacingDirection =
-                RevHubOrientationOnRobot.UsbFacingDirection.UP;
+                RevHubOrientationOnRobot.UsbFacingDirection.BACKWARD;
 
         // drive model parameters
-        public double inPerTick = 0.0019571295433364;
-        public double lateralInPerTick = 0.0011569903073521382;
-        public double trackWidthTicks = 7290.158084947854;
+        // Matches the measured three-dead-wheel scale used by ForwardPushTest.
+        public double inPerTick = 0.00191837052073273;
+        // LateralRampLogger 2026-07-21, calculated by the bundled 0.1.23 page.
+        public double lateralInPerTick = 0.0010034879603150176;
+        // AngularRampLogger 2026-07-21 (effective mecanum track width).
+        public double trackWidthTicks = 6250.5090234054815;
 
         // feedforward parameters (in tick units)
-        public double kS = 2.2724850864058084;
-        public double kV = 0.00018662940312018166;
+        // Mediana robusta de tres ForwardRampLogger sin asistencia manual
+        // (2026-07-21), excluyendo únicamente el tramo inmóvil de arranque.
+        public double kS = 2.48;
+        public double kV = 0.000189;
+        // ManualFeedforwardTuner 2026-07-21: v0/v1 follow vref closely.
         public double kA = 0.0001;
 
         // path profile parameters (in inches)
-        public double maxWheelVel = 65;
-        public double minProfileAccel = -45;
+        public double maxWheelVel = 60;
+        public double minProfileAccel = -30;
         public double maxProfileAccel = 55;
 
         // turn profile parameters (in radians)
@@ -82,8 +88,8 @@ public final class MecanumDrive {
 
         // path controller gains
         public double axialGain = 8;
-        public double lateralGain = 1;
-        public double headingGain = 8; // shared with turn
+        public double lateralGain = 8;
+        public double headingGain = 12; // shared with turn
 
         public double axialVelGain = 0.0;
         public double lateralVelGain = 0.0;
@@ -366,8 +372,13 @@ public final class MecanumDrive {
             rightBack.setPower(rightBackPower);
             rightFront.setPower(rightFrontPower);
 
-
-
+            // Dashboard diagnostics: values returned by the motor API after the
+            // command is applied/clipped. These distinguish controller output
+            // from a wheel or motor that stops despite receiving power.
+            p.put("lfPower", leftFront.getPower());
+            p.put("lbPower", leftBack.getPower());
+            p.put("rfPower", rightFront.getPower());
+            p.put("rbPower", rightBack.getPower());
 
             p.put("x", localizer.getPose().position.x);
             p.put("y", localizer.getPose().position.y);

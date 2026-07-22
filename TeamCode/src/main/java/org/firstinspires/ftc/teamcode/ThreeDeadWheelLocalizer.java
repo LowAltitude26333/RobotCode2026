@@ -22,14 +22,17 @@ import org.firstinspires.ftc.teamcode.messages.ThreeDeadWheelInputsMessage;
 @Config
 public final class ThreeDeadWheelLocalizer implements Localizer {
     public static class Params {
-        // Provisional scale. Measure and tune this value for the installed pod encoders.
-        public double inPerTick = 0.0019571295433364;
-        public double par0YTicks = 0.0; // y position of the first parallel encoder (in tick units)
-        public double par1YTicks = 1.0; // y position of the second parallel encoder (in tick units)
-        public double perpXTicks = 0.0; // x position of the perpendicular encoder (in tick units)
-        public boolean par0Reversed = false;
-        public boolean par1Reversed = false;
-        public boolean perpReversed = false;
+        // Measured over five 60 cm forward pushes (mean 12,313.6 ticks).
+        public double inPerTick = 0.00191837052073273;
+        // AngularRampLogger 2026-07-21. With both parallel encoders
+        // forward-positive, this RR equation uses right-positive Y.
+        public double par0YTicks = 3174.0795443819798;
+        public double par1YTicks = -3619.1632183254724;
+        // X remains forward-positive; negative is behind the reference center.
+        public double perpXTicks = -2330.341135601611;
+        public boolean par0Reversed = true;
+        public boolean par1Reversed = true;
+        public boolean perpReversed = true;
     }
 
     public static Params PARAMS = new Params();

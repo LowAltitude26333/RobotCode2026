@@ -61,11 +61,24 @@ public final class TuningOpModes {
     // (confirmado a nivel de bytecode contra ftc-0.1.23) -- son lectura de encoder
     // mientras una persona empuja/gira el robot a mano, no comandan motores. Por eso
     // pueden habilitarse ya, en paralelo con el cierre de MP-01.
+    // MP-02: Pedro is the selected runtime owner. Keep the historical RR tuners
+    // in source for rollback, but do not register them in Driver Station.
     public static final boolean DISABLED_HAND_PUSH_TUNERS = true;
-    // El resto del menú (ramp loggers, feedforward, LocalizationTest con gamepad,
-    // splines, OTOS) sí mueve motores. Re-enable in MP-02 only after the tuner
-    // lifecycle has the same E-stop/stop guarantees, y sólo después de que MP-01
-    // salga de BLOCKED (guía 08 secc. 4, etapa "restringido y baja potencia").
+    // Etapas motorizadas autorizadas por el lead: ForwardRampLogger (2026-07-20),
+    // LateralRampLogger y AngularRampLogger (2026-07-21). Se impulsan solos,
+    // suben 0.1 de potencia por segundo hasta 0.9 y ponen los motores en cero al Stop.
+    public static final boolean ENABLE_FORWARD_RAMP_LOGGER = false;
+    public static final boolean ENABLE_LATERAL_RAMP_LOGGER = false;
+    public static final boolean ENABLE_ANGULAR_RAMP_LOGGER = false;
+    // Variante local del tuner oficial con cero explicito en Stop/excepcion.
+    public static final boolean ENABLE_SAFE_MANUAL_FEEDFORWARD_TUNER = false;
+    // Feedback cerrado por decision del lead con la mejor combinacion fisica.
+    public static final boolean ENABLE_MANUAL_FEEDBACK_TUNER = false;
+    // Gate de spline completado; se oculta del candidato base.
+    public static final boolean ENABLE_SAFE_SPLINE_TEST = false;
+    // El resto del menú (feedforward/feedback, splines,
+    // LocalizationTest, depurador de motores y OTOS) permanece oculto hasta que
+    // cada etapa sea autorizada expresamente después de revisar la anterior.
     public static final boolean DISABLED_POWERED_TUNERS = true;
 
     private TuningOpModes() {}
@@ -139,7 +152,14 @@ public final class TuningOpModes {
 
     @OpModeRegistrar
     public static void register(OpModeManager manager) {
-        if (DISABLED_HAND_PUSH_TUNERS && DISABLED_POWERED_TUNERS) return;
+        if (DISABLED_HAND_PUSH_TUNERS
+                && DISABLED_POWERED_TUNERS
+                && !ENABLE_FORWARD_RAMP_LOGGER
+                && !ENABLE_LATERAL_RAMP_LOGGER
+                && !ENABLE_ANGULAR_RAMP_LOGGER
+                && !ENABLE_SAFE_MANUAL_FEEDFORWARD_TUNER
+                && !ENABLE_MANUAL_FEEDBACK_TUNER
+                && !ENABLE_SAFE_SPLINE_TEST) return;
 
         DriveViewFactory dvf;
         if (DRIVE_CLASS.equals(MecanumDrive.class)) {
@@ -308,15 +328,60 @@ public final class TuningOpModes {
             manager.register(metaForClass(DeadWheelDirectionDebugger.class), new DeadWheelDirectionDebugger(dvf));
         }
 
-        if (!DISABLED_POWERED_TUNERS) {
-            manager.register(metaForClass(AngularRampLogger.class), new AngularRampLogger(dvf));
+        if (ENABLE_FORWARD_RAMP_LOGGER) {
             manager.register(metaForClass(ForwardRampLogger.class), new ForwardRampLogger(dvf));
+            FtcDashboard.getInstance().withConfigRoot(configRoot ->
+                    configRoot.putVariable(
+                            "ForwardRampLogger",
+                            ReflectionConfig.createVariableFromClass(ForwardRampLogger.class)));
+        }
+
+        if (ENABLE_LATERAL_RAMP_LOGGER) {
             manager.register(metaForClass(LateralRampLogger.class), new LateralRampLogger(dvf));
+            FtcDashboard.getInstance().withConfigRoot(configRoot ->
+                    configRoot.putVariable(
+                            "LateralRampLogger",
+                            ReflectionConfig.createVariableFromClass(LateralRampLogger.class)));
+        }
+
+        if (ENABLE_ANGULAR_RAMP_LOGGER) {
+            manager.register(metaForClass(AngularRampLogger.class), new AngularRampLogger(dvf));
+            FtcDashboard.getInstance().withConfigRoot(configRoot ->
+                    configRoot.putVariable(
+                            "AngularRampLogger",
+                            ReflectionConfig.createVariableFromClass(AngularRampLogger.class)));
+        }
+
+        if (ENABLE_SAFE_MANUAL_FEEDFORWARD_TUNER) {
+            manager.register(
+                    metaForClass(SafeManualFeedforwardTuner.class),
+                    new SafeManualFeedforwardTuner(dvf));
+            FtcDashboard.getInstance().withConfigRoot(configRoot ->
+                    configRoot.putVariable(
+                            "SafeManualFeedforwardTuner",
+                            ReflectionConfig.createVariableFromClass(
+                                    SafeManualFeedforwardTuner.class)));
+        }
+
+        if (ENABLE_MANUAL_FEEDBACK_TUNER) {
+            manager.register(
+                    metaForClass(ManualFeedbackTuner.class),
+                    ManualFeedbackTuner.class);
+            FtcDashboard.getInstance().withConfigRoot(configRoot ->
+                    configRoot.putVariable(
+                            "ManualFeedbackTuner",
+                            ReflectionConfig.createVariableFromClass(
+                                    ManualFeedbackTuner.class)));
+        }
+
+        if (ENABLE_SAFE_SPLINE_TEST) {
+            manager.register(metaForClass(SplineTest.class), SplineTest.class);
+        }
+
+        if (!DISABLED_POWERED_TUNERS) {
             manager.register(metaForClass(ManualFeedforwardTuner.class), new ManualFeedforwardTuner(dvf));
             manager.register(metaForClass(MecanumMotorDirectionDebugger.class), new MecanumMotorDirectionDebugger(dvf));
 
-            manager.register(metaForClass(ManualFeedbackTuner.class), ManualFeedbackTuner.class);
-            manager.register(metaForClass(SplineTest.class), SplineTest.class);
             manager.register(metaForClass(LocalizationTest.class), LocalizationTest.class);
 
             // Plantillas de quickstart sin hardware correspondiente en este robot (sin
@@ -330,12 +395,8 @@ public final class TuningOpModes {
 
             FtcDashboard.getInstance().withConfigRoot(configRoot -> {
                 for (Class<?> c : Arrays.asList(
-                        AngularRampLogger.class,
-                        ForwardRampLogger.class,
-                        LateralRampLogger.class,
                         ManualFeedforwardTuner.class,
-                        MecanumMotorDirectionDebugger.class,
-                        ManualFeedbackTuner.class
+                        MecanumMotorDirectionDebugger.class
                 )) {
                     configRoot.putVariable(c.getSimpleName(), ReflectionConfig.createVariableFromClass(c));
                 }
