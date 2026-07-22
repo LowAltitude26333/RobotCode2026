@@ -1,7 +1,7 @@
 # Plan paralelo de 20h — pista Software y pista Tuning
 
 > Estado: plan de trabajo activo para la ventana previa a competencia (~20h restantes, equipo grande: 3+ personas de software, varias de mecánica/eléctrica/pruebas)
-> Última actualización: 2026-07-18
+> Última actualización: 2026-07-20
 > Este documento no repite contenido de otros documentos del programa. Cuando un paso ya está descrito en otro archivo, aquí solo se referencia y se dice **cuándo** ejecutarlo y **con quién sincronizarse**, no se vuelve a explicar el procedimiento.
 
 ## 0. Cómo usar este documento
@@ -67,8 +67,10 @@ Nota: si alguien de Software también compila localmente en su propia laptop sol
 
 ### Paso 1 — Cerrar MP-01 físicamente
 
-- Torreta: instrumentar duración real del hold y delta de ticks por toque (ya es la próxima acción registrada en `handoff-task.md` — no diseñar nada nuevo, solo ejecutar esa instrumentación), para explicar la asimetría +12 vs -62 ticks antes de tocar potencia, timeout, watchdog o soft limits ±200.
-- Kicker: formalizar motor-only como configuración de competencia (ya es la decisión vigente, DEC-037) — confirmar que mecánica no va a reinstalar el CRServo antes de competir; si lo hace, es un ciclo nuevo de build+regresión completo, no una nota al margen.
+- Torreta/FND-027: **completado** bajo APK `9C2F`. DEC-039 acepta 10/10 por sentido: 20/20 terminaron en cero, sin anomalías y dentro del envelope acordado. La asimetría antihoraria promedio de 11.6% queda como limitación conocida; no repetir la matriz ni introducir un multiplicador fijo durante MP-01.
+- Shooter/FND-028: **cerrado para MP-01 por aceptación del Test lead** bajo APK `09B2...DAC1`. El pulso sin piezas terminó `STOPPED_TIMEOUT` a `3027.7 ms`, ticks `0 -> 555`, peak/end `1028.6/942.9 RPM`, batería mínima `12.37 V`, power final cero, dirección hacia fuera, parada completa y cero anomalías. El hold continuo fue `125.6 ms`: no cumple todavía T8 (`>=250 ms`), por lo que no se repite este pulso, no se habilita feeder y la estabilidad/carga quedan para MP-06/T8.
+- Candidato de prueba integrada `PRUEBA: MECANISMOS SIN SERVO`: **MOTOR-ONLY FINAL / TORRETA VALIDADA**. FND-003 y FND-020 cerrados por confirmación física del lead. Envelope `-983/+1070`, power `0.50` con aproximación `0.05` en 100 ticks; candidato `5FF4...4E61`, `320C...D226` superseded. Feeder con piezas y T8/carga continúan pendientes.
+- Kicker: configuración de competencia motor-only formalizada por DEC-037; reintroducir un servo requiere una decisión y ciclo de diseño nuevos.
 - Regla de proceso: cuando haya varios fixes de software independientes ya identificados y sin riesgo de interacción entre sí, pedir a Software que los agrupe en un solo candidato antes de reinstalar — no un APK por fix.
 - Regla de proceso: los E-stop/Stop de `SystemCheck` y `ShooterTuning` comparten exactamente el mismo lifecycle de `SafeCommandOpMode` ya probado 10/10 en `MainTeleOp`. No repetir la matriz completa ahí — un spot-check de 3-5 repeticiones por modo basta como evidencia de que la misma ruta de código sigue funcionando.
 
@@ -78,7 +80,7 @@ Nota: si alguien de Software también compila localmente en su propia laptop sol
 
 Sobre los puertos del Hub confirmados en la sección 1 (no Pinpoint). Signo, ticks/rev y offset de cada pod respecto al centro de giro. Alimenta directamente `ThreeDeadWheelLocalizer.Params` (Road Runner) y la configuración equivalente que Software deja lista en `pedroPathing/Constants.java` (ver sección 3). Corresponde a T5 de `05-programa-pruebas.md`, aunque para esta ventana basta con las repeticiones estrictamente necesarias para firmar signo/offset — no hace falta correr ya el gate completo de ≤2in/2° con todas las combinaciones de ruta si el tiempo aprieta; eso se puede completar en una segunda pasada antes de MP-08.
 
-En la misma sesión, cerrar también la **orientación/signo del IMU** — sigue `PENDIENTE` en `contrato-hardware.md` y es un bloqueo físico distinto de los pods (el IMU alimenta heading field-centric del drive; los pods derivan su propio heading). El procedimiento de 5 vueltas CW/5 CCW ya está descrito en `08-guia-verificacion-hardware.md` sección 5.1 — no rediseñarlo, solo ejecutarlo. Este dato gatea el mismo `PoseProvider`/`DriveAdapter` que la calibración de pods, así que conviene medirlo en la misma sesión física.
+La **orientación/signo del IMU** quedó validada 5/5 por sentido bajo `RIGHT/BACKWARD`: antihorario positivo, horario negativo y error máximo `4.4°` con tolerancia `5°`. No repetir salvo cambio de montaje, Control Hub, configuración o código. Continúa la calibración de los tres pods, que deriva su heading por una ruta distinta.
 
 **Gate de salida:** tabla firmada de signo/ticks-por-rev/offset por pod (Road Runner y Pedro) + signo/orientación de IMU confirmados.
 
@@ -142,4 +144,4 @@ Ninguna de estas tareas requiere tener el robot físico en la mano. Se puede tra
 ## 6. Qué queda fuera de esta ventana de 20h
 
 - MP-09 (limpieza del candidato) y MP-10 (revalidación post-limpieza) — se retoman después de competir.
-- Los tres documentos de handoff formales pedidos en `handoff-plan-MP01-MP02-MasterPlan.md` (`handoff-MP01.md`, `handoff-MP02.md`, `handoff-MasterPlan.md`) — se sigue usando `handoff-task.md` como bitácora corrida durante esta ventana; la reconciliación formal en tres documentos separados se hace después de competir.
+- Los tres handoffs formales ya fueron reconciliados al aceptar MP-01/MP-02: `handoff-MP01.md`, `handoff-MP02.md` y `handoff-MasterPlan.md`. `handoff-task.md` se conserva como bitácora cronológica detallada.

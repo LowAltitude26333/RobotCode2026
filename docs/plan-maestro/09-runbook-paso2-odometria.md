@@ -9,7 +9,7 @@
 
 ## 0. Un hecho que ordena toda la sesión
 
-MP-01 sigue `BLOCKED` (ver `handoff-task.md`). Eso bloquea **sólo** la parte de esta calibración que necesita motores armados. La mayoría del trabajo de pods se hace empujando/girando el robot a mano con los motores apagados, y **no depende de MP-01**.
+MP-01 está `ACCEPTED` (ver `handoff-task.md`) con spot-check final `5/5 PASS` sobre el APK `7A90…F5AC`. La mayoría del trabajo de pods ya se completó con el robot empujado/girado a mano; MP-02 queda autorizado para movimiento restringido con Stop/E-stop disponible.
 
 Verificado directamente (no por inferencia) contra el código de los tuners:
 
@@ -20,7 +20,7 @@ Esto separa la sesión en tres fases con distinto bloqueo:
 
 - **Fase A (software, sin robot):** ya lista — ver secc. 5.
 - **Fase B (física, motores apagados):** disponible ya, en paralelo con el cierre de MP-01.
-- **Fase C (física, motores armados):** bloqueada hasta que MP-01 salga de `BLOCKED` (guía 08 secc. 4, etapa "restringido y baja potencia").
+- **Fase C (física, motores armados):** autorizada únicamente después de registrar el spot-check final de MP-01 como PASS (guía 08 secc. 4, etapa "restringido y baja potencia").
 
 ## 1. Alcance de esta ventana (no confundir con el gate completo)
 
@@ -56,7 +56,8 @@ Guía 08 secc. 4, etapas 1-3 (documental → mecánica desenergizada → sensore
 2. **Mecánica desenergizada:** inspeccionar holgura de cable en ambos extremos de cada pod (T3 de `05-programa-pruebas.md`), presión/contacto de cada rueda, y **dibujar** la posición X/Y de cada pod respecto al centro de giro con una convención de signo explícita, antes de correr cualquier tuner. Este boceto es lo que permite contrastar el signo que reporte el tuner contra una referencia física independiente.
 3. **Sensores con actuadores inhibidos — el trabajo de medición:**
    - Signo de cada encoder: `DeadWheelDirectionDebugger` (RR) — empujar/girar el pod a mano y leer el signo del conteo crudo.
-   - Ticks/rev y distancia/tick, **medidos por separado para cada eje**: `ForwardPushTest`/`ForwardTuner` con distancia de cinta medida, ≥5 repeticiones por sentido, para `par0`/`par1`; `LateralPushTest`/`LateralTuner` con distancia de cinta medida, ≥5 repeticiones por sentido, para `perp`.
+   - Escala lineal común `inPerTick` de Road Runner: `ForwardPushTest` con distancia de cinta medida y ≥5 repeticiones. El tuner usa el promedio de `par0`/`par1`; calcular `inPerTick = distancia real en pulgadas / ticks traveled`.
+   - No correr `LateralPushTest` con este localizador: en Road Runner FTC 0.1.23 es sólo para mecanum con encoders de drive y aborta si detecta dead wheels. La respuesta de `perp` se contrasta con desplazamientos laterales medidos mediante telemetría cruda/pose y, después, con los tuners motorizados correspondientes cuando su gate se habilite.
    - Turn ticks/inches: `TurnTuner` (Pedro) con ángulo medido (transportador o marca), ≥5 repeticiones CW + ≥5 CCW — **este valor no se infiere del forward**, se mide en su propio eje.
    - Offsets de pod (`par0YTicks`/`par1YTicks`/`perpXTicks` en RR; `TBD_LEFT_POD_Y_INCHES`/`TBD_RIGHT_POD_Y_INCHES`/`TBD_STRAFE_POD_X_INCHES` en Pedro): del boceto físico del paso 2, cruzados con `OffsetsTuner` (Pedro). `OffsetsTuner` espera que los offsets de la config activa estén en 0 antes de correr — confirmar esa precondición en pantalla, no asumirla (hoy `TBD_STRAFE_POD_X_INCHES=0.0` ya la cumple, pero verificar igual).
    - IMU: procedimiento ya definido en guía 08 secc. 5.1 — 5 giros manuales CW + 5 CCW, registrar heading al init y el cambio de signo. No rediseñar el procedimiento, sólo ejecutarlo (`plan-paralelo-20h.md` secc. 2 lo pide explícitamente).
@@ -70,7 +71,7 @@ T4.4 de `05-programa-pruebas.md`: forward/strafe/giro corto a baja potencia, con
 
 ## 5. Preparación de software ya hecha (Fase A)
 
-- `tuning/TuningOpModes.java`: el flag único `DISABLED` se dividió en `DISABLED_HAND_PUSH_TUNERS` (gobierna `ForwardPushTest`/`LateralPushTest`/`DeadWheelDirectionDebugger`, confirmado sin `setPower`/`setVelocity`) y `DISABLED_POWERED_TUNERS` (gobierna el resto: ramp loggers, feedforward, `LocalizationTest`, splines, y las plantillas OTOS sin sensor correspondiente en este robot). Para habilitar la Fase B, cambiar `DISABLED_HAND_PUSH_TUNERS` a `false`; `DISABLED_POWERED_TUNERS` permanece `true` hasta que MP-01 cierre y su lifecycle de Stop/E-stop quede verificado (DEC-035).
+- `tuning/TuningOpModes.java`: el flag único `DISABLED` se dividió en `DISABLED_HAND_PUSH_TUNERS` (gobierna `ForwardPushTest`/`LateralPushTest`/`DeadWheelDirectionDebugger`, confirmado sin `setPower`/`setVelocity`) y `DISABLED_POWERED_TUNERS` (gobierna el resto: ramp loggers, feedforward, `LocalizationTest`, splines, y las plantillas OTOS sin sensor correspondiente en este robot). El lead autorizó la Fase B el 2026-07-20 y `DISABLED_HAND_PUSH_TUNERS=false`; `DISABLED_POWERED_TUNERS` permanece `true` hasta que MP-01 cierre y su lifecycle de Stop/E-stop quede verificado (DEC-035).
 - Por qué no hace falta un wrapper de E-stop adicional para el subconjunto de Fase B: los tres tuners habilitados no comandan ningún motor (confirmado por bytecode), así que no hay actuador que un E-stop deba detener. El requisito de DEC-035 ("stop, interrupción y E-stop verificables") está pensado para los tuners que sí mueven drivetrain — esos siguen bloqueados.
 - `pedroPathing/Tuning.java` permanece `@Disabled` por ahora. A diferencia de RR, expone un único menú (`Localization`/`Automatic`/`Manual`/`Tests`/`Swerve`) sin separación por flag — quitar `@Disabled` expone todo el menú a la vez, incluyendo `Swerve` (plantilla sin hardware correspondiente, este robot es mecanum) y las carpetas `Automatic`/`Manual` que sí mueven motores. Antes de quitar `@Disabled`, dejar por escrito en la sesión que **sólo la carpeta `Localization`** aplica, y no navegar a las demás. Quitar la anotación se hace junto con el resto del trabajo de Fase B, no antes.
 - No se construyó ningún comparador "shadow" RR-vs-Pedro en vivo: `handoff-plan-MP01-MP02-MasterPlan.md` ya lo prohíbe (nunca instanciar ambos `Follower`/localizador sobre el mismo hardware a la vez). Si se quiere una comparación, son dos corridas **secuenciales** de un solo dueño cada una sobre el mismo recorrido marcado, diferenciadas a mano desde la hoja de evidencia.
@@ -116,13 +117,15 @@ Diez instancias `MEAS-XXX` según la plantilla de guía 08 secc. 6. Campos ya co
 ### MEAS-POD-PAR1-TICKS — ticks/rev, diámetro y distancia/tick de `par1`
 - (mismos campos que MEAS-POD-PAR0-TICKS, pod `par1`, mismas ≥5 repeticiones forward)
 
+Resultado 2026-07-20 para la escala común RR: cinco recorridos de `60.0 cm`, promedios `par0/par1` de `12539/12303.5/12203.5/12200.5/12321.5 ticks`, media `12313.6 ticks`, candidato `inPerTick=0.00191837052073273`. Falta retest de distancia estimada con el candidato instalado.
+
 ### MEAS-POD-PERP-DIR — signo de encoder de `perp` (rightBack)
 - Unidad y convención: signo (+/-) al empujar el robot hacia la izquierda
 - (resto de campos igual al patrón DIR)
 
-### MEAS-POD-PERP-TICKS — ticks/rev, diámetro y distancia/tick de `perp`
-- Instrumento / resolución: cinta métrica + `LateralPushTest`/`LateralTuner`
-- Valores crudos (repeticiones): ≥5 repeticiones strafe — _(llenar)_
+### MEAS-POD-PERP-TICKS — contraste lateral del pod `perp`
+- Instrumento / resolución: cinta métrica + telemetría cruda/pose; **no** `LateralPushTest` con dead wheels
+- Valores crudos (repeticiones): ≥5 repeticiones left — _(llenar)_
 - (resto de campos igual al patrón TICKS)
 
 ### MEAS-POD-TURN — turn ticks/inches (independiente de forward/strafe)
@@ -135,6 +138,8 @@ Diez instancias `MEAS-XXX` según la plantilla de guía 08 secc. 6. Campos ya co
 - Valores crudos: medidas en pulgadas de cada pod — _(llenar)_
 - Valor candidato: `par0YTicks`/`par1YTicks`/`perpXTicks` (RR) y `TBD_LEFT_POD_Y_INCHES`/`TBD_RIGHT_POD_Y_INCHES`/`TBD_STRAFE_POD_X_INCHES` (Pedro) — _(llenar)_
 - Chequeo obligatorio: confirmar `par0YTicks ≠ par1YTicks` antes de cerrar (ver secc. 3, paso 4)
+
+Resultado físico 2026-07-20: `par0` derecho `171.45 mm=6.75 in`, `par1` izquierdo `171.45 mm=6.75 in`, `perp` detrás `177.8 mm=7.00 in`. Con `inPerTick=0.00191837052073273`, semillas RR: `par0YTicks=+3518.6112`, `par1YTicks=-3518.6112`, `perpXTicks=-3648.93013333333`. Estos signos corresponden a la ecuación RR instalada con ambos paralelos forward-positive; no confundir con la convención de offsets de Pedro. Pendiente contraste angular/regresión.
 
 ### MEAS-IMU-SIGN — orientación y signo de heading del IMU
 - Instrumento / resolución: procedimiento guía 08 secc. 5.1, telemetría de heading

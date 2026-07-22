@@ -2,7 +2,7 @@
 
 > Estado: registro vivo; entradas iniciales provienen de auditoría estática, no de pruebas físicas
 > Baseline histórico inicial: `main@f91af18`; baseline de implementación: `origin/main@a887fe4f7ca9023eec6034a0db6b8d918c640ecc`
-> Última actualización: 2026-07-18
+> Última actualización: 2026-07-21
 > Alcance: bugs, riesgos, discrepancias, resultados y retests del plan maestro
 > Responsable sugerido: test lead; cada entrada debe tener owner técnico
 > Fuente de verdad: evidencia vinculada al SHA/configuración/sesión. No cerrar hallazgos sólo porque compile.
@@ -47,33 +47,34 @@ No crear findings para tareas normales ya planeadas salvo que aparezca una discr
 
 | ID | Severidad | Estado | Resumen | Owner | Paquete |
 |---|---|---|---|---|---|
-| FND-001 | CRITICAL | FIX_READY | Cleanup de `VisionPortal` ligado antes de asignarlo | Software vision | MP-01 |
-| FND-002 | HIGH | FIX_READY | Chord de armado evaluado sólo una vez en initialize | Software/Ops | MP-01 |
-| FND-003 | HIGH | BLOCKED_PHYSICAL | Límites ±200 ticks de torreta no validados | Mechanical + turret | MP-01/05 |
-| FND-004 | HIGH | OPEN | Geometría de localización provisional/inconsistente | Localization | MP-02 |
-| FND-005 | HIGH | FIX_READY | Feeder tiene caminos directos sin interlock único | Mechanisms | MP-01/06 |
-| FND-006 | HIGH | FIX_READY | Secuencia shooter puede esperar readiness sin timeout | Shooter | MP-01/06 |
+| FND-001 | CRITICAL | CLOSED | Webcams retiradas del runtime activo; 20/20 init/stop sin lookup ni excepción | Software vision | MP-01 |
+| FND-002 | HIGH | CLOSED | Chord repetitivo validado 20/20 corto y 20/20 completo | Software/Ops | MP-01 |
+| FND-003 | HIGH | CLOSED | Límites `-983/+1070` y potencia `0.50→0.05` validados por el lead | Mechanical + turret | MP-01/05 |
+| FND-004 | HIGH | CLOSED | Geometría, signos, escala y masa Pedro validados con T5 40/40 | Localization | MP-02 |
+| FND-005 | HIGH | CONTAINED | Producción exige `shooter.isReady()`; interlock completo de pose/torreta/chasis pasa a MP-06 | Mechanisms | MP-06 |
+| FND-006 | HIGH | CLOSED | Secuencias activas tienen timeout, intentos acotados, failure y cleanup | Shooter | MP-01/06 |
 | FND-007 | MEDIUM | CONTAINED | E-stop no uniforme en OpModes habilitados | Safety | MP-01/07 |
 | FND-008 | MEDIUM | OPEN | Ownership de torreta/visión fuera del container | Architecture | MP-07 |
 | FND-009 | MEDIUM | OPEN | Declaraciones de versión/dependencias superpuestas | Build | MP-09 |
 | FND-010 | MEDIUM | CONTAINED | Superficie de OpModes sin separar commissioning/release | Release | MP-00/07/09 |
 | FND-011 | HIGH | SUPERSEDED | `IntakeTeleOp` histórico puede dejar feeder energizado | Safety/mechanisms | FND-013 |
 | FND-012 | LOW | OPEN | Conceptos/nombres legacy no reflejan hardware final | Architecture | MP-06/09 |
-| FND-013 | CRITICAL | FIX_READY | `IntakeTeleOp` vigente añade shooter directo/latched | Safety/shooter | MP-01/07 |
-| FND-014 | CRITICAL | FIX_READY | `TeleopTorreta` entrega shooter nulo a un comando | Safety/shooter | MP-01 |
+| FND-013 | CRITICAL | CLOSED | `IntakeTeleOp` está deshabilitado y ya no posee shooter/kicker | Safety/shooter | MP-01/07 |
+| FND-014 | CRITICAL | CLOSED | `TeleopTorreta` está deshabilitado y no contiene camino de shooter nulo | Safety/shooter | MP-01 |
 | FND-015 | CRITICAL | CLOSED | Shooter falla abierto ante encoder/voltaje inválido | Shooter | MP-01/06 |
-| FND-016 | HIGH | FIX_READY | `SafeCommandOpMode` no tiene init-loop repetitivo | Architecture/safety | MP-01 |
-| FND-017 | HIGH | OPEN | Migración Pedro no poseía movimiento completo | Drive/localization | MP-02 |
+| FND-016 | HIGH | CLOSED | Init-loop, Stop y E-stop pre-START validados en hardware | Architecture/safety | MP-01 |
+| FND-017 | HIGH | CLOSED | Pedro posee pose, movimiento, paths y stop en producción | Drive/localization | MP-02 |
 | FND-018 | HIGH | OPEN | Feeder carece de pulso máximo y cooldown obligatorios | Mechanisms | MP-06 |
 | FND-019 | HIGH | OPEN | Readiness omite velocidad lineal/angular del chasis | Shooter/drive | MP-06/T9 |
-| FND-020 | HIGH | BLOCKED_PHYSICAL | Cero manual no detecta falso centro/reset/brownout | Turret/mechanical | MP-01/05 |
-| FND-021 | HIGH | BLOCKED_PHYSICAL | Contrato físico incompleto y sin export RC | Hardware/safety | MP-00/01 |
+| FND-020 | HIGH | CLOSED | Gates de falso centro/reset aprobados por el lead | Turret/mechanical | MP-01/05 |
+| FND-021 | HIGH | CONTAINED | Contrato MP-01 confirmado; calibración de pods y Limelight quedan en MP-02/03 | Hardware/safety | MP-02/03 |
 | FND-022 | HIGH | OPEN | Limpieza posterior a aceptación no tenía revalidación | Test/release | MP-09/10 |
 | FND-023 | MEDIUM | OPEN | Tags de rollback/final estaban incompletos o tardíos | Release | MP-00/09/10 |
 | FND-024 | MEDIUM | OPEN | Gates ambiguos en muestras, tiempo y fallo ambiental | Test | MP-08/10 |
 | FND-025 | MEDIUM | OPEN | Estados y poses iniciales no estaban sincronizados | Architecture/ops | MP-04/07 |
-| FND-026 | HIGH | CONTAINED | Motor y CRServo del kicker no tienen sincronía mecánica; dual bloqueado, motor-only validado | Mechanical + mechanisms | MP-01/06 |
-| FND-027 | MEDIUM | BLOCKED_PHYSICAL | Pulso de commissioning de torreta excede presupuesto de 8 ticks por corte entre ciclos | Software/test + turret | MP-01 |
+| FND-026 | HIGH | CLOSED | Configuración final motor-only; CRServo retirado por decisión del lead | Mechanical + mechanisms | MP-01/06 |
+| FND-027 | MEDIUM | CLOSED | Autocorte temporal de torreta validado 10/10 por sentido; asimetría direccional aceptada | Software/test + turret | MP-01 |
+| FND-028 | CRITICAL | CLOSED | Dirección, encoder, watchdog y autocorte del shooter validados; T8/carga quedan separados | Shooter + electrical | MP-01/06 |
 
 ## 5. Entradas iniciales históricas (`main@f91af18`)
 
@@ -116,9 +117,9 @@ No crear findings para tareas normales ya planeadas salvo que aparezca una discr
 
 ### FND-003 — Soft limits de torreta no validados físicamente
 
-- **Severidad / estado:** `HIGH / BLOCKED_PHYSICAL`
+- **Severidad / estado:** `HIGH / CLOSED`
 - **Fecha:** 2026-07-15
-- **Baseline:** constantes actuales alrededor de -200/+200 ticks
+- **Baseline:** límites anteriores `-200/+200 ticks`
 - **Configuración/sesión:** sin medición física adjunta
 - **Esperado:** límites representan arco seguro con margen contra hard stops/cables.
 - **Observado:** no existe evidencia física en el repo sobre dirección, ticks/grado, centro o margen.
@@ -131,6 +132,11 @@ No crear findings para tareas normales ya planeadas salvo que aparezca una discr
 - **Repetibilidad positiva:** una ida manual desde la cinta hasta aproximadamente +200 ticks y regreso exacto a la cinta terminó en -44 ticks, es decir, añadió otros -22 ticks de deriva. Antes de atribuirlo a holgura se debe comprobar si el encoder cambia estando completamente inmóvil; no se autoriza movimiento motorizado durante el diagnóstico.
 - **Estabilidad en reposo:** la lectura permaneció en -44 ticks durante 2 minutos con la torreta inmóvil y alineada a la cinta. No se observó deriva eléctrica espontánea; el offset queda asociado provisionalmente a backlash/repetibilidad mecánica o alineación visual y deberá absorberse con margen/tolerancia, sujeto a la prueba desde el lado negativo.
 - **Repetibilidad negativa:** desde la cinta en -44, una ida manual hasta aproximadamente -200 ticks y regreso horario a la misma marca terminó en -47, diferencia de sólo 3 ticks con potencia cero. El encoder queda estable y la repetibilidad local por ese lado es compatible con un T4 motorizado conservador; todavía falta ejecutar ese gate y no se amplían los límites actuales.
+- **Confirmación del lead 2026-07-20:** extremos observados `-993/+935 ticks`; se ordenan límites `-983/+925`, 10 ticks hacia el centro por lado. Falta retest motorizado de corte/power cero y revisión de cables/contacto antes de cerrar.
+- **Riesgo residual explícito:** 10 ticks superan por sólo 1 tick la deriva postcorte máxima de 9 ticks observada en FND-027. No usar estos extremos en aim automático hasta pasar el retest a potencia reducida.
+- **Actualización del lead 2026-07-20:** límite positivo final `+1070` con tolerancia ya aplicada; negativo permanece `-983`. Se autoriza potencia de recorrido `0.30`; el software reduce a `0.05` en una zona de 100 ticks antes de cada límite. El cambio de envelope exige retest FND-003 nuevo.
+- **Aumento posterior 2026-07-20:** el lead sube la potencia de recorrido a `0.50`; se conserva aproximación `0.05` en los últimos 100 ticks. El APK `320C...D226` queda superseded y FND-003 requiere retest del nuevo candidato.
+- **Cierre 2026-07-20:** el Test lead confirma aprobado el retest físico prescrito del envelope final `-983/+1070` con recorrido `0.50` y aproximación `0.05`; ambos sentidos cortaron en cero, permitieron regresar hacia el interior y no presentaron contacto ni tensión observada. No se atribuyen valores crudos no reportados.
 - **Riesgo:** contacto mecánico, daño de cables o bloqueo prematuro.
 - **Acción:** fixture/marks, potencia ≤0.1, medir ambos sentidos, backlash y repetibilidad; revisión mecánica.
 - **Criterio de cierre:** tabla firmada con ticks/grados, margen, signos y TEST-T4 aprobado sin tocar hard stop.
@@ -138,7 +144,7 @@ No crear findings para tareas normales ya planeadas salvo que aparezca una discr
 
 ### FND-004 — Localización no tiene constantes aptas para auto-aim
 
-- **Severidad / estado:** `HIGH / FIX_READY`
+- **Severidad / estado:** `HIGH / CLOSED`
 - **Fecha:** 2026-07-15
 - **Baseline:** `main@f91af18`
 - **Componentes:** RR `ThreeDeadWheelLocalizer`, `pedroPathing/Constants.java`
@@ -147,6 +153,7 @@ No crear findings para tareas normales ya planeadas salvo que aparezca una discr
 - **Riesgo:** pose/distancia/bearing incorrectos; fusión engañosa.
 - **Acción:** MP-02 completo; no activar aim con esos valores.
 - **Criterio de cierre:** inventario físico y ruta repetida ≤2 in/2°, con logs y signs comprobados.
+- **Cierre 2026-07-21:** los nombres/puertos, signos, escalas y offsets de los tres pods quedaron comprobados; la masa Pedro se corrigió de `5 kg` provisional a `8.5 kg` medida. T5 pasó `40/40`, sin deriva progresiva, con máximo global `0.787 in` radial y `1.650°` de heading, dentro del gate `≤2 in/≤2°`.
 - **Owner:** localization.
 
 ### FND-005 — No existe un único interlock de feeder
@@ -286,10 +293,12 @@ No crear findings para tareas normales ya planeadas salvo que aparezca una discr
 
 ### FND-017 — Migración Pedro incompleta
 
-- **Severidad / estado:** `HIGH / OPEN`
+- **Severidad / estado:** `HIGH / CLOSED`
 - **Evidencia:** la arquitectura proponía `PoseProvider`, mientras `RobotContainer -> DriveSubsystem -> MecanumDrive` conservaba Road Runner como dueño del movimiento.
 - **Riesgo:** dual-stack implícito, poses divergentes y rollback parcial.
 - **Acción/cierre:** MP-02 migra pose, conducción, paths y stop como paquete; búsqueda/call path demuestra un solo dueño runtime.
+- **Implementación MP-02:** el runtime de producción quedó en `MainTeleOp -> RobotContainer -> PedroDriveSubsystem -> PedroDriveAdapter -> Follower`; una sola instancia de `Follower` posee motores, pose, paths, actualización y stop. Los tuners dinámicos de Road Runner no se registran.
+- **Cierre físico 2026-07-21:** después de T5 `40/40`, el lead confirmó en el APK final con masa `8.5 kg`: reset de heading con START, release-stop, BACK E-stop y forward+turn, todos `PASS`. Se cierra el riesgo de ownership/lifecycle dual.
 
 ### FND-018 — Feeder sin pulso/cooldown acotados
 
@@ -308,18 +317,22 @@ No crear findings para tareas normales ya planeadas salvo que aparezca una discr
 
 ### FND-020 — Cero de torreta puede ser falso o perderse
 
-- **Severidad / estado:** `HIGH / BLOCKED_PHYSICAL`
+- **Severidad / estado:** `HIGH / CLOSED`
 - **Evidencia:** cero manual depende de colocación humana; reset/brownout puede reiniciar encoder sin demostrar centro.
 - **Evidencia física adicional 2026-07-18:** el equipo reporta que un toque físico pequeño produce cambios grandes de ticks; no existe aún conversión validada ticks/grado. La marca de cinta continúa siendo la única referencia física de centro.
 - **Riesgo:** límites y setpoint desplazados, contacto mecánico o cables tensionados.
 - **Acción:** marca/fixture, `zeroValid`, invalidación en cada init/reset/brownout, zona de frenado y contención exterior.
 - **Retest parcial 2026-07-18:** después de un movimiento conocido de +29 ticks y posterior instalación/reinicio, el siguiente INIT reportó -2 ticks, `zero=INVALID_INIT` y cero movimiento. Esto demuestra invalidación fail-closed al reiniciar, pero también confirma que el encoder ya no permite regresar a la marca física; falso centro y brownout eléctrico real siguen pendientes.
 - **Cierre:** tabla firmada y pruebas desde ambos sentidos sin hard-stop; un falso/reinicio bloquea movimiento.
+- **Resultado 2026-07-20:** el lead confirma que todos los pasos prescritos pasaron: inicio sin armar, pérdida simulada y reinicio/power-cycle fuera de centro rechazaron movimiento con cero inválido y power cero. Se cierra FND-020; tras cambiar potencia/límites sólo se exige spot-check de no movimiento sin armar.
 
 ### FND-021 — Falta contrato físico completo
 
 - **Severidad / estado:** `HIGH / BLOCKED_PHYSICAL`
 - **Evidencia:** no hay export RC versionado; faltan datos verificables de drive, pods, IMU, intake y Limelight además de mecanismos.
+- **Actualización del lead 2026-07-20:** mappings de odometría confirmados: `par0=rightFront`, `par1=leftFront`, `perp=rightBack`. Montaje físico del Control Hub confirmado `logo=RIGHT`, `USB=BACK`; se detectó que `MecanumDrive` declaraba incorrectamente `USB=UP` y se corrigió a `UsbFacingDirection.BACKWARD`. Falta retest físico del signo/heading con el nuevo candidato; esta corrección de software no valida por sí sola el IMU.
+- **Retest IMU 2026-07-20:** evidencia `TUNEO IMU.xlsx` SHA-256 `817FFB58302D753B4A56B8FC4D2BFF2B77CEC01BD554B8793985B8A85CBB0DF6`. Resultado 10/10 PASS: antihorario positivo 5/5 (delta medio `+90.52°`, error máximo `1.2°`) y horario negativo 5/5 (magnitud media `92.42°`, error máximo `4.4°`), con tolerancia `5°`. Orientación y signo del IMU quedan validados.
+- **Reconciliación 2026-07-21:** los mappings, signos, escalas y geometría base de los tres pods ya fueron medidos y el tuneo RR fue aceptado de forma pragmática. FND-021 deja de bloquear MP-01. La repetibilidad final y migración de ownership son gate de MP-02; nombre, extrínseca y pipeline de Limelight son gate de MP-03. El finding queda `CONTAINED` hasta cerrar esas fases.
 - **Riesgo:** mappings, signos, ejes o límites inventados.
 - **Acción/cierre:** completar y firmar la guía 08; cada `TBD-BLOCKING` inhibe el componente afectado.
 
@@ -364,11 +377,12 @@ No crear findings para tareas normales ya planeadas salvo que aparezca una discr
 
 ### FND-026 — Kicker dual no cumple sincronía mecánica
 
-- **Severidad / estado:** `HIGH / CONTAINED`
+- **Severidad / estado:** `HIGH / CLOSED`
 - **Fecha / autor:** 2026-07-17 / prueba física del equipo
 - **Componente/owner:** `KickerSubsystem`; mechanical + mechanisms
 - **Requisito:** `kickerMotor` y `kickerServo` deben iniciar y detener físicamente juntos; release/E-stop conservan salida cero inmediata.
 - **Contención 2026-07-18:** DEC-037 mantiene `KICKER_SERVO_ENABLED=false`, servo físicamente desconectado y operación motor-only. El candidato motor-only pasó INIT, avance, reversa, release, Stop y E-stop sin piezas. La configuración dual permanece bloqueada hasta corrección mecánica, APK nuevo y regresión completa; reinstalar el servo no la autoriza por sí solo.
+- **Cierre 2026-07-20:** el lead confirmó configuración final sin servo. La bandera se vuelve constante de compilación `false`; el problema de sincronía dual sale del diseño final. Reinstalar un servo reabriría el finding como cambio nuevo.
 - **Precondiciones:** goBILDA `2000-0025-0002` programado en modo continuo, conectado a una llanta; motor en BRAKE; CRServo a ±0.5.
 - **Esperado:** movimiento mecánico sincronizado en avance, reversa y stop.
 - **Observado:** el servo tarda aproximadamente 0.5 s en iniciar y 0.5–1.0 s en detenerse; el motor responde antes. El servo finalmente se detiene, no zumba y el comportamiento aparece en ambos sentidos.
@@ -381,7 +395,7 @@ No crear findings para tareas normales ya planeadas salvo que aparezca una discr
 
 ### FND-027 — Presupuesto de ticks del pulso de torreta no es un límite duro
 
-- **Severidad / estado:** `MEDIUM / BLOCKED_PHYSICAL`
+- **Severidad / estado:** `MEDIUM / CLOSED`
 - **Fecha / autor:** 2026-07-18 / commissioning físico del equipo
 - **SHA / rama / dirty status:** APK SHA-256 `7DA3A5518979BF8C44787482B7B052F9724205B39A13D3836275B3E1CCB6FDD3`; `masterplan@24f9911`, worktree dirty
 - **Componente/owner:** pulso histórico `TurretSubsystem.startCommissioningPulse`; reemplazo actual `requestCommissioningJog`; software/test + turret
@@ -396,7 +410,41 @@ No crear findings para tareas normales ya planeadas salvo que aparezca una discr
 - **Primer movimiento T4 armado:** un toque de `DPAD_RIGHT` produjo giro horario y terminó en +12 ticks, `STOPPED_RELEASE`, power=0 y move active=false; release instrumentado en 2.265 ms, gate 50 ms PASS, sin ruido ni vibración. Falta estabilidad, repetición, límite y sentido negativo antes de cerrar.
 - **Primer movimiento negativo T4:** desde +12 ticks, un toque de `DPAD_LEFT` giró antihorario y terminó en -50, delta=-62 ticks. Release sí terminó en power=0/move inactive, 2.726 ms y gate 50 ms PASS. La asimetría 12 vs 62 ticks por toques no temporizados impide atribuir todavía el resultado al mecanismo o al control; se pausa para medir estabilidad y después instrumentar duración real de mando antes de repetir.
 - **Estabilidad tras lado negativo:** -50 ticks y power=0 permanecieron sin cambio durante 20 s, sin movimiento, ruido, vibración ni error. El stop queda estable; el siguiente diagnóstico debe registrar duración del hold y delta de ticks, no modificar potencia ni límites.
-- **Criterio de cierre:** nueva implementación documenta correctamente su garantía, termina en cero y 20/20 pulsos por sentido permanecen dentro del límite físico acordado sin ruido, error ni acercamiento a hard-stops.
+- **Criterio histórico de cierre:** 20/20 pulsos por sentido. Queda superseded por DEC-039; no se reescribe como si nunca hubiera existido.
+- **Candidato final probado:** `SystemCheckOpMode` conserva hold-to-run, potencia máxima fija `0.05`, watchdog `100 ms`, soft limits `-200/+200`, cero manual confirmado y Stop/E-stop; agrega autocorte de comparación a `850 ms` y bloqueo hasta soltar D-pad. APK SHA-256 `9C2F58F3327064A199BC9426A646C05550BDC3F462ACF90E3534851BAD9B38E0` (`9C2F`).
+- **Gate aceptado 2026-07-20:** el Test lead aprobó explícitamente reducir el criterio a 10/10 por sentido. Los 20 pulsos terminaron `STOPPED_TIMEOUT`, power final `0`, `Move active=false`, parada completa, estabilidad durante la espera y cero anomalías. Duración `855.0–881.6 ms`; |delta| positivo `54–60 ticks`; |delta| negativo `59–72 ticks`; todos dentro de los límites acordados de `800–900 ms`, `|delta|<=75` y desplazamiento postcorte `<=80 ticks`.
+- **Caracterización direccional:** sobre nueve parejas con precarga estandarizada, promedio horario/positivo `67.8 ticks/s` y antihorario/negativo `75.7 ticks/s`; negativo `11.6%` más rápido en promedio, con variación por pareja de `-1.1%` a `+25.5%`. Se acepta como limitación mecánica/control conocida; no justifica un multiplicador fijo ni declara resuelto el backlash.
+- **Trazabilidad:** la matriz `PRUEBAS COMPLETAS.xlsx` fue revisada completa; faltan hora en pruebas 1, 2, 8 y 18, y batería en 1, 2, 6, 8, 18 y 19. Se conservan como `NO REGISTRADO`; no se inventan valores y no invalidan el gate de parada.
+- **Cierre:** 10/10 por sentido `PASS` bajo el APK `9C2F`; cualquier cambio de APK, potencia, timeout, watchdog, soft limits, transmisión o configuración física reabre la validación.
+
+### FND-028 — Shooter con dirección incorrecta y encoder sin respuesta
+
+- **Severidad / estado:** `CRITICAL / CLOSED`
+- **Fecha / autor:** 2026-07-20 / commissioning físico del equipo
+- **SHA / rama / dirty status:** candidato esperado SHA-256 `0ADF7218167026BF63D1E7F58F55761F9CB63D4B72C4D224C26492A82D79A1F4`; `masterplan@fed3424`, worktree dirty; hash instalado no verificado independientemente
+- **Componente/owner:** `ShooterSubsystem`, `RobotMap.SHOOTER_MOTOR_IS_INVERTED`, cableado/puerto de encoder; shooter + electrical
+- **Precondiciones:** shooter firme/despejado, sin piezas, batería `11.61 V`, Safety operator con Stop; gate sin chord aprobado.
+- **Esperado:** pulso único power `0.10`/`500 ms`, sentido físico de lanzamiento, ticks/RPM no cero y corte estable.
+- **Observado:** `STOPPED_TIMEOUT` a `527.3 ms`; el mecanismo giró hacia dentro (sentido incorrecto), pero ticks quedaron `0 -> 0`, delta `0` y peak indicated RPM `0.0`. Batería del reporte `11.58 -> 11.58 V`; power final `0`, pulse inactive/consumed, parada completa, health=`HEALTHY`, fault=`none`, sin ruido/vibración/roce/calor/olor y RPM indicada `0` tras 20 s.
+- **Impacto/riesgo:** el control cerrado no tiene feedback verificable y la dirección física es incorrecta; cualquier nuevo giro o alimentación queda bloqueado.
+- **Causa de software confirmada para el health engañoso:** el pulso se corta a `500 ms`, mientras `monitorEncoderResponse()` usa `SHOOTER_READY_TIMEOUT_MS=2000`; por diseño, el pulso puede terminar con encoder inmóvil antes de que el fault se active.
+- **Hipótesis física principal, aún no confirmada:** encoder desconectado, mal asentado o conectado a un puerto distinto; `RUN_WITHOUT_ENCODER` todavía permite leer posición, por lo que motor moviéndose con posición y velocidad exactamente cero no se explica por ese modo. La inversión vigente `true` contradice el sentido físico requerido observado, pero no se cambia hasta cerrar la inspección.
+- **Inspección desenergizada:** motor reportado como goBILDA 5203 Series Yellow Jacket brushed DC `6000 RPM`; cable de encoder presente, firme, sin daño visible y conectado al puerto de encoder 3. El sentido correcto confirmado es hacia fuera. Esto descarta una desconexión obvia, pero no demuestra continuidad eléctrica ni funcionamiento del encoder/puerto.
+- **Candidato diagnóstico pasivo:** `ShooterSubsystem.PHYSICAL_OUTPUT_ALLOWED=false` fuerza cero en el último punto antes de `motorLeader.set(...)` para todas las instancias; `SystemCheck` publica `Shooter/Encoder live` y rechaza cualquier chord como `REJECTED_OUTPUT_DISABLED`. APK SHA-256 `B4CBC43A7ABA4BD02FB3ADB6B9A49A33FEA8A0AD1054BE681DD088BA25050988`, 81,311,287 bytes, 32/32 tests y `assembleDebug` PASS; pendiente instalación/prueba manual.
+- **Resultado pasivo:** con output allowed=`false` y power=`0`, giro manual hacia fuera produjo ticks `0 -> 28`; regreso hacia dentro volvió `28 -> 0`. `Actual RPM` alcanzó aproximadamente `85` durante el giro y volvió casi a cero; health=`HEALTHY`, fault=`none` y no hubo movimiento espontáneo. Encoder/cable/puerto/lectura quedan funcionales pasivamente; no se atribuye el primer `0 -> 0` a un encoder desconectado.
+- **Candidato de hipótesis 2:** motor output cambia de invertido a normal para invertir el sentido físico; como FTC SDK 10.3.0 también invierte el signo reportado al cambiar `DcMotor.Direction`, el encoder FTCLib se invierte por separado para conservar RPM de salida positiva. Sólo la instancia de `SystemCheck` habilita output después de fijar cap `0.10`; las demás permanecen fail-closed. Un watchdog nuevo exige al menos un tick en `250 ms` o corta/latcha `ENCODER_FAULT`; autocorte total sigue en `500 ms`. APK SHA-256 `2A193852530748B23C8D8F2B3F27262F0134ADBB84B49D1DE61F00F7727D254D`, 81,352,643 bytes; 32/32 tests, `assembleDebug`, `git diff --check` y cero ReparsePoints PASS; no instalado ni probado físicamente.
+- **Resultado hipótesis 2 a power 0.10:** gate sin chord `REJECTED_ARM_CHORD`, output allowed=`true`, applied power=`0`, pulse inactive/not consumed, health=`HEALTHY`, fault=`none` y cero movimiento. El pulso armado terminó `STOPPED_ENCODER_NO_RESPONSE`; el equipo reporta que la rueda no venció el umbral mecánico de arranque a esa potencia. No se recibieron todavía los demás campos del bloque para esta repetición.
+- **Candidato de breakaway autorizado por Test lead:** cap sube a `0.50`, pulso total baja a `300 ms` y watchdog de al menos un tick baja a `150 ms`; se conservan un pulso por INIT, chord, dirección corregida, encoder positivo separado, health/fault, release/Stop/E-stop y bloqueo de todos los demás owners. APK SHA-256 `B2946F95B60FD0CF5736EA2CF8B7D24206852E6649487CC84873A745B7C0F7EE`, 81,311,759 bytes; 32/32 tests, `assembleDebug`, `git diff --check` y cero ReparsePoints PASS; no instalado ni probado físicamente.
+- **Resultado breakaway `B294`:** `STOPPED_TIMEOUT` a `318.2 ms`, raw ticks `0 -> 4`, delta `4`, encoder responded=`true`, peak indicated RPM `85.7`, batería `11.31 -> 10.39 V`, power final reportado `0`, pulse inactive/consumed, health=`HEALTHY`, fault=`none`, parada completa y sin ruido/vibración/roce/olor/calor. La rotación física fue hacia dentro, por lo que la dirección candidata normal queda refutada. La caída de `0.92 V` con sólo cuatro ticks impide aumentar más potencia antes de corregir dirección/evaluar carga.
+- **Candidato de dirección 3:** vuelve motor invertido=`true` y encoder FTCLib normal=`false`, combinación consistente con la prueba pasiva donde hacia fuera produjo `+28` ticks. Conserva power `0.50`, pulso `300 ms`, watchdog `150 ms` y todos los cortes. APK SHA-256 `3C0C8DC6A481254755FE492ABEDD238BA3C11DFD6BBAD7A3E4A5F7CAF7A56144`, 81,311,767 bytes; 32/32 tests, build y diff PASS; no instalado ni probado físicamente.
+- **Retest dirección 3:** `STOPPED_TIMEOUT` a `310.5 ms`, ticks `0 -> 11`, delta `11`, encoder responded=`true`, peak indicated RPM `257.1`, batería `13.56 -> 13.23 V`, pulse inactive/consumed, health=`HEALTHY`, fault=`none` y RPM indicada `0` al finalizar. Giro físico hacia fuera, parada completa y cero ruido/vibración/roce/olor/calor. Dirección, encoder-response watchdog y corte quedan aprobados para este candidato; la caracterización RPM/corriente/carga sigue pendiente.
+- **Candidato de caracterización RPM 1:** conserva target indicado `1000 RPM`, cap `0.50`, dirección aprobada, watchdog `150 ms`, un pulso por INIT y todos los cortes; extiende sólo el autocorte a `2000 ms`. Agrega RPM indicada justo antes del corte, batería mínima y máximo hold continuo dentro de tolerancia. APK SHA-256 `F847E8BBB747A7C505B5367DED73C4504D31FE805FF93B1C47B96E74A2DD9F21`, 81,312,043 bytes; 32/32 tests, build/diff/ReparsePoints PASS; no instalado ni probado físicamente.
+- **Resultado RPM 1:** resultado transcrito por el operador como `SPOTED_TIMEOUT` (confirmación ortográfica exacta pendiente); duración `2027.2 ms`, ticks `0 -> 276`, encoder responded, peak `857.1 RPM`, end `771.4 RPM`, batería `13.31 -> 13.10 V`, mínima `12.97 V`, max ready hold `0.0 ms`, power final `0`, health=`HEALTHY`, fault=`none`, dirección hacia fuera, parada completa y cero anomalías. Cap `0.50` no alcanzó la banda de readiness `910–1090 RPM`.
+- **Candidato RPM 2:** target `1000 RPM`, cap `0.75`, autocorte `3000 ms`, watchdog `150 ms`, un pulso por INIT y misma instrumentación/cortes. APK SHA-256 `09B23FD2ED57E30496D5D7FBB710F21FDD34A77255F1D414C8578BBE465DDAC1`, 81,312,039 bytes; 32/32 tests, build y diff PASS; no instalado ni probado físicamente.
+- **Resultado RPM 2:** `STOPPED_TIMEOUT` a `3027.7 ms`, ticks `0 -> 555`, encoder responded=`true`, peak/end `1028.6/942.9 RPM`, batería `13.11 -> 12.94 V`, mínima `12.37 V`, max ready hold `125.6 ms`, power final `0`, pulse inactive/consumed, health=`HEALTHY`, fault=`none` y RPM final `0`. El giro fue hacia fuera, se detuvo completamente y no hubo ruido, vibración, roce, olor ni calor. El candidato alcanzó la banda alrededor de `1000 RPM`, pero no sostuvo los `250 ms` continuos exigidos por T8.
+- **Aceptación del Test lead:** “Como Test lead, acepto cerrar FND-028 para MP-01 bajo el APK 09B2...DAC1. Dirección, encoder, watchdog y autocorte aprobados; estabilidad de 250 ms y pruebas con carga permanecen pendientes para MP-06/T8. Feeder bloqueado.”
+- **Acción/contención:** no repetir los pulsos de dirección/RPM ni alimentar piezas. La estabilidad de control y carga permanecen separadas y pendientes para MP-06/T8; el cierre de este finding no habilita feeder.
+- **Criterio de cierre:** encoder cuenta de forma coherente en prueba pasiva/diagnóstica, dirección física correcta, falta de respuesta produce fault antes del autocorte, power final cero y retest físico escalonado aprobado.
 
 ## 8. Plantilla para nuevas entradas
 

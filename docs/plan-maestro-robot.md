@@ -1,8 +1,8 @@
 # Plan maestro de robustecimiento del robot
 
-> Estado: MP-01 en commissioning sobre `masterplan`; gates instrumentados avanzados, T4 de torreta pausado para medir duración de hold/delta de ticks
+> Estado: MP-01 y MP-02 `ACCEPTED`; MP-03 es la siguiente fase activa sobre `masterplan`
 > Baseline de implementación: `origin/main@a887fe4f7ca9023eec6034a0db6b8d918c640ecc`; preserva evidencia histórica de `b5a1342`
-> Última actualización: 2026-07-18
+> Última actualización: 2026-07-21
 > Alcance: arquitectura, torreta, Limelight 3A, odometría, shooter, controles, pruebas y limpieza
 > Responsables sugeridos: líder de software, responsable mecánico/eléctrico, operador 1, operador 2 y responsable de pruebas
 > Fuente de verdad: antes de ejecutar una fase se debe volver a inspeccionar la rama y el hardware; este documento describe el baseline indicado, no garantiza el estado físico del robot.

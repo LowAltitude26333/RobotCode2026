@@ -7,6 +7,29 @@ Repo: `C:\Users\brito\OneDrive\Documentos\FTC\RobotCode2026`
 Rama observada: `masterplan` en `24f9911`, tracking `origin/masterplan`
 Estado Git al momento de la auditoría: worktree amplio con cambios locales sin commit. El SHA base no identificaba por sí solo el código, APK ni pruebas actuales; la actualización operativa posterior registra la consolidación.
 
+## Actualización urgente de reanudación — 2026-07-20
+
+- Checkout operativo vigente: `C:\dev\RobotCode2026`; la ruta OneDrive del encabezado se conserva sólo como dato histórico de la auditoría.
+- La fuente operativa primaria sigue siendo `plan-paralelo-20h.md`; para evidencia detallada usar `handoff-task.md` y los documentos más recientes.
+- FND-027 permanece cerrado bajo APK `9C2F`; FND-028 permanece cerrado para MP-01 bajo APK `09B2...DAC1`, sin trasladar aceptación a estabilidad T8, carga o feeder.
+- El lead reemplazó el mapa rechazado por controles simples: G1 `A/B` intake, `X/Y` kicker motor-only, D-pad `-150/-50/+50/+150 ticks`; G2 `A/B` shooter constante a potencia `0.90`.
+- El candidato corregido compiló con 32/32 tests y `assembleDebug` PASS. APK no instalado: SHA-256 `BC7DCF58EE32C973E428EE2304CF68E74FD1CC20047B62C83A42D60F7CB0B1A6`, 81,315,943 bytes.
+- El candidato conserva E-stop/Stop, fault latch del shooter, cero manual y límites/timeout de torreta, y el interlock que impide salida del CRServo desde este owner.
+- Actualización del lead: configuración final sin CRServo; FND-020 cerrado. Envelope `-983/+1070`, power `0.50` y aproximación `0.05` dentro de 100 ticks.
+- `320C...D226` queda superseded. Candidato `5FF4...4E61`, 32/32 tests y `assembleDebug` PASS. FND-003 cerró por confirmación física del lead; FND-021 es el siguiente bloqueo de MP-01. Feeder con piezas y T8/carga continúan pendientes.
+
+## Actualización de cierre MP-01 — 2026-07-21
+
+- El estado operativo vigente es `ACCEPTED`; las secciones históricas que aún dicen `BLOCKED` o `READY_FOR_GATE` quedan superseded por esta actualización y por `handoff-task.md`.
+- FND-001/002/006/013/014/016 están cerrados con la implementación y evidencia acumulada. FND-005 queda contenido para MP-01 y su interlock completo pertenece a MP-06. FND-021 queda contenido y repartido entre los gates de MP-02 (pods/ownership) y MP-03 (Limelight).
+- Spot-check final aprobado por el lead `5/5` sobre APK SHA-256 `7A9060615BFD6FB0C31E5E5C2D9B68E2E41EE228B99CAD385ABBF00B349CF5AC`: INIT quieto, START sin torreta armada, kicker rechazado con shooter apagado, release cero y BACK E-stop. MP-02 queda autorizado para movimiento restringido, conservando Stop/E-stop y ownership único.
+
+## Actualización de cierre MP-02 — 2026-07-21
+
+- MP-02 está `ACCEPTED`: T5 `40/40`, máximo global `0.787 in/1.650°`, sin deriva progresiva; direcciones `9/9` y spot-check final START reset/release/BACK/forward+turn `4/4 PASS`.
+- Producción usa un owner único `MainTeleOp -> RobotContainer -> PedroDriveSubsystem -> PedroDriveAdapter -> Follower`; FND-004 y FND-017 están cerrados.
+- Los tres handoffs formales ya existen: [MP-01](handoff-MP01.md), [MP-02](handoff-MP02.md) y [MasterPlan](handoff-MasterPlan.md). MP-03 queda como siguiente fase activa.
+
 ## Actualización operativa al cierre de sesión — 2026-07-18
 
 La auditoría que sigue conserva valor histórico, pero su matriz MP-01 quedó superada por las pruebas posteriores. Para el estado ejecutable vigente usar primero `handoff-task.md`, `hallazgos.md`, `contrato-hardware.md` y el diff/commit actual.

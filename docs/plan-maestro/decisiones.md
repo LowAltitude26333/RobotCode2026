@@ -2,7 +2,7 @@
 
 > Estado: registro vivo de decisiones de producto/arquitectura
 > Baseline histórico inicial: `main` en `f91af18`; baseline vigente: `origin/main@b5a134260456565df9d0295722ebecad900f21b4`
-> Última actualización: 2026-07-18
+> Última actualización: 2026-07-20
 > Alcance: elecciones aprobadas, alternativas, consecuencias y condiciones de revisión
 > Responsable sugerido: líder técnico y responsables nombrados en cada decisión
 > Fuente de verdad: la decisión más reciente con estado `ACCEPTED`; cambios importantes requieren nueva entrada, no reescribir silenciosamente la historia.
@@ -57,7 +57,8 @@
 | DEC-034 | ACCEPTED | Pedro posee pose y movimiento; RR sólo rollback | Pedro no cumple MP-02. |
 | DEC-035 | ACCEPTED | Tuners sin lifecycle quedan deshabilitados durante MP-01 | MP-02 integra lifecycle verificable. |
 | DEC-036 | ACCEPTED | Contrato de hardware confirmado para MP-01 | Cambia configuración física o RC. |
-| DEC-037 | ACCEPTED | Kicker motor-only activo; dual condicional a corrección y retest | Mecánica reinstala/cambia el CRServo. |
+| DEC-037 | ACCEPTED | Kicker motor-only final; CRServo retirado y compilado en cero | Nueva decisión formal cambia el diseño. |
+| DEC-039 | ACCEPTED | FND-027 usa gate 10/10 por sentido para el APK 9C2F | Cambia APK, potencia, límites, transmisión o configuración física. |
 
 ## 3. Decisiones aceptadas
 
@@ -364,14 +365,14 @@
 - **Consecuencia:** RobotMap se convierte en fuente única de nombres/direcciones; el export RC y las pruebas físicas siguen siendo gates obligatorios.
 - **Supersede:** reemplaza las partes de DEC-011/DEC-015 que exigían conservar `kickerM otor` y mantener hardware retirado hasta confirmación.
 
-### DEC-037 — Kicker motor-only activo y configuración dual condicional
+### DEC-037 — Kicker motor-only final; CRServo retirado
 
 - **Estado/fecha:** `ACCEPTED`, 2026-07-18
 - **Contexto:** el motor y el CRServo recibieron comandos simultáneos, pero el CRServo mostró aproximadamente 0.5 s de demora al arrancar y 0.5–1.0 s al detenerse. Mecánica retiró físicamente el servo y el candidato motor-only pasó INIT, avance, reversa, release, Stop y E-stop sin piezas.
-- **Decisión:** MP-01 opera con `KICKER_SERVO_ENABLED=false` y el servo físicamente desconectado. La arquitectura dual se conserva como opción futura, pero no queda autorizada automáticamente al reinstalar el servo.
-- **Condición para dual:** mecánica corrige o acepta formalmente la dinámica, conecta/configura el dispositivo, software activa la bandera con el OpMode detenido, se genera un APK nuevo y se repiten INIT, avance, reversa, release, Stop y E-stop con evidencia ligada a ese APK. Hasta completar esa secuencia, dual permanece bloqueado.
-- **Consecuencia:** FND-026 queda `CONTAINED`, no `CLOSED`; motor-only puede continuar MP-01 y cualquier intento dual reabre el gate físico.
-- **Rollback:** bandera `false`, servo desconectado y kicker motor-only.
+- **Decisión actualizada 2026-07-20:** el lead confirma configuración final motor-only. `KICKER_SERVO_ENABLED=false` queda constante de compilación y el servo permanece retirado.
+- **Condición para cambiar:** sólo una nueva decisión formal puede reintroducir un servo; requiere diseño, mapping, APK y regresión completos. No existe rollback operativo a dual.
+- **Consecuencia:** FND-026 queda `CLOSED` para la configuración final. Kicker motor-only continúa; carga/corriente se validan como pruebas del motor, no del servo.
+- **Rollback:** no aplica durante esta configuración; conservar servo retirado y salida compilada en cero.
 
 ### DEC-038 — Reutilización de código de repos FTC sin auditoría de licencias, y patrón piecewise adoptado de HyperionBots
 
@@ -382,6 +383,28 @@
 - **Razón:** partir de implementación probada en competencia reduce riesgo en ventana de 20h; la adaptación conserva los contratos de seguridad propios.
 - **Consecuencia:** el checklist de licencias del doc 04 secc. 10 queda reducido a "comentario de origen + entrada aquí"; los tests puros (`RpmModelsTest`) son el gate de la adaptación.
 - **Rollback:** sustituir la implementación adaptada por una propia equivalente; las interfaces (`RpmModel`) no cambian.
+
+### DEC-039 — Gate 10/10 por sentido para FND-027
+
+- **Estado/fecha:** `ACCEPTED`, 2026-07-20
+- **Owner/aprobadores:** Test lead; equipo de Tuning con Safety operator presente.
+- **Contexto:** FND-027 exigía históricamente 20/20 pulsos por sentido. La matriz completa implicaba 40 movimientos individuales y competía con los gates restantes de MP-01 y shooter. El candidato temporal de `850 ms` produjo evidencia repetible y sin anomalías.
+- **Decisión:** reducir formalmente el criterio de FND-027 a 10/10 pulsos por sentido exclusivamente para el APK SHA-256 `9C2F58F3327064A199BC9426A646C05550BDC3F462ACF90E3534851BAD9B38E0`. El Test lead declaró: “La matriz 10/10 queda aceptada para el APK 9C2F, con asimetría direccional conocida y sin anomalías.”
+- **Evidencia/test gate:** 20/20 filas `PASS`; `STOPPED_TIMEOUT`, power final `0`, `Move active=false`, parada completa, cero anomalías y estabilidad durante la espera. Duración `855.0–881.6 ms`; |delta| positivo `54–60`, negativo `59–72`; límites de aceptación `800–900 ms`, `|delta|<=75` y desplazamiento postcorte `<=80 ticks`.
+- **Asimetría aceptada:** en nueve parejas con precarga estandarizada, positivo `67.8 ticks/s`, negativo `75.7 ticks/s`, diferencia promedio `11.6%`. La variación por pareja (`-1.1%` a `+25.5%`) impide tratarla como factor fijo; la compensación queda para control cerrado/auto-aim posterior.
+- **Safety/operación:** esta decisión no aumenta potencia, no amplía ±200 ticks, no debilita watchdog, cero manual, Stop/E-stop ni hold-to-run. No autoriza más pulsos de torreta para FND-027.
+- **Consecuencia:** FND-027 pasa a `CLOSED`. MP-01 no se declara cerrado por esta decisión; conserva sus demás findings y gates físicos.
+- **Revisión/rollback:** cualquier cambio de APK, potencia, autocorte, watchdog, soft limits, transmisión, motor, cableado o configuración física invalida esta matriz y requiere un gate nuevo. Si se revoca DEC-039, vuelve a aplicar el criterio histórico 20/20.
+
+### DEC-040 — Cierre funcional del shooter para MP-01
+
+- **Estado/fecha:** `ACCEPTED`, 2026-07-20
+- **Owner/aprobadores:** Test lead; equipo de Tuning con Safety operator presente.
+- **Contexto:** FND-028 se abrió por giro hacia dentro y ausencia de ticks/RPM durante el primer pulso. La secuencia diagnóstica confirmó encoder pasivo, corrigió la combinación de dirección/signo y agregó watchdog y autocorte fail-closed.
+- **Decisión:** cerrar FND-028 para MP-01 exclusivamente bajo APK SHA-256 `09B23FD2ED57E30496D5D7FBB710F21FDD34A77255F1D414C8578BBE465DDAC1`. El Test lead acepta dirección hacia fuera, encoder positivo, watchdog y autocorte.
+- **Evidencia:** pulso único sin piezas, target `1000 RPM`, cap `0.75`, `STOPPED_TIMEOUT` a `3027.7 ms`, ticks `0 -> 555`, peak/end `1028.6/942.9 RPM`, batería mínima `12.37 V`, power final `0`, health=`HEALTHY`, fault=`none`, parada completa y cero anomalías.
+- **Límite explícito:** ready hold `125.6 ms` no cumple los `250 ms` de T8. El cierre no certifica estabilidad, carga ni tiros y no habilita feeder; permanecen pendientes para MP-06/T8.
+- **Revisión/rollback:** cualquier cambio de APK, dirección, signo de encoder, watchdog, límite de potencia, transmisión, motor, cableado o configuración física exige revalidar el gate correspondiente.
 
 ## 4. Decisiones pendientes de implementación, no de producto
 
