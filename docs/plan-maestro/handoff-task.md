@@ -13,11 +13,11 @@
   primer pulso hasta el final del tercero `<=3500 ms`.
 - Mantener simultáneamente `gamepad1 A + RIGHT_BUMPER`. Soltar cualquiera,
   `B`, fault, batería baja, timeout o Stop corta shooter y kicker.
-- Target `2000 RPM`, cap `0.90`; el shooter puede permanecer activo máximo
+- Target cargado `1800 RPM`, cap `0.90`; el shooter puede permanecer activo máximo
   `8000 ms` para incluir spin-up y ráfaga.
 - Cada pieza conserva pulso kicker motor-only `632 ms`, corte duro redundante
   `700 ms` y cooldown `300 ms`. Antes de cada una exige readiness continuo
-  `2000±90 RPM` durante `>=250 ms`; nunca dispara por temporizador solamente.
+  `1800±90 RPM` durante `>=250 ms`; nunca dispara por temporizador solamente.
 - El intake permanece apagado durante INIT y spin-up para no precargar el
   shooter. Se enciende automáticamente sólo cuando inicia la ráfaga, después
   de readiness continuo, y vuelve a cero al completar, abortar, soltar,
@@ -32,9 +32,9 @@
 - Telemetría: `Burst/Result`, `Completed shots`, `Duration`, estado del kicker
   y, para cada pieza, tiempo de inicio, RPM previa y RPM mínima.
 - APK: `C:\dev\RobotCode2026\TeamCode\build\outputs\apk\debug\TeamCode-debug.apk`.
-- Tamaño: `81,374,245` bytes.
+- Tamaño: `81,374,220` bytes.
 - SHA-256:
-  `1938A18EA3494CD1D1351D53AA738B27556058DF3F8E775E1BB837319D817B34`.
+  `40EDE95DD021AFFF7F4DAF856695110FE2A53915D2E1C25416A937AE73CC87BF`.
 - Verificación: `76/76` tests JVM, cero failures/errors/skips,
   `assembleDebug` y `git diff --check` PASS. Pendiente instalación y prueba
   física con batería cargada.

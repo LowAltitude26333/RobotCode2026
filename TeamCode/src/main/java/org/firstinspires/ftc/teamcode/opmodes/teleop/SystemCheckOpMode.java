@@ -27,7 +27,9 @@ public class SystemCheckOpMode extends SafeCommandOpMode {
     // --- VARIABLES EDITABLES EN DASHBOARD ---
     // Edita esto en vivo en la sección "SystemCheckOpMode" del Dashboard
     // First physical shooter gate: fixed values, deliberately not Dashboard-editable.
-    public static final double SHOOTER_COMMISSIONING_TARGET_RPM = 2000.0;
+    // Loaded three-artifact plateau physically measured at 1757-1800 RPM with
+    // output already saturated at 0.90. This gate does not claim 2000-RPM range.
+    public static final double SHOOTER_COMMISSIONING_TARGET_RPM = 1800.0;
     public static final double SHOOTER_COMMISSIONING_MAX_POWER = 0.90;
     public static final long SHOOTER_COMMISSIONING_PULSE_MS = 8000;
     public static final long SHOOTER_ENCODER_RESPONSE_TIMEOUT_MS = 150;
@@ -189,7 +191,7 @@ public class SystemCheckOpMode extends SafeCommandOpMode {
         updateThreeShotBurst();
 
         // 3. Telemetría del gate cerrado T8.1.
-        telemetry.addLine("--- SHOOTER: T8.1 CLOSED LOOP 2000 RPM ---");
+        telemetry.addLine("--- SHOOTER: LOADED BURST GATE 1800 RPM ---");
         telemetry.addData("Shooter/Target RPM", SHOOTER_COMMISSIONING_TARGET_RPM);
         telemetry.addData("Actual RPM", shooter.getActualShooterRPM());
         telemetry.addData("Shooter Enabled", shooterEnabled);
@@ -227,7 +229,7 @@ public class SystemCheckOpMode extends SafeCommandOpMode {
                 shooterCurrentReadyHoldMs);
         telemetry.addData("Fault injection", shooter.getFaultInjectionMode());
         telemetry.addData("Shooter applied power", shooter.getLastAppliedPower());
-        telemetry.addLine("Gamepad1 A=2000 RPM; soltar/B/Stop=0; autocorte 8 s");
+        telemetry.addLine("Gamepad1 A=1800 RPM; soltar/B/Stop=0; autocorte 8 s");
         telemetry.addLine("Sostener A+RIGHT_BUMPER=ráfaga 3 piezas, máximo 3.5 s");
         telemetry.addLine("Cada pieza exige ready >=250 ms; intake ON solo en rafaga");
         telemetry.addData("Burst/Armed", shooterPulseActive
