@@ -29,7 +29,7 @@ public class LowAltitudeConstants {
         // kS: Voltaje estático (fricción mínima para empezar a mover).
         public static double SHOOTER_KS = 2.5;
         // kV: Voltios necesarios por cada RPM. (Ej. 12V / 6000RPM = 0.002)
-        public static double SHOOTER_KV = 0.003;
+        public static double SHOOTER_KV = 0.0044;
         // kA: Aceleración (opcional, dejamos en 0 para shooter velocidad constante).
         public static double SHOOTER_KA = 0.0;
 

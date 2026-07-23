@@ -13,6 +13,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import org.firstinspires.ftc.teamcode.LowAltitudeConstants;
 import org.firstinspires.ftc.teamcode.RobotSafety;
 import org.firstinspires.ftc.teamcode.opmodes.SafeCommandOpMode;
+import org.firstinspires.ftc.teamcode.safety.FeederPulseStateMachine;
 import org.firstinspires.ftc.teamcode.safety.TurretArmingStateMachine;
 import org.firstinspires.ftc.teamcode.subsystems.IntakeSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.KickerSubsystem;
@@ -26,10 +27,15 @@ public class SystemCheckOpMode extends SafeCommandOpMode {
     // --- VARIABLES EDITABLES EN DASHBOARD ---
     // Edita esto en vivo en la sección "SystemCheckOpMode" del Dashboard
     // First physical shooter gate: fixed values, deliberately not Dashboard-editable.
-    public static final double SHOOTER_COMMISSIONING_TARGET_RPM = 1000.0;
-    public static final double SHOOTER_COMMISSIONING_MAX_POWER = 0.75;
-    public static final long SHOOTER_COMMISSIONING_PULSE_MS = 3000;
+    public static final double SHOOTER_COMMISSIONING_TARGET_RPM = 2000.0;
+    public static final double SHOOTER_COMMISSIONING_MAX_POWER = 0.90;
+    public static final long SHOOTER_COMMISSIONING_PULSE_MS = 8000;
     public static final long SHOOTER_ENCODER_RESPONSE_TIMEOUT_MS = 150;
+    public static final double BURST_READY_HOLD_MS = 250.0;
+    public static final int BURST_SHOT_COUNT = 3;
+    public static final double BURST_MAX_DURATION_MS = 3500.0;
+    // Fail closed below the lowest voltage already observed in the accepted one-piece test.
+    public static final double BURST_MIN_BATTERY_V = 10.50;
     // MP-01 T4/FND-027: hold-to-run jog with an automatic, repeatable comparison cutoff.
     // Releasing early still commands zero immediately; the subsystem blocks reactivation
     // after the cutoff until the D-pad is released.
@@ -60,8 +66,21 @@ public class SystemCheckOpMode extends SafeCommandOpMode {
     private double shooterPulseDurationMs;
     private boolean shooterEncoderResponded;
     private long shooterReadyHoldStartNanos;
+    private double shooterCurrentReadyHoldMs;
     private double shooterMaxReadyHoldMs;
     private String shooterLastResult = "NOT_RUN";
+    private boolean burstActive;
+    private boolean burstConsumed;
+    private boolean burstRequestHeld;
+    private boolean burstShotPulseActive;
+    private int burstCompletedShots;
+    private long burstStartNanos;
+    private long burstShotStartNanos;
+    private double burstDurationMs;
+    private final double[] burstPreRpm = new double[BURST_SHOT_COUNT];
+    private final double[] burstMinRpm = new double[BURST_SHOT_COUNT];
+    private final double[] burstShotStartMs = new double[BURST_SHOT_COUNT];
+    private String burstResult = "NOT_RUN";
 
     @Override
     public void initialize() {
@@ -75,6 +94,10 @@ public class SystemCheckOpMode extends SafeCommandOpMode {
         }
         kicker = new KickerSubsystem(hardwareMap);
         intake = new IntakeSubsystem(hardwareMap);
+        // Requested commissioning behavior: intake runs throughout PLAY without
+        // consuming a gamepad button. IntakeSubsystem remains registered with
+        // RobotSafety, so OpMode Stop/E-stop still commands zero.
+        intake.setDefaultCommand(new RunCommand(intake::intakeOn, intake));
         turret = new TurretSubsystem(hardwareMap);
         turretArming = new TurretArmingStateMachine(
                 LowAltitudeConstants.TurretConstants.TURRET_ARM_HOLD_MS);
@@ -84,7 +107,7 @@ public class SystemCheckOpMode extends SafeCommandOpMode {
 
         // --- MAPEO DE CONTROLES PARA TUNING ---
 
-        // 1. SHOOTER: one low-power pulse per INIT. START+A must remain held.
+        // 1. SHOOTER: one low-power pulse per INIT. Gamepad1 A must remain held.
         new GamepadButton(driverPad, GamepadKeys.Button.A)
                 .whileHeld(new RunCommand(this::requestShooterCommissioningPulse, shooter))
                 .whenReleased(new InstantCommand(this::releaseShooterCommissioningPulse, shooter));
@@ -93,24 +116,10 @@ public class SystemCheckOpMode extends SafeCommandOpMode {
                 .whenPressed(new InstantCommand(() -> finishShooterCommissioningPulse(
                         "STOPPED_MANUAL", true), shooter));
 
-        // 2. INTAKE & KICKER (Para probar recuperación bajo carga)
-        // Gatillo Derecho: Disparar (Kicker)
+        // 2. THREE-PIECE GATE: hold-to-run request with readiness before every piece.
         new GamepadButton(driverPad, GamepadKeys.Button.RIGHT_BUMPER)
-                .whileHeld(new RunCommand(kicker::kick, kicker)) // Asumiendo que kick() mueve el servo
-                .whenReleased(new InstantCommand(() -> RobotSafety.timeZeroCommand(
-                        "SYSTEM_CHECK_KICKER_RELEASE", kicker::stop), kicker));
-
-        // Gatillo Izquierdo: Alimentar (Intake)
-        new GamepadButton(driverPad, GamepadKeys.Button.LEFT_BUMPER)
-                .whileHeld(new RunCommand(intake::intakeOn, intake))
-                .whenReleased(new InstantCommand(() -> RobotSafety.timeZeroCommand(
-                        "SYSTEM_CHECK_INTAKE_RELEASE", intake::intakeOff), intake));
-
-        // X/Y: Control Manual de Kicker/Intake Reverso si se atora algo
-        new GamepadButton(driverPad, GamepadKeys.Button.Y)
-                .whileHeld(new RunCommand(intake::intakeReturn, intake))
-                .whenReleased(new InstantCommand(() -> RobotSafety.timeZeroCommand(
-                        "SYSTEM_CHECK_INTAKE_REVERSE_RELEASE", intake::intakeOff), intake));
+                .whileHeld(new RunCommand(this::requestThreeShotBurst, kicker))
+                .whenReleased(new InstantCommand(this::releaseThreeShotBurst, kicker));
 
         // Commissioning-only fail-closed injection; face buttons never request shooter output.
         new GamepadButton(faultPad, GamepadKeys.Button.A)
@@ -145,8 +154,8 @@ public class SystemCheckOpMode extends SafeCommandOpMode {
                 .whenPressed(new InstantCommand(turret::simulateZeroLossForCommissioning, turret));
 
         telemetry.addLine("✅ ROBOT LISTO PARA TUNING");
-        telemetry.addLine("SHOOTER: un pulso por INIT; START+A=hold, B=stop");
-        telemetry.addLine("No usar kicker/intake ni alimentar piezas durante este gate");
+        telemetry.addLine("SHOOTER: un pulso por INIT; A=hold, B=stop");
+        telemetry.addLine("INTAKE: ON automatico durante PLAY; Stop/E-stop=0");
         telemetry.addLine("Abra http://192.168.43.1:8080/dash");
         telemetry.update();
     }
@@ -178,19 +187,12 @@ public class SystemCheckOpMode extends SafeCommandOpMode {
         // Esto permite que si cambias SHOOTER_KV en el Dashboard, el motor lo sienta DE INMEDIATO.
         shooter.reloadControllersIfConstantsChanged();
 
-        // 2. Actualizar target en vivo si el motor ya está andando
-        // Si ya le diste a la 'A' y cambias el número en el dashboard, se actualiza solo.
-        if (shooterEnabled
-                && Double.compare(shooter.getTargetRPM(), SHOOTER_COMMISSIONING_TARGET_RPM) != 0) {
-            shooter.setTargetRPM(SHOOTER_COMMISSIONING_TARGET_RPM);
-        }
-
-        // 3. Correr Scheduler (Comandos y Periodic del Subsystem)
+        // 2. Correr Scheduler (Comandos y Periodic del Subsystem)
         super.run();
+        updateThreeShotBurst();
 
-        // 4. Telemetría Limpia para Gráficas
-        // En Dashboard, verás dos líneas. Si se superponen perfectamente, tu PID es Dios.
-        telemetry.addLine("--- SHOOTER: T8.1, PULSO 1000 RPM ---");
+        // 3. Telemetría del gate cerrado T8.1.
+        telemetry.addLine("--- SHOOTER: T8.1 CLOSED LOOP 2000 RPM ---");
         telemetry.addData("Shooter/Target RPM", SHOOTER_COMMISSIONING_TARGET_RPM);
         telemetry.addData("Actual RPM", shooter.getActualShooterRPM());
         telemetry.addData("Shooter Enabled", shooterEnabled);
@@ -224,9 +226,28 @@ public class SystemCheckOpMode extends SafeCommandOpMode {
                 shooterPulseStartVoltage, shooterPulseEndVoltage);
         telemetry.addData("Shooter/Pulse min battery", "%.2f V", shooterPulseMinVoltage);
         telemetry.addData("Shooter/Max ready hold", "%.1f ms", shooterMaxReadyHoldMs);
+        telemetry.addData("Shooter/Current ready hold", "%.1f ms",
+                shooterCurrentReadyHoldMs);
         telemetry.addData("Fault injection", shooter.getFaultInjectionMode());
         telemetry.addData("Shooter applied power", shooter.getLastAppliedPower());
-        telemetry.addLine("START+A=un pulso; A solo=rechazo; soltar/B/Stop=0");
+        telemetry.addLine("Gamepad1 A=2000 RPM; soltar/B/Stop=0; autocorte 8 s");
+        telemetry.addLine("Sostener A+RIGHT_BUMPER=ráfaga 3 piezas, máximo 3.5 s");
+        telemetry.addLine("Cada pieza exige ready >=250 ms; intake permanece ON");
+        telemetry.addData("Burst/Armed", shooterPulseActive
+                && shooter.isReady()
+                && shooterCurrentReadyHoldMs >= BURST_READY_HOLD_MS
+                && !burstConsumed);
+        telemetry.addData("Burst/Active", burstActive);
+        telemetry.addData("Burst/Consumed", burstConsumed);
+        telemetry.addData("Burst/Result", burstResult);
+        telemetry.addData("Burst/Completed shots", burstCompletedShots);
+        telemetry.addData("Burst/Duration", "%.1f ms", burstDurationMs);
+        telemetry.addData("Burst/Kicker state", kicker.getPulseState());
+        for (int index = 0; index < BURST_SHOT_COUNT; index++) {
+            telemetry.addData("Burst/Shot " + (index + 1),
+                    "start=%.1f ms, pre=%.1f, min=%.1f RPM",
+                    burstShotStartMs[index], burstPreRpm[index], burstMinRpm[index]);
+        }
         telemetry.addLine("Gamepad2: A=voltaje, B=encoder freeze, X=RPM NaN, Y=overspeed");
 
         telemetry.addLine("--- TORRETA: T4 HOLD-TO-RUN ---");
@@ -260,7 +281,8 @@ public class SystemCheckOpMode extends SafeCommandOpMode {
                 TURRET_COMPARISON_PULSE_MS);
 
         // Datos extra para diagnóstico
-        telemetry.addData("Error", SHOOTER_COMMISSIONING_TARGET_RPM - shooter.getActualShooterRPM());
+        telemetry.addData("Error",
+                SHOOTER_COMMISSIONING_TARGET_RPM - shooter.getActualShooterRPM());
         telemetry.addData("Batería", shooter.getBatteryVoltage());
         telemetry.addData("Kicker servo solicitado", kicker.isServoEnabledAtInit());
         telemetry.addData("Kicker servo disponible", kicker.isServoAvailable());
@@ -279,13 +301,6 @@ public class SystemCheckOpMode extends SafeCommandOpMode {
         }
         if (!shooter.isPhysicalOutputAllowed()) {
             shooterLastResult = "REJECTED_OUTPUT_DISABLED";
-            shooterBlockedUntilRelease = true;
-            shooter.stop();
-            shooterEnabled = false;
-            return;
-        }
-        if (!gamepad1.start) {
-            shooterLastResult = "REJECTED_ARM_CHORD";
             shooterBlockedUntilRelease = true;
             shooter.stop();
             shooterEnabled = false;
@@ -312,6 +327,7 @@ public class SystemCheckOpMode extends SafeCommandOpMode {
             shooterEncoderResponded = false;
             shooterPulseEndIndicatedRpm = shooter.getActualShooterRPM();
             shooterReadyHoldStartNanos = 0;
+            shooterCurrentReadyHoldMs = 0;
             shooterMaxReadyHoldMs = 0;
             shooterLastResult = "PULSE_ACTIVE";
         }
@@ -330,10 +346,13 @@ public class SystemCheckOpMode extends SafeCommandOpMode {
             if (shooterReadyHoldStartNanos == 0) {
                 shooterReadyHoldStartNanos = nowNanos;
             }
-            shooterMaxReadyHoldMs = Math.max(shooterMaxReadyHoldMs,
-                    (nowNanos - shooterReadyHoldStartNanos) / 1_000_000.0);
+            shooterCurrentReadyHoldMs =
+                    (nowNanos - shooterReadyHoldStartNanos) / 1_000_000.0;
+            shooterMaxReadyHoldMs = Math.max(
+                    shooterMaxReadyHoldMs, shooterCurrentReadyHoldMs);
         } else {
             shooterReadyHoldStartNanos = 0;
+            shooterCurrentReadyHoldMs = 0;
         }
 
         if (shooter.isFaultLatched()) {
@@ -352,6 +371,7 @@ public class SystemCheckOpMode extends SafeCommandOpMode {
 
     private void releaseShooterCommissioningPulse() {
         boolean wasActive = shooterPulseActive;
+        finishThreeShotBurst(burstActive ? "STOPPED_SHOOTER_RELEASE" : burstResult);
         RobotSafety.timeZeroCommand("SYSTEM_CHECK_SHOOTER_RELEASE", shooter::stop);
         shooterEnabled = false;
         shooterBlockedUntilRelease = false;
@@ -363,6 +383,7 @@ public class SystemCheckOpMode extends SafeCommandOpMode {
     private void finishShooterCommissioningPulse(String result, boolean consumePulse) {
         long nowNanos = System.nanoTime();
         boolean wasActive = shooterPulseActive;
+        finishThreeShotBurst(burstActive ? "STOPPED_SHOOTER" : burstResult);
         shooter.stop();
         shooterEnabled = false;
         shooterPulseActive = false;
@@ -379,5 +400,104 @@ public class SystemCheckOpMode extends SafeCommandOpMode {
             shooterPulseEndVoltage = shooter.getBatteryVoltage();
             shooterPulseMinVoltage = Math.min(shooterPulseMinVoltage, shooterPulseEndVoltage);
         }
+    }
+
+    private void requestThreeShotBurst() {
+        burstRequestHeld = true;
+        if (burstConsumed || burstActive) {
+            return;
+        }
+        if (!shooterPulseActive
+                || !shooter.isHealthy()
+                || !shooter.isReady()
+                || shooterCurrentReadyHoldMs < BURST_READY_HOLD_MS) {
+            kicker.stop();
+            burstResult = "WAITING_FOR_READY";
+            return;
+        }
+
+        burstConsumed = true;
+        burstActive = true;
+        burstStartNanos = System.nanoTime();
+        burstDurationMs = 0;
+        burstCompletedShots = 0;
+        burstResult = "BURST_ACTIVE";
+        startNextBurstShot(burstStartNanos);
+    }
+
+    private void releaseThreeShotBurst() {
+        burstRequestHeld = false;
+        if (burstActive) {
+            finishThreeShotBurst("STOPPED_REQUEST_RELEASE");
+            finishShooterCommissioningPulse("STOPPED_BURST_RELEASE", true);
+        }
+    }
+
+    private void updateThreeShotBurst() {
+        if (!burstActive) {
+            return;
+        }
+
+        long nowNanos = System.nanoTime();
+        burstDurationMs = (nowNanos - burstStartNanos) / 1_000_000.0;
+        if (burstShotPulseActive && burstCompletedShots < BURST_SHOT_COUNT) {
+            int activeIndex = burstCompletedShots;
+            burstMinRpm[activeIndex] = Math.min(
+                    burstMinRpm[activeIndex], shooter.getActualShooterRPM());
+        }
+
+        if (shooter.isFaultLatched()) {
+            abortBurstAndShooter("STOPPED_SHOOTER_FAULT");
+        } else if (shooter.getBatteryVoltage() < BURST_MIN_BATTERY_V) {
+            abortBurstAndShooter("STOPPED_LOW_BATTERY");
+        } else if (!shooterPulseActive) {
+            finishThreeShotBurst("STOPPED_SHOOTER");
+        } else if (!burstRequestHeld) {
+            abortBurstAndShooter("STOPPED_REQUEST_RELEASE");
+        } else if (burstDurationMs >= BURST_MAX_DURATION_MS) {
+            abortBurstAndShooter("STOPPED_BURST_TIMEOUT");
+        } else if (burstShotPulseActive
+                && (nowNanos - burstShotStartNanos) / 1_000_000.0
+                >= LowAltitudeConstants.KICKER_EXTEND_TIME_MS) {
+            RobotSafety.timeZeroCommand("SYSTEM_CHECK_BURST_PIECE_STOP", kicker::stop);
+            burstShotPulseActive = false;
+            burstCompletedShots++;
+            if (burstCompletedShots >= BURST_SHOT_COUNT) {
+                finishThreeShotBurst("COMPLETED_3_OF_3");
+                finishShooterCommissioningPulse("STOPPED_BURST_COMPLETE", true);
+            }
+        } else if (!burstShotPulseActive
+                && burstCompletedShots < BURST_SHOT_COUNT
+                && kicker.getPulseState() == FeederPulseStateMachine.State.IDLE
+                && shooter.isReady()
+                && shooterCurrentReadyHoldMs >= BURST_READY_HOLD_MS) {
+            startNextBurstShot(nowNanos);
+        }
+    }
+
+    private void startNextBurstShot(long nowNanos) {
+        int index = burstCompletedShots;
+        burstShotStartNanos = nowNanos;
+        burstShotStartMs[index] = (nowNanos - burstStartNanos) / 1_000_000.0;
+        burstPreRpm[index] = shooter.getActualShooterRPM();
+        burstMinRpm[index] = burstPreRpm[index];
+        burstShotPulseActive = true;
+        kicker.kick();
+    }
+
+    private void abortBurstAndShooter(String result) {
+        finishThreeShotBurst(result);
+        finishShooterCommissioningPulse(result, true);
+    }
+
+    private void finishThreeShotBurst(String result) {
+        if (!burstActive) {
+            return;
+        }
+        burstDurationMs = (System.nanoTime() - burstStartNanos) / 1_000_000.0;
+        RobotSafety.timeZeroCommand("SYSTEM_CHECK_BURST_STOP", kicker::stop);
+        burstShotPulseActive = false;
+        burstActive = false;
+        burstResult = result;
     }
 }

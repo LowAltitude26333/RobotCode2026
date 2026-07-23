@@ -18,6 +18,10 @@ import org.firstinspires.ftc.teamcode.shooter.ShooterVelocityWindow;
 public class ShooterSubsystem extends SubsystemBase {
 
     private static final double MAX_COMMISSIONING_OUTPUT_POWER = 0.90;
+    private static final boolean SDK_FEEDBACK_IS_INVERTED =
+            ShooterFeedbackSign.afterMotorDirection(
+                    RobotMap.SHOOTER_ENCODER_IS_INVERTED,
+                    RobotMap.SHOOTER_MOTOR_IS_INVERTED);
 
     // Fail-closed by default. Only a reviewed commissioning owner may enable this instance.
     private boolean physicalOutputAllowed;
@@ -101,8 +105,9 @@ public class ShooterSubsystem extends SubsystemBase {
     private void configureMotors() {
         // 1. Invertir Motor si es necesario
         motorLeader.setInverted(RobotMap.SHOOTER_MOTOR_IS_INVERTED);
-        // Encoder position direction is independent from the physically verified motor direction.
-        motorLeader.encoder.setDirection(RobotMap.SHOOTER_ENCODER_IS_INVERTED
+        // The SDK motor direction already changes encoder readback sign. Apply only
+        // the remaining inversion so physically verified outward motion is positive.
+        motorLeader.encoder.setDirection(SDK_FEEDBACK_IS_INVERTED
                 ? Motor.Direction.REVERSE
                 : Motor.Direction.FORWARD);
 
@@ -293,7 +298,7 @@ public class ShooterSubsystem extends SubsystemBase {
     public int getEncoderPosition() {
         return ShooterFeedbackSign.outwardPositive(
                 motorLeader.motor.getCurrentPosition(),
-                RobotMap.SHOOTER_ENCODER_IS_INVERTED);
+                SDK_FEEDBACK_IS_INVERTED);
     }
 
     /**
@@ -386,17 +391,17 @@ public class ShooterSubsystem extends SubsystemBase {
                 diagnosticRawTicks = motorLeader.motor.getCurrentPosition();
                 diagnosticOutwardTicks = ShooterFeedbackSign.outwardPositive(
                         diagnosticRawTicks,
-                        RobotMap.SHOOTER_ENCODER_IS_INVERTED);
+                        SDK_FEEDBACK_IS_INVERTED);
                 diagnosticSdkTicksPerSecond = ShooterFeedbackSign.outwardPositive(
                         ((DcMotorEx) motorLeader.motor).getVelocity(),
-                        RobotMap.SHOOTER_ENCODER_IS_INVERTED);
+                        SDK_FEEDBACK_IS_INVERTED);
 
                 // FTCLib 2.1.1 applies Encoder.setDirection() to position, but not to
                 // getCorrectedVelocity(). Normalize velocity explicitly so the physically
                 // verified outward shooting direction is positive in control and telemetry.
                 diagnosticFtclibTicksPerSecond = ShooterFeedbackSign.outwardPositive(
                         motorLeader.getCorrectedVelocity(),
-                        RobotMap.SHOOTER_ENCODER_IS_INVERTED);
+                        SDK_FEEDBACK_IS_INVERTED);
                 diagnosticSdkShooterRPM =
                         ticksPerSecondToShooterRPM(diagnosticSdkTicksPerSecond);
                 diagnosticWindowShooterRPM = diagnosticVelocityWindow.update(
@@ -578,7 +583,10 @@ public class ShooterSubsystem extends SubsystemBase {
         telemetry.addData("Shooter/BatteryV", batteryVoltage);
 
         // Telemetría de diagnóstico
-        telemetry.addData("Shooter/Target", targetShooterRPM);
+        telemetry.addData("Shooter/Target",
+                commissioningConstantPower > 0 ? 0.0 : targetShooterRPM);
+        telemetry.addData("Shooter/ControlMode",
+                commissioningConstantPower > 0 ? "OPEN_LOOP" : "CLOSED_LOOP");
         telemetry.addData("Shooter/Actual", actualShooterRPM);
         telemetry.addData("Shooter/Power", lastAppliedPower);
         telemetry.addData("Shooter/DiagSdkRPM", diagnosticSdkShooterRPM);

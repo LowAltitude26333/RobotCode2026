@@ -16,4 +16,13 @@ public final class ShooterFeedbackSign {
     public static int outwardPositive(int rawValue, boolean encoderIsInverted) {
         return encoderIsInverted ? -rawValue : rawValue;
     }
+
+    /**
+     * FTC SDK motor direction changes the sign returned by its encoder reads.
+     * Apply only the remaining inversion needed after the motor direction is configured.
+     */
+    public static boolean afterMotorDirection(boolean rawEncoderIsInverted,
+                                              boolean motorIsInverted) {
+        return rawEncoderIsInverted != motorIsInverted;
+    }
 }

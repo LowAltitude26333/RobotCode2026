@@ -1,32 +1,261 @@
 # Handoff actual — commissioning del shooter T8.1
 
-> **SIGUIENTE PASO ÚNICO:** instalar el APK RAW `FE7A...B1AE`, abrir
-> `DIAG: Shooter Encoder RAW`, pulsar INIT/PLAY y girar el eje exactamente diez
-> vueltas hacia fuera con potencia hardcoded en cero. Registrar `Diag/Connection`,
-> `Raw delta`, `Outward delta`, `Changed samples` y `Raw min..max`. No energizar
-> el shooter, no cambiar gains y no sustituir cable/puerto hasta obtener este
-> resultado de frontera.
+> **ESTADO DE FRONTERA:** FND-029 está cerrado. Cable/adaptador reemplazado,
+> T8.0 RAW bidireccional PASS y T8.1 `1000/1500/2000 RPM` PASS. El envelope
+> `0.90` sólo alcanzó `2314.3 RPM` open-loop; no avanzar a 2450/2900, piezas
+> fuera del gate. Una pieza a `2000 RPM` salió recta y el kicker paró. El lead
+> aceptó como objetivo tres piezas en máximo `3.5 s`; el siguiente paso único
+> es el gate de ráfaga acotado descrito abajo.
 
-## Bloqueo vigente — FND-029
+## SIGUIENTE PASO ÚNICO — ráfaga de 3 piezas en máximo 3.5 s
 
-- FND-029 está `CRITICAL / INVESTIGATING` y bloquea T8.1, `1500+ RPM`, piezas,
-  feeder y autos de tiro.
+- Autorización/objetivo del lead: tres piezas, duración desde el inicio del
+  primer pulso hasta el final del tercero `<=3500 ms`.
+- Mantener simultáneamente `gamepad1 A + RIGHT_BUMPER`. Soltar cualquiera,
+  `B`, fault, batería baja, timeout o Stop corta shooter y kicker.
+- Target `2000 RPM`, cap `0.90`; el shooter puede permanecer activo máximo
+  `8000 ms` para incluir spin-up y ráfaga.
+- Cada pieza conserva pulso kicker motor-only `632 ms`, corte duro redundante
+  `700 ms` y cooldown `300 ms`. Antes de cada una exige readiness continuo
+  `2000±90 RPM` durante `>=250 ms`; nunca dispara por temporizador solamente.
+- El intake arranca automáticamente al entrar a PLAY y permanece encendido
+  durante este OpMode, sin botón dedicado. Stop/E-stop ordena cero mediante
+  `RobotSafety`. Servo kicker permanece deshabilitado. Una ráfaga por INIT.
+- No se concede kicker continuo: conserva pulsos acotados hacia el mismo lado,
+  porque eliminar el límite `700 ms` debilitaría FND-018 y permitiría atasco o
+  alimentación con RPM todavía caída.
+- Si no completa tres piezas dentro de `3500 ms`, aborta como
+  `STOPPED_BURST_TIMEOUT`. Si batería cae por debajo de `10.50 V`, menor que
+  el mínimo ya validado de `10.60 V`, aborta `STOPPED_LOW_BATTERY`.
+- Telemetría: `Burst/Result`, `Completed shots`, `Duration`, estado del kicker
+  y, para cada pieza, tiempo de inicio, RPM previa y RPM mínima.
+- APK: `C:\dev\RobotCode2026\TeamCode\build\outputs\apk\debug\TeamCode-debug.apk`.
+- Tamaño: `81,339,497` bytes.
+- SHA-256:
+  `8C79BBB9DC5801CC9BE381481E1F68DEEE67DB14E980FE7C8EA72EC8CC71387C`.
+- Verificación: `76/76` tests JVM, cero failures/errors/skips,
+  `assembleDebug` y `git diff --check` PASS. Pendiente instalación y prueba
+  física con batería cargada.
+
+## Resultado histórico — una pieza manual a 2000 RPM
+
+- Autorización física explícita del lead: una sola pieza, sin feeder automático.
+- `gamepad1 A` conserva el pulso closed-loop `2000 RPM`, cap `0.90`, máximo
+  `5000 ms`; debe mantenerse sostenido.
+- `RIGHT_BUMPER` solicita una sola vez por INIT el kicker motor-only a la potencia
+  existente `0.85`, únicamente si el shooter lleva al menos `250 ms` listo.
+- Pulso solicitado `632 ms`; `KickerSubsystem` conserva además su corte duro
+  redundante `700 ms`, cooldown `300 ms`, BRAKE y todos los shutdowns.
+- El intake queda deliberadamente sin bindings. Servo kicker permanece deshabilitado
+  por compilación. No hay alimentación automática ni segundo pulso.
+- Cualquier falta de readiness antes del request rechaza el tiro; fault, release
+  del shooter, `B`, timeout o Stop ordenan cero.
+- Esta primera pieza se dirige exclusivamente a una red/backstop y mide caída/
+  recuperación de RPM y comportamiento del kicker. No certifica distancia,
+  precisión, hood, feeder ni `GOAL_AUTO`.
+- Telemetría nueva: `Shooter/Current ready hold`, `Shot/Armed`, `Active`,
+  `Consumed`, `Result`, `Duration`, `Pre RPM`, `Min RPM` y `Kicker state`.
+- APK: `C:\dev\RobotCode2026\TeamCode\build\outputs\apk\debug\TeamCode-debug.apk`.
+- Tamaño: `81,371,839` bytes.
+- SHA-256:
+  `83EFA383DA021B86168FBB376C5080674A1B39A81338B266B200FCE8E2AD2726`.
+- Verificación: `76/76` tests JVM, cero failures/errors/skips,
+  `assembleDebug` y `git diff --check` PASS. Pendiente instalación y prueba
+  física.
+- Primer intento reportado por el operador: `Shot/Armed` nunca se observó en
+  `true` y el movimiento del kicker se percibió demasiado corto. El reporte es
+  internamente ambiguo: en este candidato `Armed=false` impide llamar
+  `kicker.kick()`. Antes de cambiar tiempos se requieren `Shot/Result`,
+  `Shot/Duration`, `Shot/Consumed`, `Shooter/Max ready hold`,
+  `Shooter/Current ready hold` y `Shot/Kicker state` del intento para distinguir
+  rechazo de readiness, ventana transitoria o APK anterior. No se autoriza
+  ampliar el kicker a 5 s.
+- Aclaración posterior del operador: `RIGHT_BUMPER` se presionó antes de ready.
+  Por diseño, ese request fue rechazado y no valida la duración de `632 ms`.
+  Repetir con el mismo APK: mantener `A`, esperar `Shot/Armed=true` y sólo
+  entonces presionar una vez `RIGHT_BUMPER`. Si no aparece `Armed=true` antes
+  del autocorte, no disparar y registrar la telemetría.
+- Repetición válida con una pieza: `Shot/Result=COMPLETED`, duración `658.3 ms`,
+  pre/min RPM `1971.4/1500.0`, end RPM `1928.6`, ready hold máximo `1700.8 ms`,
+  batería mínima `10.60 V`, health `HEALTHY`, fault `none` y safety gate PASS.
+  La pieza salió completamente y recta, sin atasco, doble alimentación ni
+  síntomas. `Shot/Kicker state=IDLE`.
+- Bloqueo antes de otra pieza: el operador respondió “no” a la pregunta combinada
+  “¿se detuvo/regresó?”. El software actual sólo ordena avance y después cero;
+  no contiene fase automática de reversa. Es necesario separar físicamente:
+  (a) si el motor dejó de girar y (b) si el mecanismo volvió a posición de carga.
+  No ejecutar otra pieza hasta aclararlo.
+- Aclaración física final: el operador describe que el kicker empujó la pieza y
+  se detuvo después del tiempo programado; no permaneció energizado/girando.
+  El stop del pulso de una pieza queda `PASS`. La evidencia no mide retorno a
+  una posición indexada, que no existe en el camino motor-only actual.
+- La corrida sólo registra pre/min/end RPM, no el timestamp de recuperación.
+  Se observó `1500.0 -> 1928.6 RPM` antes del corte; la gráfica sugiere
+  aproximadamente `1–1.5 s`, pero no se certifica ese valor. Tres piezas
+  requieren readiness continuo `>=250 ms` antes de cada pulso y medición bajo
+  batería descargándose; no se autorizan como ráfaga inmediata con esta única
+  muestra.
+
+## Resultado aprobado — T8.1 closed-loop 2000 RPM
+
+- `SYSTEM CHECK and TUNING` vuelve a control cerrado con target fijo
+  `2000 RPM`, cap autorizado `0.90` y máximo `5000 ms`.
+- PID/FF permanecen sin cambios: `kV=0.0044`, `kS=2.5`, `kP=0.00075`,
+  `kI=kD=kA=0`, bang-bang threshold `150` y ratio 1:1.
+- Se conserva un pulso por INIT, `gamepad1 A` hold-to-run, watchdog de encoder
+  `150 ms`, overspeed absoluto `6000 RPM` y cero al soltar `A`, presionar `B`,
+  recibir Stop, fault o timeout.
+- Graficar `Shooter/Actual`, `Shooter/DiagSdkRPM`,
+  `Shooter/DiagWindowRPM`, `Shooter/Target` y `Shooter/Power`.
+- APK: `C:\dev\RobotCode2026\TeamCode\build\outputs\apk\debug\TeamCode-debug.apk`.
+- Tamaño: `81,336,971` bytes.
+- SHA-256:
+  `A4EFBC673E35A6857D0A36C6145560EFAF3FD1713456E6B7F588341A3296E73A`.
+- Verificación: `76/76` tests JVM, cero failures/errors/skips y
+  `assembleDebug` PASS.
+- Resultado físico: `STOPPED_TIMEOUT`, pulso `5018.3 ms`, delta `+3871 ticks`,
+  peak/end `2100.0/1971.4 RPM`, ready hold `2357.7 ms`, batería
+  `12.04 -> 11.58 V`, mínima `10.99 V`, health `HEALTHY`, fault `none`,
+  power final cero y safety gate PASS.
+- Giro continuo hacia fuera, stop completo y ausencia de ruido, vibración,
+  roce, olor o calentamiento. Actual/SDK/window permanecieron coherentes.
+- Gate `2000±100 RPM` durante `>=250 ms`: `PASS`.
+- Siguiente decisión bloqueante: el open-loop `0.90` sólo alcanzó
+  `2314.3 RPM`; `2450/2900 RPM`, piezas y feeder permanecen bloqueados hasta
+  decidir si se amplía nuevamente el envelope o se certifica `2000 RPM` como
+  techo actual.
+
+## Resultado — caracterización open-loop 0.90
+
+- APK instalado: `81,337,075` bytes, SHA-256
+  `1247F3D33B99897C9A9D0B314601E3467F03121F4275AC5E080878D460AB47EB`.
+- Resultado físico: `STOPPED_TIMEOUT`, pulso `5018.8 ms`, delta `+3963 ticks`,
+  peak/end `2314.3/2314.3 RPM`, batería `12.07 -> 11.45 V`, mínima `11.07 V`,
+  health `HEALTHY`, fault `none`, power final cero y safety gate PASS.
+- Giro continuo hacia fuera, stop completo y ausencia de ruido, vibración,
+  roce, olor o calentamiento. Actual/SDK/window fueron coherentes.
+- Conclusión: `2000 RPM` es físicamente alcanzable dentro del envelope `0.90`.
+  Esta evidencia no certifica todavía control cerrado ni autoriza 2450/2900.
+
+## Resultado — caracterización open-loop 0.75
+
+- Propósito: distinguir si el resultado bloqueado de `2000 RPM` fue sólo tiempo
+  insuficiente de aceleración o si `0.75` es el techo físico alcanzable con la
+  batería/montaje actuales. Esta prueba no aumenta alcance ni constituye tuneo PID.
+- `SYSTEM CHECK and TUNING` ordena potencia abierta fija `0.75`, sin PID,
+  feedforward ni bang-bang, durante máximo `5000 ms`.
+- `gamepad1 A` es hold-to-run; soltar `A`, presionar `B`, Stop, fault, ausencia
+  de encoder o timeout ordena cero. Se conserva un solo pulso por INIT, output cap
+  `0.75`, watchdog de encoder `150 ms` y overspeed absoluto `6000 RPM`.
+- La referencia informativa permanece en `2000 RPM`, pero
+  `Shooter/Target=0` y `Shooter/ControlMode=OPEN_LOOP` durante el pulso para no
+  confundir la caracterización con control cerrado.
+- Graficar únicamente `Shooter/Actual`, `Shooter/DiagSdkRPM`,
+  `Shooter/DiagWindowRPM` y `Shooter/Power`.
+- APK: `C:\dev\RobotCode2026\TeamCode\build\outputs\apk\debug\TeamCode-debug.apk`.
+- Tamaño: `81,337,103` bytes.
+- SHA-256:
+  `3F3F388B2FD53CD7DBD951D83C126772E319FEF85C8EF0B57F994BDAF4FAC5D6`.
+- Verificación: `76/76` tests JVM, cero failures/errors/skips y
+  `assembleDebug` PASS.
+- Resultado físico: `STOPPED_TIMEOUT`, pulso `5048.9 ms`, delta `+3117 ticks`,
+  peak/end `1800.0/1800.0 RPM`, batería `12.11 -> 11.81 V`, mínima `11.37 V`,
+  health `HEALTHY`, fault `none`, power final cero y safety gate PASS.
+- El operador confirmó giro continuo hacia fuera, stop completo y ausencia de
+  ruido, vibración, roce, olor o calentamiento. Actual/SDK/window fueron
+  coherentes y la gráfica se aproximó a una meseta de `1750–1800 RPM`.
+- Conclusión: el cap `0.75` no alcanza `2000 RPM`; ampliar de `3000` a `5000 ms`
+  sólo agregó aproximadamente `130 RPM` al peak y no cerró el gate. No seguir
+  ajustando kS/kV/kP para compensar una salida ya saturada.
+- Siguiente decisión bloqueante: conservar el techo certificado de `1800 RPM` o
+  autorizar explícitamente un nuevo envelope de potencia antes de otra corrida.
+  `2450/2900 RPM`, piezas y feeder permanecen bloqueados.
+
+## Resultado bloqueado — T8.1 2000 RPM
+
+- `SYSTEM CHECK and TUNING`: target fijo `2000 RPM`, gamepad1 `A` hold-to-run.
+- Un pulso por INIT, duración máxima `3000 ms`, output cap `0.75`, watchdog de
+  encoder `150 ms`, `B` stop y cero al soltar `A` o detener el OpMode.
+- Control congelado en el candidato aceptado: `kV=0.0044`, `kS=2.5`,
+  `kP=0.00075`, `kI=kD=kA=0`, bang-bang threshold `150`, ratio 1:1.
+- APK: `C:\dev\RobotCode2026\TeamCode\build\outputs\apk\debug\TeamCode-debug.apk`.
+- Tamaño: `81,336,939` bytes.
+- SHA-256:
+  `4EF381C7B14470EC5758B4EBDC1AA4B1CCE4E663F3BE39F20011733BD74715BA`.
+- Verificación: `76/76` tests JVM, cero failures/errors/skips y
+  `assembleDebug` PASS.
+- Resultado físico: pulso `3010.0 ms`, delta `+1550 ticks`, peak/end
+  `1671.4/1628.6 RPM`, ready hold `0.0 ms`, batería `12.17 -> 11.67 V`,
+  mínima `11.38 V`, health `HEALTHY`, fault `none`, power final cero y safety
+  gate PASS. Giro continuo hacia fuera, stop completo y sin síntomas mecánicos.
+- Gate `2000±100 RPM` durante `>=250 ms`: `BLOCKED`.
+- Causa: error `>150 RPM` durante todo el pulso mantiene bang-bang en `14 V`,
+  pero el cap `0.75` limita la salida; la rueda seguía acelerando al timeout.
+  kS/kV/kP no gobiernan la salida en ese tramo. No hacer un tercer ajuste de
+  gains ni cambiar cap/timeout sin autorización explícita.
+
+## Escalón aprobado — T8.1 1500 RPM
+
+- Pulso `3023.9 ms`, delta `+1536 ticks`, peak/end `1585.7/1585.7 RPM`.
+- Ready hold `1093.5 ms`; batería `12.22 -> 12.15 V`, mínima `11.42 V`.
+- Health `HEALTHY`, fault `none`, power final cero y safety gate PASS.
+- Giro continuo hacia fuera, stop completo y sin síntomas mecánicos.
+- Gate `1500±100 RPM` durante `>=250 ms`: `PASS`.
+
+## Candidato aprobado a 1000 RPM
+
+- Cambio solicitado después de T8.0: en `SYSTEM CHECK and TUNING`, `gamepad1 A`
+  por sí solo activa el mismo pulso hold-to-run; ya no exige el chord `START+A`.
+- El cable/adaptador del encoder ya fue sustituido físicamente antes del primer
+  retest energizado.
+- Ese retest produjo feedback continuo pero invertido: target `+1000 RPM`,
+  delta `-1454 ticks`, peak/end `-1542.9 RPM` y ready hold `0.0 ms`; power final
+  cero, safety gate PASS y sin síntomas mecánicos.
+- Causa demostrada: doble inversión entre `DcMotor.Direction.REVERSE` y
+  `SHOOTER_ENCODER_IS_INVERTED=true`. La corrección aplica solamente la inversión
+  residual a los readbacks SDK/FTCLib; no cambia dirección física ni control.
+- La regresión de signo pasó: delta `+1030 ticks`, tres estimadores positivos,
+  peak/end `900/814.3 RPM`, pero ready hold `0.0 ms`.
+- Ajuste T8.1 `1/2`, `kV=0.00365`: Dashboard confirmó el valor cargado; retest
+  dio delta `+1051 ticks`, peak/end `900/900 RPM` y ready hold `0.0 ms`.
+- Ajuste T8.1 `2/2`: únicamente `SHOOTER_KV` cambia `0.00365 -> 0.0044`.
+  kS/kP/kI/kD, bang-bang, ratio 1:1, target, límites y stops permanecen.
+- Retest final con `kV=0.0044`: peak/end `1071.4/1028.6 RPM`, ready hold
+  `1712.7 ms`, delta `+1182 ticks`, batería mínima `11.52 V`, health `HEALTHY`,
+  fault `none`, power final cero, safety gate PASS y sin síntomas mecánicos.
+- Gate `1000±100 RPM` durante `>=250 ms`: `PASS`.
+- Se conservan un pulso por INIT, target `1000 RPM`, output cap `0.75`, watchdog
+  de encoder `150 ms`, timeout `3000 ms`, `B` stop y cero inmediato al soltar
+  `A` o detener el OpMode.
+- `gamepad2 A` conserva exclusivamente la inyección de fault de voltaje.
+- APK: `C:\dev\RobotCode2026\TeamCode\build\outputs\apk\debug\TeamCode-debug.apk`.
+- Tamaño: `81,336,923` bytes.
+- SHA-256:
+  `FE31564532DBFE7AD1C9E398CBBC5653309C92FA59FAB3C1F4553674D33CE4EB`.
+- Verificación: `76/76` tests JVM, cero failures/errors/skips y
+  `assembleDebug` PASS.
+
+## Cierre vigente — FND-029
+
+- FND-029 está `CRITICAL / CLOSED`; `T8.0 RAW PASS` y T8.1 `1000 RPM PASS`.
+  Piezas, feeder y autos de tiro permanecen bloqueados por sus gates.
 - Hecho físico actual: motor y rueda del shooter son 1:1. El valor de software
   heredado `SHOOTER_GEAR_RATIO=2.0` se corrigió a `1.0`; no se modificó ninguna
   relación mecánica.
-- Bug reproducible: con potencia cero, el eje gira manualmente y `LoopCount`
-  avanza, pero todas las lecturas de posición/velocidad permanecen en cero. Bajo
-  potencia se han observado pocas cuentas y picos instantáneos incompatibles con
-  la posición acumulada.
+- Síntoma histórico reproducible: con potencia cero, el eje giraba manualmente y
+  `LoopCount` avanzaba, pero las lecturas de posición/velocidad permanecían en
+  cero. El síntoma dejó de reproducirse después de apagar y reasentar el conector
+  del encoder sin cambiar cable, puerto ni encoder.
 - La hipótesis de bulk cache quedó refutada por retest con `AUTO` y limpieza
   explícita por ciclo; ese workaround se retiró de `SystemCheck`.
-- La afirmación previa de encoder corrupto tampoco está demostrada: una captura
-  motorizada mostró posición raw monotónica. La causa sigue abierta entre
-  configuración/puerto REV, adaptador/cable, alimentación/canales A-B y encoder.
+- Encoder corrupto queda rechazado para este síntoma: el mismo encoder contó
+  bidireccionalmente `280 ticks` exactos por diez vueltas. La causa observada está
+  en el camino cable/conector; no se distingue todavía terminal flojo de una
+  intermitencia interna del cable.
 - FND-028 conserva su cierre histórico para `09B2...DAC1`, pero su evidencia no
   se transfiere al candidato/configuración actual.
 
-## Candidato RAW actual — no instalado
+## Candidato RAW probado físicamente
 
 - OpMode: `DIAG: Shooter Encoder RAW`.
 - Sin FTCLib, scheduler, PID, feedforward ni reset continuo.
@@ -36,21 +265,25 @@
   velocidad raw/outward, delta desde START, min/max y muestras modificadas.
 - APK: `C:\dev\RobotCode2026\TeamCode\build\outputs\apk\debug\TeamCode-debug.apk`.
 - Tamaño: `81,370,478` bytes.
-- SHA-256:
-  `FE7A859729BB03681EB630075AF6886EC80D3661FE29EE06DD3EEECD61B4B1AE`.
+- SHA-256 de la compilación instalada en la sesión:
+  `EE726B93482F23BD99FA4E998BE2263D261E043952F6198D17FA9AF46A0841A2`.
 - Verificación final: `74/74` tests JVM, cero
   failures/errors/skips, `assembleDebug` y `git diff --check` PASS.
 
-### Decisión después de la única prueba RAW
+### Resultado físico T8.0
 
-- `Outward delta≈+280` en diez vueltas: el path SDK/puerto/encoder cuenta; pasar
-  a caracterización abierta instrumentada con corriente y voltaje.
-- Delta `0`: apagar robot y ejecutar matriz cruzada de encoder/cable/puerto; no
-  compilar otro controlador.
-- Delta distinto de cero pero muy lejos de `280`, discontinuo o unidireccional:
-  tratar como señal cuadratura incompleta/intermitente y ejecutar la misma matriz.
-- Sólo después de `280±1` en ambos sentidos se permite calcular `kS/kV`; `kP`
-  se ajusta después. `kI/kD` permanecen cero salvo evidencia.
+- INIT: `Connection=USB, module 2`, bulk caching `OFF`, commanded power `0.0`.
+- Primera salida `-282/+282` descartada para gate porque la llanta fue
+  reacomodada después de PLAY.
+- Pasada limpia contraria: raw/outward `+280/-280`, `Changed samples=280`,
+  min/max `-2730..-2450`.
+- Pasada limpia hacia fuera: raw/outward `-280/+280`, `Changed samples=288`,
+  min/max `-2730..-2450`.
+- Gate `280±1` y signo outward: `PASS` en ambos sentidos.
+- Matriz cruzada y medición A/B: no ejecutadas porque después del reasentado no
+  hubo delta cero, discontinuidad ni fallo unidireccional.
+- Si reaparece el congelamiento, reemplazar primero cable/adaptador conocido-bueno
+  y completar la matriz; no intentar ocultarlo con software.
 
 ## Cambios de software acumulados en este bloque
 

@@ -27,6 +27,7 @@ public final class RobotMap {
     //Shooter
     public static final String SHOOTER_MOTOR = "Shooter";
     public static final boolean SHOOTER_MOTOR_IS_INVERTED = true;
+    // Sign of a direct SDK read while the motor direction is FORWARD.
     public static final boolean SHOOTER_ENCODER_IS_INVERTED = true;
 
     public static final String INTAKE_MOTOR = "intakeMotor";
