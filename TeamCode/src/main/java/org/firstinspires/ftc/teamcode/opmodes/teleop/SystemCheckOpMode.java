@@ -94,10 +94,6 @@ public class SystemCheckOpMode extends SafeCommandOpMode {
         }
         kicker = new KickerSubsystem(hardwareMap);
         intake = new IntakeSubsystem(hardwareMap);
-        // Requested commissioning behavior: intake runs throughout PLAY without
-        // consuming a gamepad button. IntakeSubsystem remains registered with
-        // RobotSafety, so OpMode Stop/E-stop still commands zero.
-        intake.setDefaultCommand(new RunCommand(intake::intakeOn, intake));
         turret = new TurretSubsystem(hardwareMap);
         turretArming = new TurretArmingStateMachine(
                 LowAltitudeConstants.TurretConstants.TURRET_ARM_HOLD_MS);
@@ -118,8 +114,9 @@ public class SystemCheckOpMode extends SafeCommandOpMode {
 
         // 2. THREE-PIECE GATE: hold-to-run request with readiness before every piece.
         new GamepadButton(driverPad, GamepadKeys.Button.RIGHT_BUMPER)
-                .whileHeld(new RunCommand(this::requestThreeShotBurst, kicker))
-                .whenReleased(new InstantCommand(this::releaseThreeShotBurst, kicker));
+                .whileHeld(new RunCommand(this::requestThreeShotBurst, kicker, intake))
+                .whenReleased(new InstantCommand(
+                        this::releaseThreeShotBurst, kicker, intake));
 
         // Commissioning-only fail-closed injection; face buttons never request shooter output.
         new GamepadButton(faultPad, GamepadKeys.Button.A)
@@ -155,7 +152,7 @@ public class SystemCheckOpMode extends SafeCommandOpMode {
 
         telemetry.addLine("✅ ROBOT LISTO PARA TUNING");
         telemetry.addLine("SHOOTER: un pulso por INIT; A=hold, B=stop");
-        telemetry.addLine("INTAKE: ON automatico durante PLAY; Stop/E-stop=0");
+        telemetry.addLine("INTAKE: OFF en spin-up; ON automatico al iniciar rafaga");
         telemetry.addLine("Abra http://192.168.43.1:8080/dash");
         telemetry.update();
     }
@@ -232,7 +229,7 @@ public class SystemCheckOpMode extends SafeCommandOpMode {
         telemetry.addData("Shooter applied power", shooter.getLastAppliedPower());
         telemetry.addLine("Gamepad1 A=2000 RPM; soltar/B/Stop=0; autocorte 8 s");
         telemetry.addLine("Sostener A+RIGHT_BUMPER=ráfaga 3 piezas, máximo 3.5 s");
-        telemetry.addLine("Cada pieza exige ready >=250 ms; intake permanece ON");
+        telemetry.addLine("Cada pieza exige ready >=250 ms; intake ON solo en rafaga");
         telemetry.addData("Burst/Armed", shooterPulseActive
                 && shooter.isReady()
                 && shooterCurrentReadyHoldMs >= BURST_READY_HOLD_MS
@@ -422,6 +419,7 @@ public class SystemCheckOpMode extends SafeCommandOpMode {
         burstDurationMs = 0;
         burstCompletedShots = 0;
         burstResult = "BURST_ACTIVE";
+        intake.intakeOn();
         startNextBurstShot(burstStartNanos);
     }
 
@@ -496,6 +494,7 @@ public class SystemCheckOpMode extends SafeCommandOpMode {
         }
         burstDurationMs = (System.nanoTime() - burstStartNanos) / 1_000_000.0;
         RobotSafety.timeZeroCommand("SYSTEM_CHECK_BURST_STOP", kicker::stop);
+        RobotSafety.timeZeroCommand("SYSTEM_CHECK_BURST_INTAKE_STOP", intake::intakeOff);
         burstShotPulseActive = false;
         burstActive = false;
         burstResult = result;

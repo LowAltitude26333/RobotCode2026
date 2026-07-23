@@ -18,9 +18,11 @@
 - Cada pieza conserva pulso kicker motor-only `632 ms`, corte duro redundante
   `700 ms` y cooldown `300 ms`. Antes de cada una exige readiness continuo
   `2000±90 RPM` durante `>=250 ms`; nunca dispara por temporizador solamente.
-- El intake arranca automáticamente al entrar a PLAY y permanece encendido
-  durante este OpMode, sin botón dedicado. Stop/E-stop ordena cero mediante
-  `RobotSafety`. Servo kicker permanece deshabilitado. Una ráfaga por INIT.
+- El intake permanece apagado durante INIT y spin-up para no precargar el
+  shooter. Se enciende automáticamente sólo cuando inicia la ráfaga, después
+  de readiness continuo, y vuelve a cero al completar, abortar, soltar,
+  recibir fault o Stop/E-stop. Servo kicker permanece deshabilitado. Una
+  ráfaga por INIT.
 - No se concede kicker continuo: conserva pulsos acotados hacia el mismo lado,
   porque eliminar el límite `700 ms` debilitaría FND-018 y permitiría atasco o
   alimentación con RPM todavía caída.
@@ -30,9 +32,9 @@
 - Telemetría: `Burst/Result`, `Completed shots`, `Duration`, estado del kicker
   y, para cada pieza, tiempo de inicio, RPM previa y RPM mínima.
 - APK: `C:\dev\RobotCode2026\TeamCode\build\outputs\apk\debug\TeamCode-debug.apk`.
-- Tamaño: `81,339,497` bytes.
+- Tamaño: `81,374,245` bytes.
 - SHA-256:
-  `8C79BBB9DC5801CC9BE381481E1F68DEEE67DB14E980FE7C8EA72EC8CC71387C`.
+  `1938A18EA3494CD1D1351D53AA738B27556058DF3F8E775E1BB837319D817B34`.
 - Verificación: `76/76` tests JVM, cero failures/errors/skips,
   `assembleDebug` y `git diff --check` PASS. Pendiente instalación y prueba
   física con batería cargada.
