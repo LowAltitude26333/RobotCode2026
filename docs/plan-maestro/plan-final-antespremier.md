@@ -338,6 +338,17 @@ como efecto incidental.
   manuales en ambos sentidos y reportar conexión/puerto. Si queda en cero o es
   discontinuo, ejecutar matriz cruzada encoder/adaptador/cable/puerto y medir
   alimentación/canales A-B. No compensar con filtros ni gains.
+- **La prueba de giro manual sólo es válida después de PLAY.** Antes de PLAY
+  (loop de INIT), `SafeCommandOpMode` no corre el scheduler y toda la
+  telemetría queda congelada por diseño; girar el eje en INIT no indica nada.
+  Confirmar `Shooter/LoopCount`/`Diag/Changed samples` avanzando antes de leer
+  el resultado de las diez vueltas.
+- **Antes de la matriz cruzada completa, reasentar el conector del encoder**
+  (desconectar y volver a insertar hasta el tope) y repetir la prueba. Es la
+  causa más reportada en la comunidad FTC/REV para "encoder no cuenta"
+  (conector JST no asentado o cable dañado) y el paso más barato antes de abrir
+  la matriz completa — no es una causa confirmada para este caso, ningún hilo
+  externo reproduce el síntoma exacto.
 - Configuración confirmada: Yellow Jacket 5203 de 6000 RPM, 28 ticks/rev,
   reducción interna 1:1 y motor→rueda del shooter 1:1. El software usa
   `SHOOTER_GEAR_RATIO=1.0`.
@@ -455,8 +466,11 @@ entrega.
 3. Confirmar rama/HEAD/worktree y fijar un único commit, APK, configuración,
    batería y paquete `02-sesion-larga_v1.xlsx`; no heredar hashes de otro build.
 4. Ejecutar primero el OpMode aislado `DIAG: Shooter Encoder RAW`, siempre a
-   potencia cero. Exigir `280±1 ticks` por diez vueltas en ambos sentidos; si no,
-   resolver FND-029 mediante matriz física antes de continuar.
+   potencia cero. Dar PLAY antes de girar el eje a mano (en INIT la telemetría
+   no se refresca por diseño). Exigir `280±1 ticks` por diez vueltas en ambos
+   sentidos; si no, reasentar el conector del encoder y repetir antes de abrir
+   la matriz física completa (causa más común en la comunidad FTC/REV, no
+   confirmada para este caso).
 5. Después de cerrar FND-029, auditar el owner y todos los paths de cero, clamps,
    watchdogs, stop e interrupción del shooter existente. No construir otro
    controlador de competencia.
