@@ -1,13 +1,50 @@
 # Handoff actual — commissioning del shooter T8.1
 
 > **ESTADO DE FRONTERA:** FND-029 está cerrado. Cable/adaptador reemplazado,
-> T8.0 RAW bidireccional PASS y T8.1 `1000/1500/2000 RPM` PASS. El envelope
-> `0.90` sólo alcanzó `2314.3 RPM` open-loop; no avanzar a 2450/2900, piezas
-> fuera del gate. Una pieza a `2000 RPM` salió recta y el kicker paró. El lead
-> aceptó como objetivo tres piezas en máximo `3.5 s`; el siguiente paso único
-> es el gate de ráfaga acotado descrito abajo.
+> T8.0 RAW bidireccional PASS y T8.1 `1000/1500/2000 RPM` PASS. El candidato
+> cargado `masterplan@d1a183c` está instalado con target `1800 RPM`, cap `0.90`
+> e intake OFF durante spin-up. La primera ráfaga expulsó físicamente las tres
+> piezas, pero terminó `STOPPED_BURST_TIMEOUT`, contó sólo `2` pulsos completos
+> y duró `3528.3 ms`; por tanto el gate estricto `<=3500 ms` sigue OPEN. No
+> cambiar PID/FF, ratio 1:1 ni ampliar potencia para ocultar este resultado.
 
-## SIGUIENTE PASO ÚNICO — ráfaga de 3 piezas en máximo 3.5 s
+## SIGUIENTE PASO ÚNICO — caracterizar y acortar sólo el pulso del burst
+
+- Congelar target cargado `1800 RPM`, cap `0.90`, readiness `1800±90 RPM`
+  durante `>=250 ms`, cooldown `300 ms`, secuencia del intake, PID/FF,
+  watchdogs, stops y ratio 1:1.
+- Evidencia exacta de la primera ráfaga:
+  - Resultado lógico `STOPPED_BURST_TIMEOUT`, `Consumed=true`,
+    `Completed shots=2`, duración `3528.3 ms`.
+  - Resultado físico: salieron las tres piezas.
+  - Shot 1: start `0.0 ms`, pre/min `1842.9/1371.4 RPM`.
+  - Shot 2: start `1275.9 ms`, pre/min `1800.0/1114.3 RPM`.
+  - Shot 3: start `3170.6 ms`, pre/min publicado `1800.0/1800.0 RPM`.
+- Con el pulso actual `632 ms`, el tercer pulso terminaría teóricamente en
+  `3802.6 ms`; para terminar antes de `3500 ms` tendría que iniciar a más
+  tardar en `2868.0 ms`. Faltan al menos `302.6 ms`, sin contar jitter del loop.
+- El timeout se evalúa antes de acreditar el final del pulso. Eso explica
+  `Completed shots=2`, pero reordenar las condiciones no resuelve el objetivo:
+  el pulso completo igualmente terminaría después de `3500 ms`.
+- La tercera pieza salió durante los aproximadamente `357.7 ms` disponibles
+  entre su inicio y la muestra final. Hipótesis siguiente, todavía NO validada:
+  añadir una duración exclusiva del gate de burst, inicialmente `360 ms`, sin
+  modificar el global histórico `KICKER_EXTEND_TIME_MS=632` ni el corte duro
+  redundante `KICKER_MAX_PULSE_MS=700`.
+- Validar primero el pulso burst-only corto con una pieza y confirmar salida
+  completa, stop físico y ausencia de atasco; después repetir tres piezas.
+  Cambiar una sola variable permite saber si los `632 ms` mantenían carga
+  innecesaria y retrasaban también la recuperación del shooter.
+- No marcar una pieza como completada al mero inicio del pulso: no existe sensor
+  de salida y eso convertiría una orden en evidencia física. Añadir telemetría
+  separada `Started pulses`/`Completed pulses` si se modifica la instrumentación.
+- El `min=1800 RPM` del Shot 3 no demuestra que no hubo caída: el timeout cortó
+  la ventana unos `357.7 ms` después del inicio y no existe muestreo post-shot.
+- Alternativas que requieren decisión explícita del lead: relajar `3500 ms`,
+  reducir el hold `250 ms`, ampliar tolerancia/bajar nuevamente RPM o abrir
+  potencia por encima de `0.90`. Ninguna está autorizada por esta evidencia.
+
+## Candidato instalado y contrato de la ráfaga actual
 
 - Autorización/objetivo del lead: tres piezas, duración desde el inicio del
   primer pulso hasta el final del tercero `<=3500 ms`.
@@ -36,8 +73,8 @@
 - SHA-256:
   `40EDE95DD021AFFF7F4DAF856695110FE2A53915D2E1C25416A937AE73CC87BF`.
 - Verificación: `76/76` tests JVM, cero failures/errors/skips,
-  `assembleDebug` y `git diff --check` PASS. Pendiente instalación y prueba
-  física con batería cargada.
+  `assembleDebug` y `git diff --check` PASS; instalación ADB `Success`.
+  Resultado físico registrado arriba; este APK no cierra el gate temporal.
 
 ## Resultado histórico — una pieza manual a 2000 RPM
 
