@@ -1,29 +1,233 @@
-# Handoff actual — llenar el Excel de MP-03
+# Handoff actual — commissioning del shooter T8.1
 
-> **SIGUIENTE PASO ÚNICO:** llenar
-> [`01-cierre-mp03_v1.xlsx`](../../outputs/plan-final-antespremier/01-cierre-mp03_v1.xlsx)
-> con el OpMode pasivo `Limelight Diagnostic`, guardarlo como
-> `01-cierre-mp03_v1_FILLED.xlsx` y devolverlo para análisis.
+> **SIGUIENTE PASO ÚNICO:** instalar el APK RAW `FE7A...B1AE`, abrir
+> `DIAG: Shooter Encoder RAW`, pulsar INIT/PLAY y girar el eje exactamente diez
+> vueltas hacia fuera con potencia hardcoded en cero. Registrar `Diag/Connection`,
+> `Raw delta`, `Outward delta`, `Changed samples` y `Raw min..max`. No energizar
+> el shooter, no cambiar gains y no sustituir cable/puerto hasta obtener este
+> resultado de frontera.
 
-## Candidato y límites de esta sesión
+## Bloqueo vigente — FND-029
 
-- Template canónico: `outputs/plan-final-antespremier/01-cierre-mp03_v1.xlsx`.
-- SHA-256 del template: `C59598745FBFE4245140F8F891A4AA4742B56B5EB3CEB83B4FC0D71A0B1ABC35`.
-- Fuente del APK: `masterplan@533efbab6490184faa961d57aca7f27971246fcf`.
-- APK diagnóstico **no instalado**: `TeamCode/build/outputs/apk/debug/TeamCode-debug.apk`.
-- Tamaño: `81,394,879` bytes.
-- SHA-256 del APK: `4F70D2168A36EB61A229858C9D6511DD6C97AF4F004ACB3832D1C7D91BD3A7DD`.
-- Verificación software: `68/68` pruebas JVM, `assembleDebug` y revisión estática del
-  call path pasivo `LimelightDiagnosticOpMode -> LimelightSubsystem` en PASS.
+- FND-029 está `CRITICAL / INVESTIGATING` y bloquea T8.1, `1500+ RPM`, piezas,
+  feeder y autos de tiro.
+- Hecho físico actual: motor y rueda del shooter son 1:1. El valor de software
+  heredado `SHOOTER_GEAR_RATIO=2.0` se corrigió a `1.0`; no se modificó ninguna
+  relación mecánica.
+- Bug reproducible: con potencia cero, el eje gira manualmente y `LoopCount`
+  avanza, pero todas las lecturas de posición/velocidad permanecen en cero. Bajo
+  potencia se han observado pocas cuentas y picos instantáneos incompatibles con
+  la posición acumulada.
+- La hipótesis de bulk cache quedó refutada por retest con `AUTO` y limpieza
+  explícita por ciclo; ese workaround se retiró de `SystemCheck`.
+- La afirmación previa de encoder corrupto tampoco está demostrada: una captura
+  motorizada mostró posición raw monotónica. La causa sigue abierta entre
+  configuración/puerto REV, adaptador/cable, alimentación/canales A-B y encoder.
+- FND-028 conserva su cierre histórico para `09B2...DAC1`, pero su evidencia no
+  se transfiere al candidato/configuración actual.
 
-El OpMode sólo mapea `RobotMap.LIMELIGHT`, sondea cámara y publica telemetría. No
-construye `RobotContainer`, drivetrain, torreta, shooter, feeder ni intake. `BACK`,
-Stop y salida del OpMode cierran el recurso de visión; aun así, mantener Stop/E-stop
-accesible y abortar ante cualquier movimiento o excepción.
+## Candidato RAW actual — no instalado
 
-No abrir MP-04, no corregir `robotPose` y no habilitar ningún consumidor o actuador
-hasta recibir y revisar `01-cierre-mp03_v1_FILLED.xlsx`. El dataset de tiros está
-preparado sólo para sesiones futuras; MP-03 no autoriza piezas ni disparos.
+- OpMode: `DIAG: Shooter Encoder RAW`.
+- Sin FTCLib, scheduler, PID, feedforward ni reset continuo.
+- `DcMotorEx` directo a `RobotMap.SHOOTER_MOTOR`; bulk caching `OFF`.
+- Potencia sin binding y fijada a `0.0` en init, cada loop y stop.
+- Telemetría: nombre/configuración, `getConnectionInfo()`, modo SDK, posición y
+  velocidad raw/outward, delta desde START, min/max y muestras modificadas.
+- APK: `C:\dev\RobotCode2026\TeamCode\build\outputs\apk\debug\TeamCode-debug.apk`.
+- Tamaño: `81,370,478` bytes.
+- SHA-256:
+  `FE7A859729BB03681EB630075AF6886EC80D3661FE29EE06DD3EEECD61B4B1AE`.
+- Verificación final: `74/74` tests JVM, cero
+  failures/errors/skips, `assembleDebug` y `git diff --check` PASS.
+
+### Decisión después de la única prueba RAW
+
+- `Outward delta≈+280` en diez vueltas: el path SDK/puerto/encoder cuenta; pasar
+  a caracterización abierta instrumentada con corriente y voltaje.
+- Delta `0`: apagar robot y ejecutar matriz cruzada de encoder/cable/puerto; no
+  compilar otro controlador.
+- Delta distinto de cero pero muy lejos de `280`, discontinuo o unidireccional:
+  tratar como señal cuadratura incompleta/intermitente y ejecutar la misma matriz.
+- Sólo después de `280±1` en ambos sentidos se permite calcular `kS/kV`; `kP`
+  se ajusta después. `kI/kD` permanecen cero salvo evidencia.
+
+## Cambios de software acumulados en este bloque
+
+- `AGENTS.md`: fija `C:\dev\RobotCode2026` como único workspace autoritativo.
+- `RobotMap`: separa el signo outward del encoder del sentido físico del motor.
+- `ShooterFeedbackSign` y tests: normalización raw/outward explícita.
+- `ShooterVelocityWindow` y tests: diagnóstico independiente por delta de
+  posición en ventana de 100 ms.
+- `ShooterSubsystem`: publica posición, velocidad SDK, velocidad FTCLib y RPM por
+  ventana sin eliminar clamps, watchdogs, timeout ni stop.
+- `SystemCheckOpMode`: crea las claves diagnósticas desde INIT y muestra los tres
+  caminos de medición durante T8.1.
+- `LowAltitudeConstants`: corrige exclusivamente la relación externa confirmada
+  `2.0→1.0`; conserva `28 ticks/rev`, `6000 RPM` y gains existentes.
+- `ShooterHardwareConfigTest`: protege 28 ticks/rev, 6000 RPM y relación 1:1.
+- `ShooterEncoderRawDiagnosticOpMode`: diagnóstico de frontera con potencia cero.
+- Intento de caché REV: implementado para probar la hipótesis, refutado físicamente
+  y retirado; no forma parte del diff final.
+
+## Workspace, alcance y estado
+
+- Workspace autoritativo obligatorio: `C:\dev\RobotCode2026`.
+- La copia `C:\Users\brito\OneDrive\Documentos\FTC\RobotCode2026` no es
+  autoritativa: no editar, compilar, desplegar ni tomar APK/hashes desde ella.
+- Rama/base inspeccionada: `masterplan@f272792`; el working tree contiene cambios
+  deliberados sin commit y evidencia del equipo que se debe preservar.
+- MP-03 está cerrado por excepción documentada. No reabrirlo.
+- Alcance activo exclusivo: commissioning sin carga del shooter, T8.1.
+- Fuera de alcance: MP-04, fusión, auto-aim, torreta, feeder, intake y piezas.
+- `3600 RPM` permanece bloqueado.
+- Una sola prueba física por interacción; el humano decide gate o aborto.
+
+## Candidato diagnóstico probado físicamente
+
+- APK: `C:\dev\RobotCode2026\TeamCode\build\outputs\apk\debug\TeamCode-debug.apk`.
+- Tamaño: `81,335,740` bytes.
+- SHA-256:
+  `CCD709023E403963533297AC8F5AF221F57B6F4079B96209ADB937681D68428F`.
+- Verificación software: `73/73` pruebas JVM, cero failures/errors,
+  `:TeamCode:testDebugUnitTest`, `assembleDebug` y `git diff --check` PASS.
+- Cambio exclusivamente diagnóstico: conserva control, gains, relación, dirección,
+  límite `0.75`, watchdogs y stop; añade comparación de velocidad SDK cruda,
+  FTCLib corregida y RPM calculada por delta de ticks en ventana de `100 ms`.
+- Gráfica requerida: `Shooter/Target`, `Shooter/Actual`,
+  `Shooter/DiagSdkRPM` y `Shooter/DiagWindowRPM`.
+
+### Resultado físico `CCD7...428F`
+
+- `STOPPED_TIMEOUT`, `3007.8 ms`, ticks outward `0 -> 72` y raw `0 -> -72`.
+- Peak/end indicado `1028.6/685.7 RPM`; ready hold `0.0 ms`.
+- Batería `13.26 -> 12.75 V`, mínima `12.47 V`.
+- Power final `0`, health=`HEALTHY`, fault=`none`.
+- Safety stop: mismo ciclo, `0.129 ms`, gate 50 ms PASS y cero fallos.
+- La gráfica simultánea demuestra que `Actual`/FTCLib y SDK RPM siguen la misma
+  señal instantánea errática; la estimación independiente por delta de posición
+  en `100 ms` también cambia de signo y sólo acumula `72` ticks netos.
+- La salida física sólo permite potencia `0..0.75` y el operador confirmó giro
+  continuo hacia fuera. Por tanto, los cambios de signo no corresponden a una
+  reversa ordenada ni a la corrección de overflow de FTCLib.
+
+Conclusión de diagnóstico: el fallo está aguas arriba de los tres cálculos de
+software, en la señal cuadratura que llega al Hub. La hipótesis principal es un
+canal intermitente/ausente por cable, conector, encoder interno o entrada del Hub;
+la prueba no distingue todavía cuál de esos componentes. No filtrar, suavizar ni
+ajustar PID para ocultarlo.
+
+## Evidencia del candidato corregido `2E28...52C2`
+
+- APK histórico; la ruta de build local ahora contiene el candidato diagnóstico
+  `CCD7...428F`.
+- Tamaño: `81,333,611` bytes.
+- SHA-256:
+  `2E28D228462EAE23C22D37008D932935BDBC2D02AE502A35BF3BE8B7C4EE52C2`.
+- Estado físico: instalado y probado; no pasó T8.1.
+- Verificación software: `70/70` pruebas JVM, cero failures/errors,
+  `:TeamCode:testDebugUnitTest`, `assembleDebug` y `git diff --check` PASS.
+- Advertencias de compilación sobre Java 8/JDK 21 son preexistentes; no se cambió
+  Gradle, SDK ni dependencias.
+
+Dos intentos parciales se conservaron separados porque FTC Dashboard no permitió
+dos gráficas simultáneas:
+
+- Intento 1: gráfica `Target/Actual`, sin telemetría final coincidente; sólo
+  diagnóstico visual, no evidencia de gate.
+- Intento 2: `STOPPED_TIMEOUT`, `3005.9 ms`, ticks `0 -> 93`, encoder responded,
+  peak/end indicado `685.7/685.7 RPM`, batería `13.73 -> 13.46 V`, mínima
+  `12.84 V`, ready hold `0.0 ms`, output limit/potencia durante pulso `0.75`,
+  potencia final `0`, health=`HEALTHY`, fault=`none`, giro rápido hacia fuera,
+  paro completo y sin ruido, vibración, roce, olor ni calentamiento. Safety stop:
+  mismo ciclo, `0.044 ms`, gate 50 ms PASS y cero fallos.
+
+Conclusión: T8.1 a `1000 RPM` no pasa. Batería, potencia ordenada y stop quedaron
+descartados como causa inmediata; la lectura instantánea de velocidad no concuerda
+con los ticks acumulados. No ajustar `kS`, `kV` ni `kP` hasta comparar los tres
+paths de medición con el APK diagnóstico.
+
+La prueba pasiva manual tampoco se usa como evidencia: con loop activo y potencia
+cero, el eje del motor giró físicamente pero `Encoder live` no cambió; bajo potencia
+sí registró cuentas. No repetirla ni inferir de ella una falla definitiva.
+
+## Causa y corrección aplicada
+
+La primera corrida demostró que el shooter giraba físicamente en el sentido correcto,
+pero el encoder publicaba RPM/ticks negativos. FTCLib `2.1.1` aplica
+`Encoder.setDirection()` a posición, pero `getCorrectedVelocity()` conserva el signo
+crudo; el comentario anterior suponía lo contrario.
+
+Corrección mínima:
+
+- `RobotMap.SHOOTER_MOTOR_IS_INVERTED` permanece `true`: no cambió el sentido físico.
+- `SHOOTER_ENCODER_IS_INVERTED=true`.
+- `ShooterFeedbackSign` normaliza velocidad y ticks a la convención
+  “salida física del shooter = positiva”.
+- `ShooterSubsystem` usa esa convención tanto en control/readiness como en reportes.
+- `SystemCheckOpMode` publica `Shooter/Target`, `Shooter/Actual`, `Shooter/Power` y
+  `Shooter/BatteryV` desde INIT, siempre con salida física en cero.
+- Se añadió `ShooterFeedbackSignTest`; primero reprodujo el fallo y después pasó.
+- No se redujo ningún clamp, watchdog, timeout, Stop/E-stop ni ruta de cero.
+
+## Evidencia física conservada — primera corrida 1000 RPM, candidato anterior
+
+Esta evidencia explica la corrección, pero **no se transfiere al APK nuevo**:
+
+- Target: `1000 RPM`.
+- `Last result`: `STOPPED_TIMEOUT`.
+- Duración: `3027.5 ms`.
+- Encoder confirmado: `0 -> -170 ticks`.
+- Peak reportado con valor absoluto: `1028.6 RPM`.
+- End RPM indicado: `-85.7 RPM`.
+- Batería antes de la sesión: `12.36 V`.
+- Voltaje mínimo durante el pulso: `11.62 V`.
+- Max ready hold: `0.0 ms`.
+- Potencia final: `0`.
+- Health: `HEALTHY`.
+- Fault: `none`.
+- Paró completamente: sí.
+- Dirección física del shooter: correcta.
+- Anomalías mecánicas: ninguna.
+- Dashboard: target positivo y actual mayormente negativo; por eso el operador no
+  mantuvo/aceptó el gate.
+- Captura persistente:
+  [`t8.1-1000rpm-pre-fix-dashboard.png`](../../outputs/plan-final-antespremier/evidence/t8.1-1000rpm-pre-fix-dashboard.png),
+  SHA-256
+  `C5EC5D65AA0477CCFC5BDF6BE3BA6C0E4F77F9C142AF5118D8F5C79E61A3F16F`.
+
+## Próxima prueba física única — T8.1 a 1000 RPM
+
+1. Instalar únicamente el APK `2E28...52C2` desde `C:\dev`.
+2. Área despejada, sin piezas, intake/feeder en cero, torreta sin armar y
+   Stop/E-stop disponible. Palabra de aborto: `STOP`.
+3. Conectar sólo Gamepad 1; mantener Gamepad 2 desconectado.
+4. Seleccionar `SYSTEM CHECK and TUNING` y pulsar INIT.
+5. En Dashboard seleccionar `Shooter/Target`, `Shooter/Actual`, `Shooter/Power` y
+   `Shooter/BatteryV`; confirmar durante INIT `Actual=0` y `Power=0`.
+6. Pulsar Start y sostener `START+A` en Gamepad 1 para el único pulso automático de
+   aproximadamente `3000 ms`.
+7. Pulsar `B` o Stop inmediatamente si Actual vuelve a ser negativo, supera
+   `1100 RPM`, persiste potencia al soltar o aparece ruido, vibración, olor, fault,
+   excepción o cualquier movimiento no solicitado.
+8. Esperar el paro completo y reportar: `Last result`, duración, ticks inicial/final,
+   peak RPM, end RPM, voltaje mínimo, max ready hold, potencia final, Health, Fault,
+   paro completo, anomalías y captura de gráfica.
+9. Gate de este setpoint: `900..1100 RPM` durante al menos `250 ms`, sin overspeed,
+   fault, reinicio ni salida residual. No asumir PASS.
+
+## Paquete de evidencia
+
+- Template:
+  [`02-sesion-larga_v1.xlsx`](../../outputs/plan-final-antespremier/02-sesion-larga_v1.xlsx),
+  SHA-256
+  `5D7AFE7553061799D5F6FE7A4186AE441BD053213AB756DC2EBACE124FCB32FA`.
+- `02-sesion-larga_v1_FILLED.xlsx` es sólo un borrador migrado, no una entrega ni
+  evidencia final.
+- Por instrucción del operador, durante las pruebas se conservan los datos en el
+  handoff/chat y el XLSX se llena únicamente al terminar toda la serie.
+- La secuencia futura, sólo después de cada gate aceptado, es
+  `1000 -> 1500 -> 2000 -> 2450 -> 2900 RPM`.
 
 ---
 

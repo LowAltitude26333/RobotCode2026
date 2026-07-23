@@ -5,12 +5,15 @@ import com.arcrobotics.ftclib.controller.PIDController;
 import com.arcrobotics.ftclib.controller.wpilibcontroller.SimpleMotorFeedforward;
 import com.arcrobotics.ftclib.hardware.motors.Motor;
 import com.arcrobotics.ftclib.hardware.motors.MotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.LowAltitudeConstants;
 import org.firstinspires.ftc.teamcode.RobotMap;
 import org.firstinspires.ftc.teamcode.RobotSafety;
+import org.firstinspires.ftc.teamcode.shooter.ShooterFeedbackSign;
+import org.firstinspires.ftc.teamcode.shooter.ShooterVelocityWindow;
 
 public class ShooterSubsystem extends SubsystemBase {
 
@@ -59,6 +62,14 @@ public class ShooterSubsystem extends SubsystemBase {
     private int loopCycleCount = 0;
     private double actualShooterRPM;
     private double lastAppliedPower;
+    private final ShooterVelocityWindow diagnosticVelocityWindow =
+            new ShooterVelocityWindow(100);
+    private int diagnosticRawTicks;
+    private int diagnosticOutwardTicks;
+    private double diagnosticSdkTicksPerSecond;
+    private double diagnosticFtclibTicksPerSecond;
+    private double diagnosticSdkShooterRPM;
+    private double diagnosticWindowShooterRPM;
     private double outputPowerLimit = 1.0;
     private int lastEncoderPosition;
     private boolean encoderPositionInitialized;
@@ -90,8 +101,7 @@ public class ShooterSubsystem extends SubsystemBase {
     private void configureMotors() {
         // 1. Invertir Motor si es necesario
         motorLeader.setInverted(RobotMap.SHOOTER_MOTOR_IS_INVERTED);
-        // SDK motor direction also flips reported encoder sign. Keep outward RPM positive
-        // after correcting the physical motor direction for FND-028.
+        // Encoder position direction is independent from the physically verified motor direction.
         motorLeader.encoder.setDirection(RobotMap.SHOOTER_ENCODER_IS_INVERTED
                 ? Motor.Direction.REVERSE
                 : Motor.Direction.FORWARD);
@@ -181,6 +191,11 @@ public class ShooterSubsystem extends SubsystemBase {
         return readBatteryVoltage();
     }
 
+    /** Publishes a zero-output snapshot so Dashboard graph keys exist during INIT. */
+    public void publishCommissioningTelemetrySnapshot() {
+        publishTelemetry(readBatteryVoltage());
+    }
+
     public boolean isHealthy() {
         return healthState == HealthState.HEALTHY;
     }
@@ -196,6 +211,30 @@ public class ShooterSubsystem extends SubsystemBase {
 
     public double getLastAppliedPower() {
         return lastAppliedPower;
+    }
+
+    public int getDiagnosticRawTicks() {
+        return diagnosticRawTicks;
+    }
+
+    public int getDiagnosticOutwardTicks() {
+        return diagnosticOutwardTicks;
+    }
+
+    public double getDiagnosticSdkTicksPerSecond() {
+        return diagnosticSdkTicksPerSecond;
+    }
+
+    public double getDiagnosticFtclibTicksPerSecond() {
+        return diagnosticFtclibTicksPerSecond;
+    }
+
+    public double getDiagnosticSdkShooterRPM() {
+        return diagnosticSdkShooterRPM;
+    }
+
+    public double getDiagnosticWindowShooterRPM() {
+        return diagnosticWindowShooterRPM;
     }
 
     /**
@@ -250,9 +289,11 @@ public class ShooterSubsystem extends SubsystemBase {
                 "no encoder ticks during commissioning pulse");
     }
 
-    /** Raw motor-encoder position for commissioning reports; units are motor ticks. */
+    /** Outward-positive motor-encoder position for commissioning reports; units are motor ticks. */
     public int getEncoderPosition() {
-        return motorLeader.motor.getCurrentPosition();
+        return ShooterFeedbackSign.outwardPositive(
+                motorLeader.motor.getCurrentPosition(),
+                RobotMap.SHOOTER_ENCODER_IS_INVERTED);
     }
 
     /**
@@ -342,8 +383,30 @@ public class ShooterSubsystem extends SubsystemBase {
             currentShooterRPM = LowAltitudeConstants.SHOOTER_MAX_SAFE_RPM + 1.0;
         } else {
             try {
-                double motorVelocityTicks = motorLeader.getCorrectedVelocity();
-                double motorRPM = (motorVelocityTicks / LowAltitudeConstants.MOTOR_TICKS_PER_REV) * 60.0;
+                diagnosticRawTicks = motorLeader.motor.getCurrentPosition();
+                diagnosticOutwardTicks = ShooterFeedbackSign.outwardPositive(
+                        diagnosticRawTicks,
+                        RobotMap.SHOOTER_ENCODER_IS_INVERTED);
+                diagnosticSdkTicksPerSecond = ShooterFeedbackSign.outwardPositive(
+                        ((DcMotorEx) motorLeader.motor).getVelocity(),
+                        RobotMap.SHOOTER_ENCODER_IS_INVERTED);
+
+                // FTCLib 2.1.1 applies Encoder.setDirection() to position, but not to
+                // getCorrectedVelocity(). Normalize velocity explicitly so the physically
+                // verified outward shooting direction is positive in control and telemetry.
+                diagnosticFtclibTicksPerSecond = ShooterFeedbackSign.outwardPositive(
+                        motorLeader.getCorrectedVelocity(),
+                        RobotMap.SHOOTER_ENCODER_IS_INVERTED);
+                diagnosticSdkShooterRPM =
+                        ticksPerSecondToShooterRPM(diagnosticSdkTicksPerSecond);
+                diagnosticWindowShooterRPM = diagnosticVelocityWindow.update(
+                        diagnosticOutwardTicks,
+                        System.nanoTime(),
+                        LowAltitudeConstants.MOTOR_TICKS_PER_REV,
+                        LowAltitudeConstants.SHOOTER_GEAR_RATIO);
+
+                double motorRPM = (diagnosticFtclibTicksPerSecond
+                        / LowAltitudeConstants.MOTOR_TICKS_PER_REV) * 60.0;
                 currentShooterRPM = motorRPM * LowAltitudeConstants.SHOOTER_GEAR_RATIO;
             } catch (RuntimeException exception) {
                 latchFault(HealthState.ENCODER_FAULT, "encoder read failed");
@@ -442,6 +505,11 @@ public class ShooterSubsystem extends SubsystemBase {
         publishTelemetry(batteryVoltage);
     }
 
+    private double ticksPerSecondToShooterRPM(double ticksPerSecond) {
+        return (ticksPerSecond / LowAltitudeConstants.MOTOR_TICKS_PER_REV)
+                * 60.0 * LowAltitudeConstants.SHOOTER_GEAR_RATIO;
+    }
+
     private double readBatteryVoltage() {
         if (batteryVoltageSensor == null) {
             return Double.NaN;
@@ -513,6 +581,13 @@ public class ShooterSubsystem extends SubsystemBase {
         telemetry.addData("Shooter/Target", targetShooterRPM);
         telemetry.addData("Shooter/Actual", actualShooterRPM);
         telemetry.addData("Shooter/Power", lastAppliedPower);
+        telemetry.addData("Shooter/DiagSdkRPM", diagnosticSdkShooterRPM);
+        telemetry.addData("Shooter/DiagWindowRPM", diagnosticWindowShooterRPM);
+        telemetry.addData("Shooter/DiagRawTicks", diagnosticRawTicks);
+        telemetry.addData("Shooter/DiagOutwardTicks", diagnosticOutwardTicks);
+        telemetry.addData("Shooter/DiagSdkTicksPerSec", diagnosticSdkTicksPerSecond);
+        telemetry.addData("Shooter/DiagFtclibTicksPerSec",
+                diagnosticFtclibTicksPerSecond);
         telemetry.addData("Shooter/LoopCount", loopCycleCount);
         telemetry.addData("Shooter/Injected", faultInjectionMode);
     }

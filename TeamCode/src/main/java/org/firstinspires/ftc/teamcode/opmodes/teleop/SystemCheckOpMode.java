@@ -153,6 +153,8 @@ public class SystemCheckOpMode extends SafeCommandOpMode {
 
     @Override
     protected void duringInitLoop() {
+        shooter.publishCommissioningTelemetrySnapshot();
+
         long nowNanos = System.nanoTime();
         boolean confirmationHeld = gamepad2.start && gamepad2.back;
         if (turretArming.update(confirmationHeld, nowNanos)) {
@@ -188,7 +190,7 @@ public class SystemCheckOpMode extends SafeCommandOpMode {
 
         // 4. Telemetría Limpia para Gráficas
         // En Dashboard, verás dos líneas. Si se superponen perfectamente, tu PID es Dios.
-        telemetry.addLine("--- SHOOTER: PRIMER PULSO MP-01 ---");
+        telemetry.addLine("--- SHOOTER: T8.1, PULSO 1000 RPM ---");
         telemetry.addData("Shooter/Target RPM", SHOOTER_COMMISSIONING_TARGET_RPM);
         telemetry.addData("Actual RPM", shooter.getActualShooterRPM());
         telemetry.addData("Shooter Enabled", shooterEnabled);
@@ -206,6 +208,17 @@ public class SystemCheckOpMode extends SafeCommandOpMode {
         telemetry.addData("Shooter/Delta ticks", shooterPulseEndTicks - shooterPulseStartTicks);
         telemetry.addData("Shooter/Peak indicated RPM", "%.1f", shooterPulsePeakAbsRpm);
         telemetry.addData("Shooter/End indicated RPM", "%.1f", shooterPulseEndIndicatedRpm);
+        telemetry.addData("Shooter/Diag SDK RPM", "%.1f",
+                shooter.getDiagnosticSdkShooterRPM());
+        telemetry.addData("Shooter/Diag window RPM", "%.1f",
+                shooter.getDiagnosticWindowShooterRPM());
+        telemetry.addData("Shooter/Diag raw ticks", shooter.getDiagnosticRawTicks());
+        telemetry.addData("Shooter/Diag outward ticks",
+                shooter.getDiagnosticOutwardTicks());
+        telemetry.addData("Shooter/Diag SDK ticks/s", "%.1f",
+                shooter.getDiagnosticSdkTicksPerSecond());
+        telemetry.addData("Shooter/Diag FTCLib ticks/s", "%.1f",
+                shooter.getDiagnosticFtclibTicksPerSecond());
         telemetry.addData("Shooter/Encoder responded", shooterEncoderResponded);
         telemetry.addData("Shooter/Pulse battery", "%.2f -> %.2f V",
                 shooterPulseStartVoltage, shooterPulseEndVoltage);

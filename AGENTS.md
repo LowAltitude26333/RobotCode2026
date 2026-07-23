@@ -4,6 +4,20 @@ This is a FIRST Tech Challenge Robot Controller project. AI assistance supports
 students and mentors; it does not replace understanding the robot, reviewing the
 code, or validating behavior on hardware.
 
+## Canonical Workspace
+
+- The only authoritative working copy for this project is
+  `C:\dev\RobotCode2026`.
+- Before reading, editing, building, hashing, or producing an APK, verify that the
+  repository root resolves exactly to `C:\dev\RobotCode2026`. If it does not,
+  stop and switch to the canonical workspace before continuing.
+- Do not edit, build, deploy, or use artifacts from
+  `C:\Users\brito\OneDrive\Documentos\FTC\RobotCode2026`; that copy is
+  non-authoritative and may fail to upload or build correctly.
+- APK paths, hashes, test reports, handoffs, and commissioning evidence must come
+  from the canonical workspace. Preserve unrelated user changes already present
+  there.
+
 ## Instruction Priority
 
 - Follow system, developer, and user instructions first. Among repository

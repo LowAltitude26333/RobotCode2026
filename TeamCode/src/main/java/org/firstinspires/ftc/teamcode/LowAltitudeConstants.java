@@ -46,9 +46,8 @@ public class LowAltitudeConstants {
         // Voltaje nominal para cálculos (batería llena teórica).
         public static double NOMINAL_VOLTAGE = 12.0;
 
-    // Relación Externa: 2.0 significa que el Shooter gira 2 veces más rápido que el motor
-    // (Polea Grande en Motor -> Polea Pequeña en Shooter)
-    public static double SHOOTER_GEAR_RATIO = 2.0;
+    // Relación externa verificada en hardware: motor y rueda del shooter giran 1:1.
+    public static double SHOOTER_GEAR_RATIO = 1.0;
 
     public static long SHOOTER_READY_TIMEOUT_MS = 2000;
     public static int SHOOTER_READY_MAX_ATTEMPTS = 3;

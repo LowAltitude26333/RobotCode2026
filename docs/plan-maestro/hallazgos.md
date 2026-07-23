@@ -2,7 +2,7 @@
 
 > Estado: registro vivo; entradas iniciales provienen de auditoría estática, no de pruebas físicas
 > Baseline histórico inicial: `main@f91af18`; baseline de implementación: `origin/main@a887fe4f7ca9023eec6034a0db6b8d918c640ecc`
-> Última actualización: 2026-07-21
+> Última actualización: 2026-07-23
 > Alcance: bugs, riesgos, discrepancias, resultados y retests del plan maestro
 > Responsable sugerido: test lead; cada entrada debe tener owner técnico
 > Fuente de verdad: evidencia vinculada al SHA/configuración/sesión. No cerrar hallazgos sólo porque compile.
@@ -75,6 +75,7 @@ No crear findings para tareas normales ya planeadas salvo que aparezca una discr
 | FND-026 | HIGH | CLOSED | Configuración final motor-only; CRServo retirado por decisión del lead | Mechanical + mechanisms | MP-01/06 |
 | FND-027 | MEDIUM | CLOSED | Autocorte temporal de torreta validado 10/10 por sentido; asimetría direccional aceptada | Software/test + turret | MP-01 |
 | FND-028 | CRITICAL | CLOSED | Dirección, encoder, watchdog y autocorte del shooter validados; T8/carga quedan separados | Shooter + electrical | MP-01/06 |
+| FND-029 | CRITICAL | INVESTIGATING | Encoder del shooter no cambia al giro manual en la configuración actual y discrepa de las cuentas bajo potencia | Shooter + electrical | MP-06/T8 |
 
 ## 5. Entradas iniciales históricas (`main@f91af18`)
 
@@ -489,6 +490,28 @@ No crear findings para tareas normales ya planeadas salvo que aparezca una discr
 - **Aceptación del Test lead:** “Como Test lead, acepto cerrar FND-028 para MP-01 bajo el APK 09B2...DAC1. Dirección, encoder, watchdog y autocorte aprobados; estabilidad de 250 ms y pruebas con carga permanecen pendientes para MP-06/T8. Feeder bloqueado.”
 - **Acción/contención:** no repetir los pulsos de dirección/RPM ni alimentar piezas. La estabilidad de control y carga permanecen separadas y pendientes para MP-06/T8; el cierre de este finding no habilita feeder.
 - **Criterio de cierre:** encoder cuenta de forma coherente en prueba pasiva/diagnóstica, dirección física correcta, falta de respuesta produce fault antes del autocorte, power final cero y retest físico escalonado aprobado.
+
+### FND-029 — Regresión/intermitencia de la lectura del encoder del shooter
+
+- **Severidad / estado:** `CRITICAL / INVESTIGATING`
+- **Fecha / autor:** 2026-07-23 / commissioning físico del equipo
+- **Rama / dirty status:** `masterplan@f272792`, worktree deliberadamente dirty antes de este commit.
+- **Componente/owner:** Yellow Jacket 5203 1:1 de 6000 RPM, adaptador/cable de encoder, puerto REV y lectura `DcMotorEx`; shooter + electrical.
+- **Requisito o decisión relacionada:** MP-06/T8.1 exige feedback de velocidad coherente antes de ajustar `kS`, `kV` o `kP`. Feeder, piezas, `1500+ RPM` y `3600 RPM` permanecen bloqueados.
+- **Configuración física confirmada por el equipo:** un motor, reducción interna 1:1 y transmisión motor→rueda del shooter 1:1. El software corrige `SHOOTER_GEAR_RATIO` heredado de `2.0` a `1.0`; `28 ticks/rev` y `6000 RPM` permanecen.
+- **Esperado:** con potencia cero y el OpMode activo, girar el eje/rueda manualmente debe cambiar la posición acumulada. Diez vueltas completas deben producir aproximadamente `280 ticks` y el signo outward debe ser positivo.
+- **Observado:** en repetidas pruebas manuales el eje del motor gira físicamente, `Shooter/LoopCount` avanza, pero `Encoder live`, posición cruda, posición outward y velocidades permanecen en cero. Bajo pulsos motorizados anteriores sí aparecieron cuentas (`72`, `80`, `92` o `93` ticks netos según intento) y picos instantáneos erráticos; la discrepancia sigue presente.
+- **Reproducibilidad:** manual `0 ticks` repetido antes y después de reiniciar el OpMode. Un candidato posterior forzó hubs REV a `AUTO` y limpió bulk cache cada ciclo; el operador volvió a reportar todos los valores del encoder en cero y sólo `LoopCount` cambiante.
+- **Hipótesis de caché:** `REJECTED` para este bug. El workaround fue retirado; no se conserva código especulativo en `SystemCheck`.
+- **Hipótesis de “encoder corrupto”:** `NO DEMOSTRADA`. La posición motorizada acumuló cuentas monotónicas en una captura y no autoriza atribuir la causa al encoder sin aislar cable, adaptador y puerto.
+- **Relación con FND-028:** FND-028 permanece como cierre histórico válido para el APK `09B2...DAC1`; su evidencia no se transfiere al candidato/configuración actual. FND-029 bloquea el gate vigente.
+- **Impacto/riesgo:** las RPM instantáneas, readiness y cualquier ajuste de control pueden usar feedback incompleto o intermitente. Continuar energizando o “filtrar” la señal podría ocultar la falla y producir overspeed o control no determinista.
+- **Contención:** shooter sin piezas y sin nuevos pulsos; no modificar gains; no habilitar feeder, autos de tiro ni targets mayores. La salida de producción permanece inhibida.
+- **Instrumentación nueva:** `DIAG: Shooter Encoder RAW` mapea únicamente `RobotMap.SHOOTER_MOTOR` como `DcMotorEx`, desactiva bulk caching, mantiene potencia hardcoded en `0.0`, no usa FTCLib/scheduler/PID/FF/reset continuo y publica conexión física, modo SDK, ticks/velocidad raw y outward, deltas, min/max y número de muestras distintas.
+- **Candidato RAW no instalado:** APK `TeamCode-debug.apk`, `81,370,478` bytes, SHA-256 `FE7A859729BB03681EB630075AF6886EC80D3661FE29EE06DD3EEECD61B4B1AE`; `74/74` tests JVM, `assembleDebug` y `git diff --check` PASS.
+- **Plan de aislamiento:** (1) ejecutar diez vueltas en el OpMode RAW; (2) si continúa en cero, con robot apagado intercambiar adaptador/cable por uno conocido, probar encoder conocido en el puerto shooter y encoder shooter en puerto conocido; (3) medir alimentación de 3.3 V y transición de canales A/B usando el pinout oficial; (4) corregir sólo el componente demostrado.
+- **Criterio de cierre:** `280±1 ticks` por diez vueltas en ambos sentidos, signo outward correcto, lectura repetible después de reiniciar, prueba abierta con corriente/voltaje/RPM coherentes y regresión T8.1 `1000±100 RPM` sostenida `>=250 ms`, sin fault/overspeed ni salida residual.
+- **Retest y resultado:** pendiente; el APK RAW no ha sido instalado ni probado físicamente.
 
 ## 8. Plantilla para nuevas entradas
 
